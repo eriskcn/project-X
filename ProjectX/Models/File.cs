@@ -9,14 +9,19 @@ public class File
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public required string Id { get; set; }
 
-    public required string Name { get; set; }
-    public required string Path { get; set; }
-    public string? FileHash { get; set; }
+    [Required] [StringLength(50)] public required string Name { get; set; }
+    [Required] [StringLength(256)] public required string Path { get; set; }
+    [StringLength(256)] public string? FileHash { get; set; }
 
     // Relationship
+    [Required]
+    [StringLength(450)]
     public required string UploadedById { get; set; }
     [ForeignKey("UploadedById")] public required User UploadedBy { get; set; }
-    
+
+    public Application Application { get; set; } = null!;
+    public Message Messages { get; set; } = null!;
+
     public CompanyDetail CompanyDetail { get; set; } = null!;
 
     // Tracking

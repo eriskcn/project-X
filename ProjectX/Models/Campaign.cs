@@ -19,6 +19,8 @@ public class Campaign
     // Relationship
     public required string RecruiterId { get; set; }
     [ForeignKey("RecruiterId")] public User Recruiter { get; set; } = null!;
+    
+    public ICollection<Job> Jobs { get; set; } = new List<Job>();
 
     // Tracking
     public CampaignStatus Status { get; set; } = CampaignStatus.Draft;

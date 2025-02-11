@@ -3,30 +3,23 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ProjectX.Models;
 
-public class Location
+public class Conversation
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public required string Id { get; set; }
 
-    [Required] [StringLength(50)] public required string Name { get; set; }
-    public Region Region { get; set; } = Region.North;
+    [StringLength(100)] public string? Name { get; set; }
+    public bool IsDeleted { get; set; } = false;
+    public bool IsStored { get; set; } = false;
 
     // Relationship
-    public ICollection<CompanyDetail> Companies { get; set; } = new List<CompanyDetail>();
-    public ICollection<Job> Jobs { get; set; } = new List<Job>();
+    public ICollection<Message> Messages { get; set; } = new List<Message>();
 
     // Tracking
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-    public DateTime Updated { get; set; } = DateTime.UtcNow;
-}
-
-public enum Region
-{
-    North,
-    Central,
-    South
+    public DateTime Modified { get; set; } = DateTime.UtcNow;
 }

@@ -45,6 +45,13 @@ public class User : IdentityUser
     [StringLength(450)] public required string RoleId { get; set; }
     [ForeignKey("RoleId")] public required Role Role { get; set; }
 
+    public ICollection<Skill> Skills { get; set; } = new List<Skill>();
+    
+    public ICollection<Message> SentMessages { get; set; } = new List<Message>();
+    public ICollection<Message> ReceivedMessages { get; set; } = new List<Message>();
+    public ICollection<Conversation> Conversations { get; set; } = new List<Conversation>();
+    public ICollection<Major> FocusMajors { get; set; } = new List<Major>();
+
     // Authentication
     [StringLength(64)] public string RefreshToken { get; set; } = string.Empty;
     public DateTime RefreshTokenExpiry { get; set; } = DateTime.UtcNow.AddDays(7);

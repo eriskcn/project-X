@@ -24,14 +24,17 @@ public class CompanyDetail
     [Required] [StringLength(2500)] public required string Introduction { get; set; }
 
     // For relationship
-    [StringLength(450)] public required string CompanyId { get; set; }
+    [Required] [StringLength(450)] public required string CompanyId { get; set; }
     [ForeignKey("CompanyId")] public User Company { get; set; } = null!;
 
-    [StringLength(450)] public required string RegistrationFileId { get; set; }
+    [Required] [StringLength(450)] public required string RegistrationFileId { get; set; }
     [ForeignKey("RegistrationFileId")] public required File RegistrationFile { get; set; }
 
-    [StringLength(450)] public required string LocationId { get; set; }
+    [Required] [StringLength(450)] public required string LocationId { get; set; }
     [ForeignKey("LocationId")] public Location Location { get; set; } = null!;
+
+    [Required] [StringLength(450)] public required string MajorId { get; set; }
+    [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
 
     // For tracking
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
