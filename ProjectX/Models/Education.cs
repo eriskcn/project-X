@@ -1,26 +1,31 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ProjectX.Data;
 
 namespace ProjectX.Models;
 
-public class Education
+public class Education : BaseEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public required string Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     public EducationLevel Level { get; set; } = EducationLevel.PrimarySchool;
-    public required string School { get; set; }
+
+    [StringLength(200)] public required string School { get; set; }
+
     [Range(1900, 2100)] public int StartYear { get; set; }
-    public bool Graduated { get; set; } = false;
+
+    public bool Graduated { get; set; }
+
     [Range(1900, 2100)] public int? GraduatedYear { get; set; }
 
     // Relationship
-    [StringLength(450)] public required string CandidateId { get; set; }
+    [Required] public Guid CandidateId { get; set; }
     [ForeignKey("CandidateId")] public User Candidate { get; set; } = null!;
 
-    [StringLength(450)] public string? MajorId { get; set; }
-    [ForeignKey("MajorId")] public Major? Major { get; set; } 
+    public Guid? MajorId { get; set; }
+    [ForeignKey("MajorId")] public Major? Major { get; set; }
 
     // Tracking
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

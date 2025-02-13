@@ -1,17 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ProjectX.Data;
 
 namespace ProjectX.Models;
 
-public class Skill
+public class Skill : BaseEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public required string Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     public required string Name { get; set; }
     public string? Description { get; set; }
-    public bool IsDeleted { get; set; } = false;
 
     // Relationship
     public ICollection<Job> Jobs { get; set; } = new List<Job>();

@@ -1,31 +1,29 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ProjectX.Data;
 
 namespace ProjectX.Models;
 
-public class Message
+public class Message : BaseEntity   
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public required string Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [StringLength(1000)] public string? Content { get; set; }
-    public bool IsDeleted { get; set; } = false;
-    public bool IsRead { get; set; } = false;
-    public bool IsEdited { get; set; } = false;
+   
+    public bool IsRead { get; set; } 
+    public bool IsEdited { get; set; }
 
     // Relationship
-    [Required] [StringLength(450)] public required string SenderId { get; set; }
+    [Required] public Guid SenderId { get; set; }
     [ForeignKey("SenderId")] public User Sender { get; set; } = null!;
 
-    [Required] [StringLength(450)] public required string ReceiverId { get; set; }
-    [ForeignKey("ReceiverId")] public User Receiver { get; set; } = null!;
-
-    [Required] [StringLength(450)] public required string ConversationId { get; set; }
+    [Required] public Guid ConversationId { get; set; }
     [ForeignKey("ConversationId")] public Conversation Conversation { get; set; } = null!;
-    
-    [StringLength(450)] public string? AttachedFileId { get; set; }
-    [ForeignKey("AttachedFileId")] public File? AttachedFile { get; set; }
+
+    public Guid AttachedFileId { get; set; }
+    [ForeignKey("AttachedFileId")] public AttachedFile? AttachedFile { get; set; }
 
     // Tracking
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

@@ -1,21 +1,17 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
+using ProjectX.Data;
 
 namespace ProjectX.Models;
 
 // 4 roles: Admin, Candidate, Company, FreelanceRecruiter
-public class Role : IdentityRole
+public class Role : IdentityRole<Guid>, ISoftDelete
 {
-    // Attributes from IdentityRole
-    // string Id
-    // string? Name
-    // string? NormalizedName
-    // string? ConcurrencyStamp
+    public bool IsDeleted { get; set; }
 
-    // For relationship
-    public ICollection<User> Users { get; set; } = new List<User>();
+    public DateTime? Deleted { get; set; }
 
-    // For tracking
+    // Tracking
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 

@@ -1,13 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ProjectX.Data;
 
 namespace ProjectX.Models;
 
-public class Job
+public class Job : BaseEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public required string Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [StringLength(150)] public required string Title { get; set; }
     [StringLength(2000)] public required string Description { get; set; }
@@ -19,17 +20,15 @@ public class Job
     [Range(0, double.MaxValue)] public double? MaxSalary { get; set; }
 
     // Relationship
-    [StringLength(450)] public required string MajorId { get; set; }
+    [Required] public Guid MajorId { get; set; }
     [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
-
-    [StringLength(450)] public required string CampaignId { get; set; }
+    [Required] public Guid CampaignId { get; set; }
     [ForeignKey("CampaignId")] public Campaign Campaign { get; set; } = null!;
-
-    [StringLength(450)] public required string LocationId { get; set; }
+    [Required] public Guid LocationId { get; set; }
     [ForeignKey("LocationId")] public Location Location { get; set; } = null!;
 
-    [StringLength(450)] public string? JobDescriptionId { get; set; }
-    [ForeignKey("JobDescriptionId")] public File? JobDescription { get; set; }
+    public Guid? JobDescriptionId { get; set; }
+    [ForeignKey("JobDescriptionId")] public AttachedFile? JobDescription { get; set; }
 
     public ICollection<Skill> Skills { get; set; } = new List<Skill>();
     public ICollection<ContractType> ContractTypes { get; set; } = new List<ContractType>();

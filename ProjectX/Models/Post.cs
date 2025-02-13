@@ -1,34 +1,37 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ProjectX.Data;
 
 namespace ProjectX.Models;
 
-public class Post
+public class Post : BaseEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public required string Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required] [StringLength(1000)] public required string Content { get; set; }
     [Range(0, int.MaxValue)] public int Point { get; set; }
-    public bool IsDeleted { get; set; } = false;
-    public bool IsEdited { get; set; } = false;
+
+    public bool IsEdited { get; set; }
 
     // Relationship
-    [Required] [StringLength(450)] public required string UserId { get; set; }
-    [ForeignKey("UserId")] public User User { get; set; } = null!;
+    public Guid UserId { get; set; }
 
-    public ICollection<User> LikedUsers { get; set; } = new List<User>();
+    [ForeignKey("UserId")]
+    [InverseProperty("Posts")]
+    public User User { get; set; } = null!;
 
-    public ICollection<User> DislikedUsers { get; set; } = new List<User>();
+    [InverseProperty("LikedPosts")] public ICollection<User> LikedUsers { get; set; } = new List<User>();
+    [InverseProperty("DislikedPosts")] public ICollection<User> DislikedUsers { get; set; } = new List<User>();
 
-    [StringLength(450)] public string? ParentId { get; set; }
+    public Guid? ParentId { get; set; }
     [ForeignKey("ParentId")] public Post ParentPost { get; set; } = null!;
 
     public ICollection<Post> ChildrenPosts { get; set; } = new List<Post>();
 
-    [StringLength(450)] public string? AttachedFileId { get; set; }
-    [ForeignKey("AttachedFileId")] public File? AttachedFile { get; set; } = null!;
+    public Guid? AttachedFileId { get; set; }
+    [ForeignKey("AttachedFileId")] public AttachedFile? AttachedFile { get; set; }
 
     // Tracking
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

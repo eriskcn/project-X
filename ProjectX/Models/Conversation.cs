@@ -1,20 +1,22 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ProjectX.Data;
 
 namespace ProjectX.Models;
 
-public class Conversation
+public class Conversation : BaseEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public required string Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [StringLength(100)] public string? Name { get; set; }
-    public bool IsDeleted { get; set; } = false;
-    public bool IsStored { get; set; } = false;
+    public bool IsStored { get; set; }
 
     // Relationship
     public ICollection<Message> Messages { get; set; } = new List<Message>();
+
+    public ICollection<User> Participants { get; set; } = new List<User>();
 
     // Tracking
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

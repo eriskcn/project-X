@@ -1,18 +1,21 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ProjectX.Data;
 
 namespace ProjectX.Models;
 
-public class CompanyDetail
+public class CompanyDetail : BaseEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public required string Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [StringLength(450)] public required string Name { get; set; }
 
     [Required] [StringLength(10)] public string? ShortName { get; set; }
+
     [Required] [StringLength(256)] public required string HeadQuarterAddress { get; set; }
+
     [Required] [StringLength(256)] public required string Logo { get; set; }
 
     [Required]
@@ -21,19 +24,22 @@ public class CompanyDetail
     public required string ContactEmail { get; set; }
 
     [Range(1900, 2100)] public required int FoundedYear { get; set; }
+
+    public CompanySize Size { get; set; } = CompanySize.Tiny;
+
     [Required] [StringLength(2500)] public required string Introduction { get; set; }
 
     // For relationship
-    [Required] [StringLength(450)] public required string CompanyId { get; set; }
+    [Required] public Guid CompanyId { get; set; }
     [ForeignKey("CompanyId")] public User Company { get; set; } = null!;
 
-    [Required] [StringLength(450)] public required string RegistrationFileId { get; set; }
-    [ForeignKey("RegistrationFileId")] public required File RegistrationFile { get; set; }
+    [Required] public Guid RegistrationFileId { get; set; }
+    [ForeignKey("RegistrationFileId")] public required AttachedFile RegistrationAttachedFile { get; set; }
 
-    [Required] [StringLength(450)] public required string LocationId { get; set; }
+    [Required] public Guid LocationId { get; set; }
     [ForeignKey("LocationId")] public Location Location { get; set; } = null!;
 
-    [Required] [StringLength(450)] public required string MajorId { get; set; }
+    [Required] public Guid MajorId { get; set; }
     [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
 
     // For tracking

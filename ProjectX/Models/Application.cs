@@ -1,13 +1,14 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using ProjectX.Data;
 
 namespace ProjectX.Models;
 
-public class Application
+public class Application : BaseEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public required string Id { get; set; }
+    public Guid Id { get; set; } = Guid.NewGuid();
 
     [StringLength(600)] public string? Introduction { get; set; }
 
@@ -17,14 +18,20 @@ public class Application
     public ApplicationStatus Status { get; set; } = ApplicationStatus.Draft;
     public ApplicationProcess Process { get; set; } = ApplicationProcess.Pending;
 
-    [StringLength(450)] public required string CandidateId { get; set; }
+    // Relationship - Candidate
+    [Required] public Guid CandidateId { get; set; }
     [ForeignKey("CandidateId")] public User Candidate { get; set; } = null!;
 
-    [StringLength(450)] public required string JobId { get; set; }
+    // Relationship - Job
+    [Required] public Guid JobId { get; set; }
     [ForeignKey("JobId")] public Job Job { get; set; } = null!;
 
-    [StringLength(450)] public required string CvFileId { get; set; }
-    [ForeignKey("CvFileId")] public File CvFile { get; set; } = null!;
+    // Relationship - CV File
+    [Required] public Guid CvFileId { get; set; }
+    [ForeignKey("CvFileId")] public AttachedFile CvAttachedFile { get; set; } = null!;
+
+    // Tracking
+    public DateTime? Submitted { get; set; }
 
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;

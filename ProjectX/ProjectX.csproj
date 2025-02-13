@@ -31,11 +31,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Controllers\" />
-      <Folder Include="DTOs\" />
       <Folder Include="Helpers\" />
-      <Folder Include="Middlewares\" />
-      <Folder Include="Services\" />
     </ItemGroup>
 
 </Project>
