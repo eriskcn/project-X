@@ -118,7 +118,6 @@ public class SkillController(
             {
                 Name = request.Name.Trim(),
                 Description = request.Description?.Trim(),
-                Created = DateTime.UtcNow,
                 Modified = DateTime.UtcNow
             };
 

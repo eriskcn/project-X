@@ -42,7 +42,6 @@ public class AuthController(
             LastName = request.LastName,
             GitHubProfile = request.GitHubProfile,
             LinkedInProfile = request.LinkedInProfile,
-            Created = DateTime.UtcNow,
             Modified = DateTime.UtcNow
         };
 

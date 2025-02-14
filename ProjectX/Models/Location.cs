@@ -22,7 +22,7 @@ public class Location : BaseEntity
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-    public DateTime Updated { get; set; } = DateTime.UtcNow;
+    public DateTime Modified { get; set; } = DateTime.UtcNow;
 }
 
 public enum Region

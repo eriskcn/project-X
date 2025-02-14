@@ -74,7 +74,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Name = "Admin",
                 NormalizedName = "ADMIN",
                 IsDeleted = false,
-                Created = DateTime.UtcNow,
                 Modified = DateTime.UtcNow
             },
             new Role
@@ -83,7 +82,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Name = "Candidate",
                 NormalizedName = "CANDIDATE",
                 IsDeleted = false,
-                Created = DateTime.UtcNow,
                 Modified = DateTime.UtcNow
             },
             new Role
@@ -92,7 +90,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Name = "Business",
                 NormalizedName = "BUSINESS",
                 IsDeleted = false,
-                Created = DateTime.UtcNow,
                 Modified = DateTime.UtcNow
             },
             new Role
@@ -101,7 +98,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Name = "FreelanceRecruiter",
                 NormalizedName = "FREELANCERECRUITER",
                 IsDeleted = false,
-                Created = DateTime.UtcNow,
                 Modified = DateTime.UtcNow
             }
         );
