@@ -13,15 +13,15 @@ public class Conversation : BaseEntity
     [StringLength(100)] public string? Name { get; set; }
     public bool IsStored { get; set; }
 
+    public DateTime? Stored { get; set; }
+
     // Relationship
     public ICollection<Message> Messages { get; set; } = new List<Message>();
 
     public ICollection<User> Participants { get; set; } = new List<User>();
 
     // Tracking
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }

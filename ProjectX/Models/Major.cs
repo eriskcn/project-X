@@ -18,9 +18,7 @@ public class Major : BaseEntity
     public ICollection<User> Users { get; set; } = new List<User>();
     public ICollection<CompanyDetail> Companies { get; set; } = new List<CompanyDetail>();
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }

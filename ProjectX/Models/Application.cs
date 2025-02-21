@@ -15,8 +15,8 @@ public class Application : BaseEntity
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Applied { get; set; } = DateTime.UtcNow;
 
-    public ApplicationStatus Status { get; set; } = ApplicationStatus.Draft;
-    public ApplicationProcess Process { get; set; } = ApplicationProcess.Pending;
+    [Column(TypeName = "nvarchar(50)")] public ApplicationStatus Status { get; set; } = ApplicationStatus.Draft;
+    [Column(TypeName = "nvarchar(50)")] public ApplicationProcess Process { get; set; } = ApplicationProcess.Pending;
 
     // Relationship - Candidate
     [Required] public Guid CandidateId { get; set; }
@@ -27,16 +27,15 @@ public class Application : BaseEntity
     [ForeignKey("JobId")] public Job Job { get; set; } = null!;
 
     // Relationship - CV File
-    [Required] public Guid CvFileId { get; set; }
-    [ForeignKey("CvFileId")] public AttachedFile CvAttachedFile { get; set; } = null!;
+    // [Required] public Guid CvFileId { get; set; }
+    // [ForeignKey("CvFileId")] public AttachedFile CvAttachedFile { get; set; } = null!;
+    public AttachedFile CvAttachedFile { get; set; } = null!;
 
     // Tracking
     public DateTime? Submitted { get; set; }
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }
 

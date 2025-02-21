@@ -17,9 +17,7 @@ public class Skill : BaseEntity
     public ICollection<Job> Jobs { get; set; } = new List<Job>();
     public ICollection<User> Users { get; set; } = new List<User>();
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }

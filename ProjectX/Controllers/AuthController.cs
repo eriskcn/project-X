@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +24,11 @@ public class AuthController(
             return BadRequest(ModelState);
         }
 
+        if (await userManager.FindByEmailAsync(request.Email) != null)
+        {
+            return BadRequest(new { Message = "Email is already in use" });
+        }
+
         if (!await roleManager.RoleExistsAsync(request.RoleName))
         {
             var role = new Role { Name = request.RoleName };
@@ -37,9 +43,7 @@ public class AuthController(
         {
             UserName = request.Email,
             Email = request.Email,
-            FirstName = request.FirstName,
-            MiddleName = request.MiddleName,
-            LastName = request.LastName,
+            FullName = request.FullName,
             GitHubProfile = request.GitHubProfile,
             LinkedInProfile = request.LinkedInProfile,
             Modified = DateTime.UtcNow
@@ -76,6 +80,8 @@ public class AuthController(
 
         user.RefreshToken = refreshToken;
         user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+        user.LoginAttempts++;
+        // user.Status = UserStatus.Online;
         await userManager.UpdateAsync(user);
 
         Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
@@ -97,6 +103,20 @@ public class AuthController(
         return Ok(new { Message = "Sign-in successful" });
     }
 
+    [HttpGet("check-business-verified")]
+    [Authorize(Roles = "Business")]
+    public IActionResult CheckBusinessVerified()
+    {
+        var businessVerifiedClaim = User.FindFirst("BusinessVerified")?.Value;
+        var isBusinessVerified = businessVerifiedClaim != null && bool.Parse(businessVerifiedClaim);
+
+        return Ok(new
+        {
+            IsAuthenticated = true,
+            IsBusinessVerified = isBusinessVerified
+        });
+    }
+
 
     [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken()
@@ -106,16 +126,20 @@ public class AuthController(
             return Unauthorized(new { Message = "Refresh token is missing" });
         }
 
+        // var user = await userManager.Users
+        //     .AsNoTracking()
+        //     .Select(u => new
+        //     {
+        //         u.Id,
+        //         u.UserName,
+        //         u.RefreshToken,
+        //         u.RefreshTokenExpiry
+        //     })
+        //     .SingleOrDefaultAsync(u => u.RefreshToken == refreshToken);
+
         var user = await userManager.Users
-            .AsNoTracking()
-            .Select(u => new
-            {
-                u.Id,
-                u.UserName,
-                u.RefreshToken,
-                u.RefreshTokenExpiry
-            })
-            .SingleOrDefaultAsync(u => u.RefreshToken == refreshToken);
+            .Where(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiry > DateTime.UtcNow)
+            .FirstOrDefaultAsync();
 
         if (user == null || user.RefreshTokenExpiry <= DateTime.UtcNow)
         {
@@ -159,5 +183,27 @@ public class AuthController(
         });
 
         return Ok(new { Message = "Token refreshed successfully" });
+    }
+
+    [Authorize]
+    [HttpPost("log-out")]
+    public async Task<IActionResult> LogOut()
+    {
+        Response.Cookies.Delete("AccessToken");
+        Response.Cookies.Delete("RefreshToken");
+
+        var user = await userManager.GetUserAsync(User);
+        if (user == null)
+        {
+            return Unauthorized(new { Message = "User not found" });
+        }
+
+        user.RefreshToken = null;
+        user.RefreshTokenExpiry = DateTime.UtcNow;
+
+        var result = await userManager.UpdateAsync(user);
+        return !result.Succeeded
+            ? StatusCode(500, new { Message = "Failed to update user" })
+            : Ok(new { Message = "Sign-out successful" });
     }
 }

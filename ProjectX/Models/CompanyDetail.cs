@@ -24,8 +24,8 @@ public class CompanyDetail : BaseEntity
     public required string ContactEmail { get; set; }
 
     [Range(1900, 2100)] public required int FoundedYear { get; set; }
-
-    public CompanySize Size { get; set; } = CompanySize.Tiny;
+    
+    [Column(TypeName = "nvarchar(50)")] public CompanySize Size { get; set; } = CompanySize.Tiny;
 
     [Required] [StringLength(2500)] public required string Introduction { get; set; }
 
@@ -33,8 +33,8 @@ public class CompanyDetail : BaseEntity
     [Required] public Guid CompanyId { get; set; }
     [ForeignKey("CompanyId")] public User Company { get; set; } = null!;
 
-    [Required] public Guid RegistrationFileId { get; set; }
-    [ForeignKey("RegistrationFileId")] public required AttachedFile RegistrationAttachedFile { get; set; }
+    // [Required] public Guid RegistrationFileId { get; set; }
+    // [ForeignKey("RegistrationFileId")] public required AttachedFile RegistrationAttachedFile { get; set; }
 
     [Required] public Guid LocationId { get; set; }
     [ForeignKey("LocationId")] public Location Location { get; set; } = null!;
@@ -42,12 +42,12 @@ public class CompanyDetail : BaseEntity
     [Required] public Guid MajorId { get; set; }
     [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
 
+    public AttachedFile RegistrationAttachedFile { get; set; } = null!;
+
     // For tracking
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
-    public DateTime Updated { get; set; } = DateTime.UtcNow;
+    public DateTime Modified { get; set; } = DateTime.UtcNow;
 }
 
 public enum CompanySize

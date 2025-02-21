@@ -13,8 +13,8 @@ public class Job : BaseEntity
     [StringLength(150)] public required string Title { get; set; }
     [StringLength(2000)] public required string Description { get; set; }
     [StringLength(256)] public required string OfficeAddress { get; set; }
-    public JobStatus Status { get; set; } = JobStatus.Active;
-    public EducationLevel? Level { get; set; } = EducationLevel.University;
+    [Column(TypeName = "nvarchar(50)")] public JobStatus Status { get; set; } = JobStatus.Active;
+    [Column(TypeName = "nvarchar(50)")] public EducationLevel? Level { get; set; } = EducationLevel.University;
     public double? YearOfExperience { get; set; }
     [Range(0, double.MaxValue)] public double? MinSalary { get; set; }
     [Range(0, double.MaxValue)] public double? MaxSalary { get; set; }
@@ -38,10 +38,8 @@ public class Job : BaseEntity
     public ICollection<Application> Applications { get; set; } = new List<Application>();
 
     // Tracking
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }
 

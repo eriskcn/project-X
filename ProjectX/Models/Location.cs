@@ -11,17 +11,15 @@ public class Location : BaseEntity
     public Guid Id { get; set; } = Guid.NewGuid();
 
     [Required] [StringLength(50)] public required string Name { get; set; }
-    public Region Region { get; set; } = Region.North;
+    [Column(TypeName = "nvarchar(50)")] public Region Region { get; set; } = Region.North;
 
     // Relationship
     public ICollection<CompanyDetail> Companies { get; set; } = new List<CompanyDetail>();
     public ICollection<Job> Jobs { get; set; } = new List<Job>();
 
     // Tracking
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }
 

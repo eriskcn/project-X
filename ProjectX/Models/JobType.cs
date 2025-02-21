@@ -17,9 +17,7 @@ public class JobType : BaseEntity
     public ICollection<Job> Jobs { get; set; } = new List<Job>();
 
     // Tracking
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }

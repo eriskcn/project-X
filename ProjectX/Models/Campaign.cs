@@ -18,22 +18,22 @@ public class Campaign : BaseEntity
 
     [Required] public DateTime Close { get; set; } = DateTime.UtcNow.AddDays(7);
 
-    public bool IsHighlight { get; set; }
-    public bool IsUrgent { get; set; }
+    public bool IsHighlight { get; set; } = false;
+    public bool IsUrgent { get; set; } = false;
+
+    public int CountJobs { get; set; } = 0;
 
     // Relationship - Recruiter
     [Required] public Guid RecruiterId { get; set; }
-    [ForeignKey("RecruiterId")] public required User Recruiter { get; set; }
+    [ForeignKey("RecruiterId")] public User Recruiter { get; set; } = null!;
 
     public ICollection<Job> Jobs { get; set; } = new List<Job>();
 
     // Tracking
-    public CampaignStatus Status { get; set; } = CampaignStatus.Draft;
+    [Column(TypeName = "nvarchar(50)")] public CampaignStatus Status { get; set; } = CampaignStatus.Draft;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }
 

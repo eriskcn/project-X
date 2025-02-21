@@ -14,6 +14,7 @@ public class Post : BaseEntity
     [Range(0, int.MaxValue)] public int Point { get; set; }
 
     public bool IsEdited { get; set; }
+    public DateTime? Edited { get; set; }
 
     // Relationship
     public Guid UserId { get; set; }
@@ -30,13 +31,12 @@ public class Post : BaseEntity
 
     public ICollection<Post> ChildrenPosts { get; set; } = new List<Post>();
 
-    public Guid? AttachedFileId { get; set; }
-    [ForeignKey("AttachedFileId")] public AttachedFile? AttachedFile { get; set; }
+    // public Guid? AttachedFileId { get; set; }
+    // [ForeignKey("AttachedFileId")] public AttachedFile? AttachedFile { get; set; }
+    public AttachedFile AttachedFile { get; set; } = null!;
 
     // Tracking
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }

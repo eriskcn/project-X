@@ -48,14 +48,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                         softDeleteEntity.IsDeleted = true;
                         softDeleteEntity.Deleted = DateTime.UtcNow;
                         break;
-
                     case EntityState.Modified:
+                    {
                         if (!softDeleteEntity.IsDeleted)
                         {
                             softDeleteEntity.Deleted = null;
                         }
 
                         break;
+                    }
                 }
             }
         }
@@ -66,40 +67,39 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         base.OnModelCreating(builder);
         builder.ConfigureSoftDelete();
 
-        builder.Entity<Role>().Property(r => r.Modified).HasDefaultValueSql("GETUTCDATE()");
         builder.Entity<Role>().HasData(
-            new Role
-            {
-                Id = Guid.NewGuid(),
-                Name = "Admin",
-                NormalizedName = "ADMIN",
-                IsDeleted = false,
-                Modified = DateTime.UtcNow
-            },
-            new Role
-            {
-                Id = Guid.NewGuid(),
-                Name = "Candidate",
-                NormalizedName = "CANDIDATE",
-                IsDeleted = false,
-                Modified = DateTime.UtcNow
-            },
-            new Role
-            {
-                Id = Guid.NewGuid(),
-                Name = "Business",
-                NormalizedName = "BUSINESS",
-                IsDeleted = false,
-                Modified = DateTime.UtcNow
-            },
-            new Role
-            {
-                Id = Guid.NewGuid(),
-                Name = "FreelanceRecruiter",
-                NormalizedName = "FREELANCERECRUITER",
-                IsDeleted = false,
-                Modified = DateTime.UtcNow
-            }
+            new Role { Id = Guid.NewGuid(), Name = "Admin", NormalizedName = "ADMIN" },
+            new Role { Id = Guid.NewGuid(), Name = "Candidate", NormalizedName = "CANDIDATE" },
+            new Role { Id = Guid.NewGuid(), Name = "Business", NormalizedName = "BUSINESS" },
+            new Role { Id = Guid.NewGuid(), Name = "FreelanceRecruiter", NormalizedName = "FREELANCERECRUITER" }
+        );
+
+        builder.Entity<Location>().HasData(
+            new Location { Id = Guid.NewGuid(), Name = "Hà Nội", Region = Region.North },
+            new Location { Id = Guid.NewGuid(), Name = "Đà Nẵng", Region = Region.Central },
+            new Location { Id = Guid.NewGuid(), Name = "Hồ Chí Minh", Region = Region.South }
+        );
+
+        builder.Entity<JobType>().HasData(
+            new JobType { Id = Guid.NewGuid(), Name = "In-Office" },
+            new JobType { Id = Guid.NewGuid(), Name = "Remote" },
+            new JobType { Id = Guid.NewGuid(), Name = "Hybrid" },
+            new JobType { Id = Guid.NewGuid(), Name = "Oversea" }
+        );
+
+        builder.Entity<JobLevel>().HasData(
+            new JobLevel { Id = Guid.NewGuid(), Name = "Intern" },
+            new JobLevel { Id = Guid.NewGuid(), Name = "Junior" },
+            new JobLevel { Id = Guid.NewGuid(), Name = "Senior" },
+            new JobLevel { Id = Guid.NewGuid(), Name = "Lead" },
+            new JobLevel { Id = Guid.NewGuid(), Name = "Manager" },
+            new JobLevel { Id = Guid.NewGuid(), Name = "Director" }
+        );
+
+        builder.Entity<ContractType>().HasData(
+            new ContractType { Id = Guid.NewGuid(), Name = "Part-time" },
+            new ContractType { Id = Guid.NewGuid(), Name = "Full-time" },
+            new ContractType { Id = Guid.NewGuid(), Name = "Freelance" }
         );
     }
 }

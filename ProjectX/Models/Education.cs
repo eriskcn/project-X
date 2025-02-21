@@ -10,7 +10,7 @@ public class Education : BaseEntity
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    public EducationLevel Level { get; set; } = EducationLevel.PrimarySchool;
+    [Column(TypeName = "nvarchar(50)")] public EducationLevel Level { get; set; } = EducationLevel.PrimarySchool;
 
     [StringLength(200)] public required string School { get; set; }
 
@@ -28,10 +28,8 @@ public class Education : BaseEntity
     [ForeignKey("MajorId")] public Major? Major { get; set; }
 
     // Tracking
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
-    [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }
 
