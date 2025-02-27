@@ -15,7 +15,7 @@ public class JobRequest
     public Guid MajorId { set; get; }
     public Guid CampaignId { set; get; }
     public Guid LocationId { set; get; }
-    public Guid? JobDescriptionId { set; get; }
+    public IFormFile? JobDescriptionFile { set; get; }
     public ICollection<Guid> Skills { set; get; } = new List<Guid>();
     public ICollection<Guid> ContractTypes { set; get; } = new List<Guid>();
     public ICollection<Guid> JobLevels { set; get; } = new List<Guid>();

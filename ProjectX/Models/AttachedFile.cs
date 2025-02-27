@@ -25,12 +25,7 @@ public class AttachedFile : BaseEntity
     // Relationship - UploadedBy
     [Required] public Guid UploadedById { get; set; }
     [ForeignKey("UploadedById")] public User UploadedBy { get; set; } = null!;
-
-    // Optional Relationships
-    // public Application? Application { get; set; }
-    // public Message? Messages { get; set; }
-    // public CompanyDetail? CompanyDetail { get; set; }
-
+    
     // Tracking
     public DateTime Uploaded { get; set; } = DateTime.UtcNow;
 }
@@ -39,6 +34,7 @@ public enum TargetType
 {
     Application,
     CompanyDetail,
+    JobDescription,
     Message,
     Post
 }

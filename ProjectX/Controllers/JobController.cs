@@ -11,7 +11,7 @@ namespace ProjectX.Controllers;
 [ApiController]
 [Route("capablanca/api/v0/jobs")]
 [Authorize]
-public class JobController(ApplicationDbContext context) : ControllerBase
+public class JobController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet("{id:Guid}")]
     public async Task<ActionResult<JobResponse>> GetJob(Guid id)
@@ -60,25 +60,52 @@ public class JobController(ApplicationDbContext context) : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
-    public async Task<ActionResult<JobResponse>> CreateJob([FromBody] JobRequest request)
+    public async Task<ActionResult<JobResponse>> CreateJob([FromForm] JobRequest request)
     {
         var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (recruiterId == null)
         {
             return Unauthorized(new { Message = "User ID not found in access token." });
         }
-
+    
         var campaign = await context.Campaigns.FindAsync(request.CampaignId);
         if (campaign == null)
         {
             return NotFound(new { Message = "Campaign not found." });
         }
-
+    
         if (campaign.RecruiterId != Guid.Parse(recruiterId))
         {
             return Forbid("You are not authorized to add jobs to this campaign.");
         }
-
+    
+        Guid? jobDescriptionId = null;
+        if (request.JobDescriptionFile != null)
+        {
+            var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+    
+            var jobDescriptionFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.JobDescriptionFile.FileName)}";
+            var filePath = Path.Combine(uploadsFolder, jobDescriptionFileName);
+            await using var stream = new FileStream(filePath, FileMode.Create);
+            await request.JobDescriptionFile.CopyToAsync(stream);
+    
+            var jobDescription = new AttachedFile
+            {
+                Id = Guid.NewGuid(),
+                Name = jobDescriptionFileName,
+                Path = filePath,
+                Type = TargetType.JobDescription,
+                UploadedById = Guid.Parse(recruiterId)
+            };
+            jobDescriptionId = jobDescription.Id;
+            context.AttachedFiles.Add(jobDescription);
+            await context.SaveChangesAsync();
+        }
+    
         var job = new Job
         {
             Title = request.Title,
@@ -92,12 +119,12 @@ public class JobController(ApplicationDbContext context) : ControllerBase
             MajorId = request.MajorId,
             CampaignId = request.CampaignId,
             LocationId = request.LocationId,
-            JobDescriptionId = request.JobDescriptionId
+            JobDescriptionId = jobDescriptionId
         };
-
+    
         context.Jobs.Add(job);
         await context.SaveChangesAsync();
-
+    
         var response = new JobResponse
         {
             Id = job.Id,
@@ -121,7 +148,7 @@ public class JobController(ApplicationDbContext context) : ControllerBase
             Created = job.Created,
             Modified = job.Modified
         };
-
+    
         return CreatedAtAction(nameof(GetJob), new { id = job.Id }, response);
     }
 }
