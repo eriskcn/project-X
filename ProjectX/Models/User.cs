@@ -11,15 +11,19 @@ public class User : IdentityUser<Guid>, ISoftDelete
     [Required] [StringLength(70)] public required string FullName { get; set; }
 
     // Profile
-    [StringLength(256)] public string ProfilePicture { get; set; } = "/images/default-avatar.png";
+    [StringLength(256)] public string ProfilePicture { get; set; } = "/images/default-avatar.jpeg";
     [StringLength(100)] public string? GitHubProfile { get; set; }
     [StringLength(150)] public string? LinkedInProfile { get; set; }
+
+    // Social Authentication
+    [StringLength(50)] public string? Provider { get; set; } 
+    [StringLength(100)] public string? OAuthId { get; set; } 
+    public bool IsExternalLogin => !string.IsNullOrEmpty(Provider); 
 
     // Business
     public bool BusinessVerified { get; set; } = false;
     public double BusinessPoints { get; set; } = 0;
-
-
+    
     public bool IsDeleted { get; set; }
     public DateTime? Deleted { get; set; }
 
@@ -39,7 +43,7 @@ public class User : IdentityUser<Guid>, ISoftDelete
     // Tracking
     [Column(TypeName = "nvarchar(50)")] public UserStatus Status { get; set; } = UserStatus.Online;
     public DateTime? LastAccess { get; set; } = DateTime.UtcNow;
-    public int LoginAttempts { get; set; } = 0;
+    public int LoginAttempts { get; set; } 
     public DateTime Created { get; set; } = DateTime.UtcNow;
     public DateTime Modified { get; set; } = DateTime.UtcNow;
 }

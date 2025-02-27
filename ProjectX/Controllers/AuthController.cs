@@ -13,6 +13,7 @@ namespace ProjectX.Controllers;
 public class AuthController(
     UserManager<User> userManager,
     RoleManager<Role> roleManager,
+    GoogleAuthService googleAuthService,
     ITokenService tokenService)
     : ControllerBase
 {
@@ -81,7 +82,6 @@ public class AuthController(
         user.RefreshToken = refreshToken;
         user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
         user.LoginAttempts++;
-        // user.Status = UserStatus.Online;
         await userManager.UpdateAsync(user);
 
         Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
@@ -117,7 +117,6 @@ public class AuthController(
         });
     }
 
-
     [HttpPost("refresh-token")]
     public async Task<IActionResult> RefreshToken()
     {
@@ -125,17 +124,6 @@ public class AuthController(
         {
             return Unauthorized(new { Message = "Refresh token is missing" });
         }
-
-        // var user = await userManager.Users
-        //     .AsNoTracking()
-        //     .Select(u => new
-        //     {
-        //         u.Id,
-        //         u.UserName,
-        //         u.RefreshToken,
-        //         u.RefreshTokenExpiry
-        //     })
-        //     .SingleOrDefaultAsync(u => u.RefreshToken == refreshToken);
 
         var user = await userManager.Users
             .Where(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiry > DateTime.UtcNow)
@@ -146,7 +134,6 @@ public class AuthController(
             return Unauthorized(new { Message = "Invalid or expired refresh token" });
         }
 
-        // Create a new User object to update the refresh token
         var userToUpdate = await userManager.FindByIdAsync(user.Id.ToString());
         if (userToUpdate == null)
         {
@@ -205,5 +192,58 @@ public class AuthController(
         return !result.Succeeded
             ? StatusCode(500, new { Message = "Failed to update user" })
             : Ok(new { Message = "Sign-out successful" });
+    }
+    
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        var payload = await googleAuthService.VerifyGoogleTokenAsync(request.IdToken);
+
+        var user = await userManager.FindByEmailAsync(payload.Email);
+        if (user == null)
+        {
+            user = new User
+            {
+                UserName = payload.Email,
+                Email = payload.Email,
+                FullName = payload.Name,
+                ProfilePicture = payload.Picture,
+                Provider = "Google",
+                OAuthId = payload.Subject,
+                Modified = DateTime.UtcNow
+            };
+
+            var result = await userManager.CreateAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.Errors);
+            }
+        }
+
+        var accessToken = await tokenService.GenerateAccessTokenAsync(user);
+        var refreshToken = tokenService.GenerateRefreshToken();
+
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+        user.LoginAttempts++;
+        await userManager.UpdateAsync(user);
+
+        Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Expires = DateTime.UtcNow.AddMinutes(30)
+        });
+
+        Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Expires = DateTime.UtcNow.AddDays(7)
+        });
+
+        return Ok(new { Message = "Sign-in successful" });
     }
 }

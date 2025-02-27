@@ -13,6 +13,7 @@ public class Job : BaseEntity
     [StringLength(150)] public required string Title { get; set; }
     [StringLength(2000)] public required string Description { get; set; }
     [StringLength(256)] public required string OfficeAddress { get; set; }
+    public int Quantity { get; set; } = 1;
     [Column(TypeName = "nvarchar(50)")] public JobStatus Status { get; set; } = JobStatus.Active;
     [Column(TypeName = "nvarchar(50)")] public EducationLevel? Level { get; set; } = EducationLevel.University;
     public double? YearOfExperience { get; set; }
