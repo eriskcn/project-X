@@ -126,7 +126,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, BusinessVerifiedHandler>();
 
 // Register token service for JWT generation
 builder.Services.AddScoped<ITokenService, TokenService>();
-
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddControllers();
 
 // Add Swagger for API documentation

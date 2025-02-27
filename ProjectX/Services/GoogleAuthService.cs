@@ -2,7 +2,7 @@ using Google.Apis.Auth;
 
 namespace ProjectX.Services;
 
-public class GoogleAuthService
+public class GoogleAuthService : IGoogleAuthService
 {
     public async Task<GoogleJsonWebSignature.Payload> VerifyGoogleTokenAsync(string idToken)
     {
