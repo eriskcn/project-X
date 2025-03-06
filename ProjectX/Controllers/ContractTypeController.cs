@@ -45,11 +45,13 @@ public class ContractTypeController(ApplicationDbContext context) : ControllerBa
 
         var response = new
         {
+            Items = contractTypes,
             TotalItems = totalItems,
             TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
             PageNumber = page,
-            PageSize = pageSize,
-            Items = contractTypes
+            PageSize = pageSize
         };
 
         return Ok(response);

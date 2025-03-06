@@ -16,11 +16,11 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<IEnumerable<LocationResponse>>> GetLocations(
         [FromQuery] Region? region,
         [FromQuery] string? search,
-        [FromQuery] int pageNumber = 1,
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10
     )
     {
-        if (pageNumber <= 0 || pageSize <= 0)
+        if (page <= 0 || pageSize <= 0)
         {
             return BadRequest(new { Message = "Page number and page size must be greater than zero." });
         }
@@ -41,7 +41,7 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var locations = await query
-            .Skip((pageNumber - 1) * pageSize)
+            .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(location => new LocationResponse
             {
@@ -53,11 +53,13 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
 
         var response = new
         {
+            Items = locations,
             TotalItems = totalItems,
             TotalPages = totalPages,
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            Items = locations
+            First = page == 1,
+            Last = page == totalPages,
+            PageNumber = page,
+            PageSize = pageSize
         };
 
         return Ok(response);
@@ -153,10 +155,10 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<LocationResponse>>> GetDeletedLocation(
         [FromQuery] string? search,
-        [FromQuery] int pageNumber = 1,
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        if (pageNumber <= 0 || pageSize <= 0)
+        if (page <= 0 || pageSize <= 0)
         {
             return BadRequest(new { Message = "Page number and page size must be greater than zero." });
         }
@@ -173,7 +175,7 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var locations = await query
-            .Skip((pageNumber - 1) * pageSize)
+            .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(location => new LocationResponse
             {
@@ -185,11 +187,13 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
 
         var response = new
         {
+            Items = locations,
             TotalItems = totalItems,
             TotalPages = totalPages,
-            PageNumber = pageNumber,
-            PageSize = pageSize,
-            Items = locations
+            First = page == 1,
+            Last = page == totalPages,
+            PageNumber = page,
+            PageSize = pageSize
         };
 
         return Ok(response);

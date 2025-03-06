@@ -45,11 +45,13 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
 
         var response = new
         {
+            Items = majors,
             TotalItems = totalItems,
             TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
             PageNumber = page,
-            PageSize = pageSize,
-            Items = majors
+            PageSize = pageSize
         };
 
         return Ok(response);
@@ -160,11 +162,13 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
 
         var response = new
         {
+            Items = majors,
             TotalItems = totalItems,
             TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
             PageNumber = page,
-            PageSize = pageSize,
-            Items = majors
+            PageSize = pageSize
         };
 
         return Ok(response);

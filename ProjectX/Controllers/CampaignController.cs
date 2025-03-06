@@ -10,10 +10,11 @@ namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/campaigns")]
-[Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+[Authorize]
 public class CampaignController(ApplicationDbContext context) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
     public async Task<ActionResult<CampaignResponse>> CreateCampaign([FromBody] CampaignRequest request)
     {
         var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -55,25 +56,38 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
     }
 
 
-    // [HttpGet("{id:guid}")]
-    // public async Task<IActionResult> GetCampaign(Guid id)
-    // {
-    //     var campaign = await context.Campaigns
-    //         .Include(c => c.Jobs)
-    //         .FirstOrDefaultAsync(c => c.Id == id);
-    //
-    //     if (campaign == null)
-    //     {
-    //         return NotFound(new { Message = "Campaign not found." });
-    //     }
-    //
-    //     
-    //
-    // }
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<CampaignResponse>> GetCampaign(Guid id)
+    {
+        var campaign = await context.Campaigns
+            .Include(c => c.Jobs)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (campaign == null)
+        {
+            return NotFound(new { Message = "Campaign not found." });
+        }
+
+        var response = new CampaignResponse
+        {
+            Id = campaign.Id,
+            Name = campaign.Name,
+            Description = campaign.Description,
+            Open = campaign.Open,
+            Close = campaign.Close,
+            IsHighlight = campaign.IsHighlight,
+            IsUrgent = campaign.IsUrgent,
+            CountJobs = campaign.CountJobs,
+            Status = campaign.Status
+        };
+
+        return Ok(response);
+    }
 
     [HttpGet]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
     public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
-        [FromQuery] string? search,
+        [FromQuery] string? search, [FromQuery] string? status,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         if (page <= 0 || pageSize <= 0)
@@ -94,6 +108,11 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         if (!string.IsNullOrEmpty(search))
         {
             query = query.Where(c => c.Name.Contains(search) || c.Description.Contains(search));
+        }
+
+        if (!string.IsNullOrEmpty(status))
+        {
+            query = query.Where(c => c.Status.ToString() == status);
         }
 
         var totalItems = await query.CountAsync();
@@ -118,13 +137,115 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
         var response = new
         {
+            Items = campaigns,
             TotalItems = totalItems,
             TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
             PageNumber = page,
-            PageSize = pageSize,
-            Items = campaigns
+            PageSize = pageSize
         };
 
         return Ok(response);
+    }
+
+    [HttpGet("{campaignId:guid}/jobs")]
+    public async Task<ActionResult<IEnumerable<JobResponse>>> GetCampaignJobs([FromRoute] Guid campaignId,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null,
+        [FromQuery] List<string>? jobLevels = null, [FromQuery] List<string>? jobTypes = null,
+        [FromQuery] List<string>? contractTypes = null)
+    {
+        var recruiterId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty);
+        var campaign = await context.Campaigns
+            .Include(c => c.Jobs)
+            .ThenInclude(j => j.Major)
+            .Include(c => c.Jobs)
+            .ThenInclude(j => j.Location)
+            .Include(c => c.Jobs)
+            .ThenInclude(j => j.Skills)
+            .Include(c => c.Jobs)
+            .ThenInclude(j => j.ContractTypes)
+            .Include(c => c.Jobs)
+            .ThenInclude(j => j.JobLevels)
+            .Include(c => c.Jobs)
+            .ThenInclude(j => j.JobTypes)
+            .Include(c => c.Jobs)
+            .ThenInclude(j => j.Applications)
+            .FirstOrDefaultAsync(c => c.Id == campaignId && c.RecruiterId == recruiterId);
+
+        if (campaign == null)
+        {
+            return NotFound(new { Message = "Campaign not found or you are not authorized to view its jobs." });
+        }
+
+        var query = campaign.Jobs.AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(j => j.Title.Contains(search) || j.Description.Contains(search));
+        }
+
+        if (jobLevels is { Count: > 0 })
+        {
+            query = query.Where(j => jobLevels.Any(l => j.JobLevels.Any(jl => jl.Name == l)));
+        }
+
+        if (jobTypes is { Count: > 0 })
+        {
+            query = query.Where(j => jobTypes.Any(t => j.JobTypes.Any(jt => jt.Name == t)));
+        }
+
+        if (contractTypes is { Count: > 0 })
+        {
+            query = query.Where(j => contractTypes.Any(t => j.ContractTypes.Any(ct => ct.Name == t)));
+        }
+
+        var totalItems = query.Count();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var jobs = await query
+            .OrderByDescending(j => j.Created)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var response = jobs.Select(j => new JobResponse
+        {
+            Id = j.Id,
+            Title = j.Title,
+            Description = j.Description,
+            OfficeAddress = j.OfficeAddress,
+            Quantity = j.Quantity,
+            Status = j.Status,
+            Level = j.Level,
+            YearOfExperience = j.YearOfExperience,
+            MinSalary = j.MinSalary,
+            MaxSalary = j.MaxSalary,
+            Major = j.Major,
+            Location = j.Location,
+            JobDescription = context.AttachedFiles
+                .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)
+                .Select(f => new FileResponse
+                    { Id = f.Id, Name = f.Name, Path = f.Path, UploadedById = f.UploadedById, Uploaded = f.Uploaded })
+                .SingleOrDefault(),
+            Skills = j.Skills,
+            ContractTypes = j.ContractTypes,
+            JobLevels = j.JobLevels,
+            JobTypes = j.JobTypes,
+            Applications = j.Applications,
+            Created = j.Created,
+            Modified = j.Modified
+        });
+
+        return Ok(new
+        {
+            Items = response,
+            TotalItems = totalItems,
+            TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
+            PageNumber = page,
+            PageSize = pageSize
+        });
     }
 }

@@ -29,11 +29,24 @@
       <Content Include="..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
+      <Content Remove="Middlewares\**" />
     </ItemGroup>
 
     <ItemGroup>
       <Folder Include="Helpers\" />
       <Folder Include="wwwroot\uploads\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Remove="Middlewares\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="Middlewares\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Middlewares\**" />
     </ItemGroup>
 
 </Project>

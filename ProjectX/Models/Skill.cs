@@ -10,8 +10,8 @@ public class Skill : BaseEntity
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    public required string Name { get; set; }
-    public string? Description { get; set; }
+    [StringLength(256)] public required string Name { get; set; }
+    [StringLength(256)] public string? Description { get; set; }
 
     // Relationship
     public ICollection<Job> Jobs { get; set; } = new List<Job>();

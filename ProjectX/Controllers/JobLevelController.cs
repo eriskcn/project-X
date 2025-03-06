@@ -44,11 +44,13 @@ public class JobLevelController(ApplicationDbContext context) : ControllerBase
 
         var response = new
         {
+            Items = jobLevels,
             TotalItems = totalItems,
             TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
             PageNumber = page,
-            PageSize = pageSize,
-            Items = jobLevels
+            PageSize = pageSize
         };
 
         return Ok(response);
@@ -166,11 +168,13 @@ public class JobLevelController(ApplicationDbContext context) : ControllerBase
 
         var response = new
         {
+            Items = jobLevels,
             TotalItems = totalItems,
             TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
             PageNumber = page,
-            PageSize = pageSize,
-            Items = jobLevels
+            PageSize = pageSize
         };
 
         return Ok(response);

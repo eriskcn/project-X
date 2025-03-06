@@ -39,11 +39,13 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
 
         var response = new
         {
+            Items = skills,
             TotalItems = totalItems,
             TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
             PageNumber = page,
-            PageSize = pageSize,
-            Items = skills
+            PageSize = pageSize
         };
 
         return Ok(response);
@@ -172,11 +174,13 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
 
         var response = new
         {
+            Items = skills,
             TotalItems = totalItems,
             TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
             PageNumber = page,
-            PageSize = pageSize,
-            Items = skills
+            PageSize = pageSize
         };
 
         return Ok(response);

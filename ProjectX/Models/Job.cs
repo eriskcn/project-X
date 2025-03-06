@@ -27,10 +27,6 @@ public class Job : BaseEntity
     [ForeignKey("CampaignId")] public Campaign Campaign { get; set; } = null!;
     [Required] public Guid LocationId { get; set; }
     [ForeignKey("LocationId")] public Location Location { get; set; } = null!;
-
-    public Guid? JobDescriptionId { get; set; }
-    [ForeignKey("JobDescriptionId")] public AttachedFile? JobDescription { get; set; }
-
     public ICollection<Skill> Skills { get; set; } = new List<Skill>();
     public ICollection<ContractType> ContractTypes { get; set; } = new List<ContractType>();
     public ICollection<JobLevel> JobLevels { get; set; } = new List<JobLevel>();

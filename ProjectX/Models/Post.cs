@@ -31,10 +31,6 @@ public class Post : BaseEntity
 
     public ICollection<Post> ChildrenPosts { get; set; } = new List<Post>();
 
-    // public Guid? AttachedFileId { get; set; }
-    // [ForeignKey("AttachedFileId")] public AttachedFile? AttachedFile { get; set; }
-    public AttachedFile AttachedFile { get; set; } = null!;
-
     // Tracking
     public DateTime Created { get; set; } = DateTime.UtcNow;
 

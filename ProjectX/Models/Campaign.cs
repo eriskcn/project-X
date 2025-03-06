@@ -18,10 +18,10 @@ public class Campaign : BaseEntity
 
     [Required] public DateTime Close { get; set; } = DateTime.UtcNow.AddDays(7);
 
-    public bool IsHighlight { get; set; } = false;
-    public bool IsUrgent { get; set; } = false;
+    public bool IsHighlight { get; set; } 
+    public bool IsUrgent { get; set; } 
 
-    public int CountJobs { get; set; } = 0;
+    public int CountJobs { get; set; } 
 
     // Relationship - Recruiter
     [Required] public Guid RecruiterId { get; set; }

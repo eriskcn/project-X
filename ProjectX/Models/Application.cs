@@ -26,11 +26,6 @@ public class Application : BaseEntity
     [Required] public Guid JobId { get; set; }
     [ForeignKey("JobId")] public Job Job { get; set; } = null!;
 
-    // Relationship - CV File
-    // [Required] public Guid CvFileId { get; set; }
-    // [ForeignKey("CvFileId")] public AttachedFile CvAttachedFile { get; set; } = null!;
-    public AttachedFile CvAttachedFile { get; set; } = null!;
-
     // Tracking
     public DateTime? Submitted { get; set; }
 

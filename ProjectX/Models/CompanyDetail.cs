@@ -24,7 +24,7 @@ public class CompanyDetail : BaseEntity
     public required string ContactEmail { get; set; }
 
     [Range(1900, 2100)] public required int FoundedYear { get; set; }
-    
+
     [Column(TypeName = "nvarchar(50)")] public CompanySize Size { get; set; } = CompanySize.Tiny;
 
     [Required] [StringLength(2500)] public required string Introduction { get; set; }
@@ -41,8 +41,6 @@ public class CompanyDetail : BaseEntity
 
     [Required] public Guid MajorId { get; set; }
     [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
-
-    public AttachedFile RegistrationAttachedFile { get; set; } = null!;
 
     // For tracking
     public DateTime Created { get; set; } = DateTime.UtcNow;

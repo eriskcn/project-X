@@ -14,7 +14,7 @@ public class Message : BaseEntity
 
     public bool IsRead { get; set; }
     public DateTime? Read { get; set; }
-    
+
     public bool IsEdited { get; set; }
     public DateTime? Edited { get; set; }
 
@@ -24,10 +24,6 @@ public class Message : BaseEntity
 
     [Required] public Guid ConversationId { get; set; }
     [ForeignKey("ConversationId")] public Conversation Conversation { get; set; } = null!;
-
-    // public Guid AttachedFileId { get; set; }
-    // [ForeignKey("AttachedFileId")] public AttachedFile? AttachedFile { get; set; }
-    public AttachedFile AttachedFile { get; set; } = null!;
 
     // Tracking
     public DateTime Created { get; set; } = DateTime.UtcNow;
