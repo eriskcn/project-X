@@ -127,7 +127,7 @@ public class AuthController(
 
         var user = await userManager.Users
             .Where(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiry > DateTime.UtcNow)
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync();
 
         if (user == null || user.RefreshTokenExpiry <= DateTime.UtcNow)
         {

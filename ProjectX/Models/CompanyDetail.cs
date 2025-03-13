@@ -10,7 +10,7 @@ public class CompanyDetail : BaseEntity
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    [StringLength(450)] public required string Name { get; set; }
+    [StringLength(450)] public required string CompanyName { get; set; }
 
     [Required] [StringLength(10)] public string? ShortName { get; set; }
 

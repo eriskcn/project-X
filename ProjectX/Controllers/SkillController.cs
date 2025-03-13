@@ -191,7 +191,7 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<SkillResponse>> RestoreSkill(Guid id)
     {
         var skill = await context.Skills.IgnoreSoftDelete()
-            .FirstOrDefaultAsync(skill => skill.Id == id);
+            .SingleOrDefaultAsync(skill => skill.Id == id);
 
         if (skill == null)
         {

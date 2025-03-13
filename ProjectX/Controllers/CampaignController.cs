@@ -62,7 +62,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
     {
         var campaign = await context.Campaigns
             .Include(c => c.Jobs)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .SingleOrDefaultAsync(c => c.Id == id);
 
         if (campaign == null)
         {
@@ -175,7 +175,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             .ThenInclude(j => j.JobTypes)
             .Include(c => c.Jobs)
             .ThenInclude(j => j.Applications)
-            .FirstOrDefaultAsync(c => c.Id == campaignId && c.RecruiterId == recruiterId);
+            .SingleOrDefaultAsync(c => c.Id == campaignId && c.RecruiterId == recruiterId);
 
         if (campaign == null)
         {

@@ -28,6 +28,7 @@ public class User : IdentityUser<Guid>, ISoftDelete
     public DateTime? Deleted { get; set; }
 
     // Relationship
+    public CompanyDetail? CompanyDetail { get; set; }
     public ICollection<Skill> Skills { get; set; } = new List<Skill>();
     public ICollection<Message> SentMessages { get; set; } = new List<Message>();
     public ICollection<Conversation> Conversations { get; set; } = new List<Conversation>();

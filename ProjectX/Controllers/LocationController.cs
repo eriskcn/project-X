@@ -204,7 +204,7 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<LocationResponse>> RestoreLocation(Guid id)
     {
         var location = await context.Locations.IgnoreSoftDelete()
-            .FirstOrDefaultAsync(location => location.Id == id);
+            .SingleOrDefaultAsync(location => location.Id == id);
 
         if (location == null)
         {

@@ -179,7 +179,7 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<MajorResponse>> RestoreMajor(Guid id)
     {
         var major = await context.Majors.IgnoreSoftDelete()
-            .FirstOrDefaultAsync(m => m.Id == id);
+            .SingleOrDefaultAsync(m => m.Id == id);
 
         if (major == null)
         {

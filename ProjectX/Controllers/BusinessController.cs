@@ -58,7 +58,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
         var companyDetail = new CompanyDetail
         {
             Id = Guid.NewGuid(),
-            Name = request.Name,
+            CompanyName = request.CompanyName,
             ShortName = request.ShortName ?? string.Empty,
             HeadQuarterAddress = request.HeadQuarterAddress,
             Logo = logoUrl,

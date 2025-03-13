@@ -186,7 +186,7 @@ public class JobTypeController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<JobTypeResponse>> RestoreJobType(Guid id)
     {
         var jobType = await context.JobTypes.IgnoreSoftDelete()
-            .FirstOrDefaultAsync(jobType => jobType.Id == id);
+            .SingleOrDefaultAsync(jobType => jobType.Id == id);
 
         if (jobType == null)
         {
