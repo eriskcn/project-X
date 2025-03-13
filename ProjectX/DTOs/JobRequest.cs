@@ -12,7 +12,15 @@ public class JobRequest
     public double? YearOfExperience { set; get; }
     public double? MinSalary { set; get; }
     public double? MaxSalary { set; get; }
+    
     public Guid MajorId { set; get; }
+    
+    
+    public byte IsHighlight { set; get; } = 0;
+    
+    public DateTime? HighlightStart { set; get; }
+    
+    public DateTime? HighlightEnd { set; get; }
     public Guid CampaignId { set; get; }
     public Guid LocationId { set; get; }
     public IFormFile? JobDescriptionFile { set; get; }

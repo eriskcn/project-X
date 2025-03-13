@@ -29,8 +29,9 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Description = request.Description,
             Open = request.Open,
             Close = request.Close,
-            IsHighlight = request.IsHighlight,
-            IsUrgent = request.IsUrgent,
+            // IsHighlight = request.IsHighlight,
+            // HighlightStart = request.HighlightStart,
+            // HighlightEnd = request.HighlightEnd,
             Status = request.Status,
             CountJobs = 0,
             RecruiterId = Guid.Parse(recruiterId)
@@ -46,13 +47,13 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Description = campaign.Description,
             Open = campaign.Open,
             Close = campaign.Close,
-            IsHighlight = campaign.IsHighlight,
-            IsUrgent = campaign.IsUrgent,
+            // IsHighlight = campaign.IsHighlight,
+            // IsUrgent = campaign.IsUrgent,
             CountJobs = campaign.CountJobs,
             Status = campaign.Status
         };
 
-        return CreatedAtAction("", new { id = campaign.Id }, response);
+        return CreatedAtAction(nameof(GetCampaign), new { id = campaign.Id }, response);
     }
 
 
@@ -75,8 +76,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Description = campaign.Description,
             Open = campaign.Open,
             Close = campaign.Close,
-            IsHighlight = campaign.IsHighlight,
-            IsUrgent = campaign.IsUrgent,
+            // IsHighlight = campaign.IsHighlight,
             CountJobs = campaign.CountJobs,
             Status = campaign.Status
         };
@@ -128,8 +128,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
                 Description = c.Description,
                 Open = c.Open,
                 Close = c.Close,
-                IsHighlight = c.IsHighlight,
-                IsUrgent = c.IsUrgent,
+                // IsHighlight = c.IsHighlight,
                 CountJobs = c.CountJobs,
                 Status = c.Status
             })
@@ -155,6 +154,11 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         [FromQuery] List<string>? jobLevels = null, [FromQuery] List<string>? jobTypes = null,
         [FromQuery] List<string>? contractTypes = null)
     {
+        if (page <= 0 || pageSize <= 0)
+        {
+            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+        }
+
         var recruiterId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty);
         var campaign = await context.Campaigns
             .Include(c => c.Jobs)
@@ -221,6 +225,9 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             YearOfExperience = j.YearOfExperience,
             MinSalary = j.MinSalary,
             MaxSalary = j.MaxSalary,
+            IsHighlight = j.IsHighlight,
+            HighlightStart = j.HighlightStart,
+            HighlightEnd = j.HighlightEnd,
             Major = j.Major,
             Location = j.Location,
             JobDescription = context.AttachedFiles
@@ -248,4 +255,10 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             PageSize = pageSize
         });
     }
+
+    // [HttpGet("highlight")]
+    // public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetHighlightCampaigns()
+    // {
+    //     
+    // }
 }

@@ -32,6 +32,10 @@ public class Job : BaseEntity
     public ICollection<JobLevel> JobLevels { get; set; } = new List<JobLevel>();
     public ICollection<JobType> JobTypes { get; set; } = new List<JobType>();
 
+    public byte IsHighlight { get; set; } = 0;
+    public DateTime? HighlightStart { get; set; }
+    public DateTime? HighlightEnd { get; set; }
+
     public ICollection<Application> Applications { get; set; } = new List<Application>();
 
     // Tracking

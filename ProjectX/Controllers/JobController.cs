@@ -14,12 +14,19 @@ namespace ProjectX.Controllers;
 public class JobController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<JobResponse>>> GetJobs([FromQuery] string search, [FromQuery] int page,
-        [FromQuery] int pageSize, [FromQuery] List<string>? jobLevels, [FromQuery] List<string>? jobTypes,
-        [FromQuery] List<string>? contractTypes, [FromQuery] List<string>? majors, [FromQuery] List<string>? locations)
+    public async Task<ActionResult<IEnumerable<JobResponse>>> GetJobs([FromQuery] string? search,
+        [FromQuery] List<string>? jobLevels, [FromQuery] List<string>? jobTypes,
+        [FromQuery] List<string>? contractTypes, [FromQuery] List<string>? majors, [FromQuery] List<string>? locations,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] int page = 1)
     {
+        if (page <= 0 || pageSize <= 0)
+        {
+            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+        }
+
         var query = context.Jobs
-            .Include(j => j.Major)
+            // .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
             .Include(j => j.ContractTypes)
@@ -48,10 +55,10 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             query = query.Where(j => contractTypes.Any(t => j.ContractTypes.Any(ct => ct.Name == t)));
         }
 
-        if (majors is { Count: > 0 })
-        {
-            query = query.Where(j => majors.Any(m => j.Major.Name == m));
-        }
+        // if (majors is { Count: > 0 })
+        // {
+        //     query = query.Where(j => majors.Any(m => j.Major.Name == m));
+        // }
 
         if (locations is { Count: > 0 })
         {
@@ -78,7 +85,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             YearOfExperience = j.YearOfExperience,
             MinSalary = j.MinSalary,
             MaxSalary = j.MaxSalary,
-            Major = j.Major,
+            // Major = j.Major,
             Location = j.Location,
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)
@@ -112,7 +119,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     public async Task<ActionResult<JobResponse>> GetJob(Guid id)
     {
         var job = await context.Jobs
-            .Include(j => j.Major)
+            // .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
             .Include(j => j.ContractTypes)
@@ -138,7 +145,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             YearOfExperience = job.YearOfExperience,
             MinSalary = job.MinSalary,
             MaxSalary = job.MaxSalary,
-            Major = job.Major,
+            // Major = job.Major,
             Location = job.Location,
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
@@ -178,7 +185,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             return Forbid("You are not authorized to add jobs to this campaign.");
         }
 
-        //handle file upload
         if (request.JobDescriptionFile != null)
         {
             var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
@@ -215,7 +221,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             YearOfExperience = request.YearOfExperience,
             MinSalary = request.MinSalary,
             MaxSalary = request.MaxSalary,
-            MajorId = request.MajorId,
+            // MajorId = request.MajorId,
             CampaignId = request.CampaignId,
             LocationId = request.LocationId,
         };
@@ -237,7 +243,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             YearOfExperience = job.YearOfExperience,
             MinSalary = job.MinSalary,
             MaxSalary = job.MaxSalary,
-            Major = job.Major,
+            // Major = job.Major,
             Location = job.Location,
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
@@ -260,7 +266,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     public async Task<ActionResult<JobResponse>> UpdateJob(Guid id, [FromForm] UpdateJobRequest request)
     {
         var job = await context.Jobs
-            .Include(j => j.Major)
+            // .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
             .Include(j => j.ContractTypes)
@@ -298,7 +304,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         job.YearOfExperience = request.YearOfExperience;
         job.MinSalary = request.MinSalary;
         job.MaxSalary = request.MaxSalary;
-        job.MajorId = request.MajorId;
+        // job.MajorId = request.MajorId;
         job.CampaignId = request.CampaignId;
         job.LocationId = request.LocationId;
 
@@ -343,7 +349,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             YearOfExperience = job.YearOfExperience,
             MinSalary = job.MinSalary,
             MaxSalary = job.MaxSalary,
-            Major = job.Major,
+            // Major = job.Major,
             Location = job.Location,
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
@@ -360,5 +366,21 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         };
 
         return Ok(response);
+    }
+
+    [HttpDelete]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    public async Task<ActionResult> DeleteJob(Guid id)
+    {
+        var job = await context.Jobs.FindAsync(id);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        context.Jobs.Remove(job);
+        await context.SaveChangesAsync();
+
+        return Ok(new { Message = "Job deleted successfully." });
     }
 }

@@ -8,7 +8,8 @@ public class CampaignRequest
     public required string Description { get; set; }
     public DateTime Open { get; set; }
     public DateTime Close { get; set; }
-    public bool IsHighlight { get; set; }
-    public bool IsUrgent { get; set; }
+    // public bool IsHighlight { get; set; }
+    // public DateTime HighlightStart { get; set; }
+    // public DateTime HighlightEnd { get; set; }
     public CampaignStatus Status { get; set; }
 }

@@ -10,6 +10,10 @@ public class Application : BaseEntity
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    [StringLength(70)] public required string FullName { get; set; }
+    [EmailAddress] [StringLength(70)] public required string Email { get; set; }
+    [StringLength(10)] public required string PhoneNumber { get; set; }
+
     [StringLength(600)] public string? Introduction { get; set; }
 
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]

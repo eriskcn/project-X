@@ -14,6 +14,9 @@ public class JobResponse
     public double? YearOfExperience { set; get; }
     public double? MinSalary { set; get; }
     public double? MaxSalary { set; get; }
+    public byte IsHighlight { set; get; }
+    public DateTime? HighlightStart { set; get; }
+    public DateTime? HighlightEnd { set; get; }
     public Major Major { set; get; } = null!;
     public Location Location { set; get; } = null!;
     public FileResponse? JobDescription { set; get; }

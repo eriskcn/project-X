@@ -18,15 +18,17 @@ public class Campaign : BaseEntity
 
     [Required] public DateTime Close { get; set; } = DateTime.UtcNow.AddDays(7);
 
-    public bool IsHighlight { get; set; } 
-    public bool IsUrgent { get; set; } 
-
-    public int CountJobs { get; set; } 
+    // public bool IsHighlight { get; set; }
+    // public DateTime HighlightStart { get; set; }
+    // public DateTime HighlightEnd { get; set; }
+    public int CountJobs { get; set; }
 
     // Relationship - Recruiter
     [Required] public Guid RecruiterId { get; set; }
     [ForeignKey("RecruiterId")] public User Recruiter { get; set; } = null!;
-
+    
+    [Required] public Guid MajorId { get; set; }
+    [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
     public ICollection<Job> Jobs { get; set; } = new List<Job>();
 
     // Tracking
