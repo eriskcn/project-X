@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 using ProjectX.Data;
 
 namespace ProjectX.Models;
@@ -12,11 +13,13 @@ public class Major : BaseEntity
 
     [Required] [StringLength(100)] public required string Name { get; set; }
 
-    // Relationship
-    public ICollection<Job> Jobs { get; set; } = new List<Job>();
+    [JsonIgnore] public ICollection<Job> Jobs { get; set; } = new List<Job>();
+
+    [JsonIgnore]
     [InverseProperty("FocusMajors")]
     public ICollection<User> Users { get; set; } = new List<User>();
-    public ICollection<CompanyDetail> Companies { get; set; } = new List<CompanyDetail>();
+
+    [JsonIgnore] public ICollection<CompanyDetail> Companies { get; set; } = new List<CompanyDetail>();
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
 

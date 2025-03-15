@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 using ProjectX.Data;
 
 namespace ProjectX.Models;
@@ -13,9 +14,8 @@ public class Skill : BaseEntity
     [StringLength(256)] public required string Name { get; set; }
     [StringLength(256)] public string? Description { get; set; }
 
-    // Relationship
-    public ICollection<Job> Jobs { get; set; } = new List<Job>();
-    public ICollection<User> Users { get; set; } = new List<User>();
+    [JsonIgnore] public ICollection<Job> Jobs { get; set; } = new List<Job>();
+    [JsonIgnore] public ICollection<User> Users { get; set; } = new List<User>();
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
 

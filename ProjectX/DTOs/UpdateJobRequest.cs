@@ -8,7 +8,7 @@ public class UpdateJobRequest
     public string? Description { set; get; }
     public string? OfficeAddress { set; get; }
     public int? Quantity { set; get; } 
-    public EducationLevel? Level { set; get; } 
+    public EducationLevel? EducationLevelRequire { set; get; } 
     public double? YearOfExperience { set; get; }
     public double? MinSalary { set; get; }
     public double? MaxSalary { set; get; }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 using ProjectX.Data;
 
 namespace ProjectX.Models;
@@ -18,14 +19,15 @@ public class Message : BaseEntity
     public bool IsEdited { get; set; }
     public DateTime? Edited { get; set; }
 
-    // Relationship
     [Required] public Guid SenderId { get; set; }
-    [ForeignKey("SenderId")] public User Sender { get; set; } = null!;
+    [JsonIgnore] [ForeignKey("SenderId")] public User Sender { get; set; } = null!;
 
     [Required] public Guid ConversationId { get; set; }
-    [ForeignKey("ConversationId")] public Conversation Conversation { get; set; } = null!;
 
-    // Tracking
+    [JsonIgnore]
+    [ForeignKey("ConversationId")]
+    public Conversation Conversation { get; set; } = null!;
+
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     public DateTime Modified { get; set; } = DateTime.UtcNow;

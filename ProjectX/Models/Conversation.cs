@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 using ProjectX.Data;
 
 namespace ProjectX.Models;
@@ -15,12 +16,9 @@ public class Conversation : BaseEntity
 
     public DateTime? Stored { get; set; }
 
-    // Relationship
-    public ICollection<Message> Messages { get; set; } = new List<Message>();
+    [JsonIgnore] public ICollection<Message> Messages { get; set; } = new List<Message>();
+    [JsonIgnore] public ICollection<User> Participants { get; set; } = new List<User>();
 
-    public ICollection<User> Participants { get; set; } = new List<User>();
-
-    // Tracking
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     public DateTime Modified { get; set; } = DateTime.UtcNow;

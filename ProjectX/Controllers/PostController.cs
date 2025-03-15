@@ -3,11 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using ProjectX.Data;
 
 namespace ProjectX.Controllers;
-
 [ApiController]
-[Route("capablanca/api/v0/user")]
+[Route("capablanca/api/v0/posts")]
 [Authorize]
-public class UserController(ApplicationDbContext context) : ControllerBase
+public class PostController(ApplicationDbContext context) : ControllerBase
 {
     
 }

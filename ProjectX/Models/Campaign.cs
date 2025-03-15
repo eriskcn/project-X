@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 using ProjectX.Data;
 
 namespace ProjectX.Models;
@@ -17,21 +18,15 @@ public class Campaign : BaseEntity
     [Required] public DateTime Open { get; set; } = DateTime.UtcNow;
 
     [Required] public DateTime Close { get; set; } = DateTime.UtcNow.AddDays(7);
-
-    // public bool IsHighlight { get; set; }
-    // public DateTime HighlightStart { get; set; }
-    // public DateTime HighlightEnd { get; set; }
     public int CountJobs { get; set; }
 
-    // Relationship - Recruiter
     [Required] public Guid RecruiterId { get; set; }
-    [ForeignKey("RecruiterId")] public User Recruiter { get; set; } = null!;
-    
-    [Required] public Guid MajorId { get; set; }
-    [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
-    public ICollection<Job> Jobs { get; set; } = new List<Job>();
 
-    // Tracking
+    [JsonIgnore]
+    [ForeignKey("RecruiterId")]
+    public User Recruiter { get; set; } = null!;
+
+    [JsonIgnore] public ICollection<Job> Jobs { get; set; } = new List<Job>();
     [Column(TypeName = "nvarchar(50)")] public CampaignStatus Status { get; set; } = CampaignStatus.Draft;
 
     public DateTime Created { get; set; } = DateTime.UtcNow;

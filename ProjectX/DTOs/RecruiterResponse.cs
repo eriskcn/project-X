@@ -2,7 +2,7 @@ using ProjectX.Models;
 
 namespace ProjectX.DTOs;
 
-public class CompanyDetailResponse
+public class RecruiterResponse
 {
     public Guid Id { get; set; }
     public required string CompanyName { get; set; }
@@ -15,7 +15,6 @@ public class CompanyDetailResponse
     public required string Introduction { get; set; }
     public LocationResponse Location { get; set; } = null!;
     public MajorResponse Major { get; set; } = null!;
-    public FileResponse? RegistrationFile { get; set; }
     public DateTime Created { get; set; }
     public DateTime Modified { get; set; }
 }

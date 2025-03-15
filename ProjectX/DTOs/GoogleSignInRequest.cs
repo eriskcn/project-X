@@ -1,6 +1,6 @@
 namespace ProjectX.DTOs;
 
-public class GoogleLoginRequest
+public class GoogleSignInRequest
 {
     public required string IdToken { get; set; }
 }

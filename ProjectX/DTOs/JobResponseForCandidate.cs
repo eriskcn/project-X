@@ -2,7 +2,7 @@ using ProjectX.Models;
 
 namespace ProjectX.DTOs;
 
-public class JobResponse
+public class JobResponseForCandidate
 {
     public Guid Id { set; get; }
     public required string Title { set; get; }
@@ -24,6 +24,7 @@ public class JobResponse
     public ICollection<ContractTypeResponse> ContractTypes { set; get; } = new List<ContractTypeResponse>();
     public ICollection<JobLevelResponse> JobLevels { set; get; } = new List<JobLevelResponse>();
     public ICollection<JobTypeResponse> JobTypes { set; get; } = new List<JobTypeResponse>();
+    public RecruiterResponse Recruiter { set; get; } = null!;
     public DateTime Created { set; get; }
     public DateTime Modified { set; get; }
 }

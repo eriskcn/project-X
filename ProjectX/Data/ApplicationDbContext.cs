@@ -101,5 +101,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             new ContractType { Id = Guid.NewGuid(), Name = "Full-time" },
             new ContractType { Id = Guid.NewGuid(), Name = "Freelance" }
         );
+
+        builder.Entity<Major>().HasData(
+            new Major { Id = Guid.NewGuid(), Name = "Công nghệ Phần mềm" },
+            new Major { Id = Guid.NewGuid(), Name = "Khoa học Dữ liệu" },
+            new Major { Id = Guid.NewGuid(), Name = "Khoa học Máy tính" }
+        );
     }
 }

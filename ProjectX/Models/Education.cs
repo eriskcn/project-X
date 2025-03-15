@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 using ProjectX.Data;
 
 namespace ProjectX.Models;
@@ -20,14 +21,15 @@ public class Education : BaseEntity
 
     [Range(1900, 2100)] public int? GraduatedYear { get; set; }
 
-    // Relationship
     [Required] public Guid CandidateId { get; set; }
-    [ForeignKey("CandidateId")] public User Candidate { get; set; } = null!;
+
+    [JsonIgnore]
+    [ForeignKey("CandidateId")]
+    public User Candidate { get; set; } = null!;
 
     public Guid? MajorId { get; set; }
-    [ForeignKey("MajorId")] public Major? Major { get; set; }
+    [JsonIgnore] [ForeignKey("MajorId")] public Major? Major { get; set; }
 
-    // Tracking
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     public DateTime Modified { get; set; } = DateTime.UtcNow;

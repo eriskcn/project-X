@@ -29,9 +29,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Description = request.Description,
             Open = request.Open,
             Close = request.Close,
-            // IsHighlight = request.IsHighlight,
-            // HighlightStart = request.HighlightStart,
-            // HighlightEnd = request.HighlightEnd,
             Status = request.Status,
             CountJobs = 0,
             RecruiterId = Guid.Parse(recruiterId)
@@ -47,8 +44,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Description = campaign.Description,
             Open = campaign.Open,
             Close = campaign.Close,
-            // IsHighlight = campaign.IsHighlight,
-            // IsUrgent = campaign.IsUrgent,
             CountJobs = campaign.CountJobs,
             Status = campaign.Status
         };
@@ -76,7 +71,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Description = campaign.Description,
             Open = campaign.Open,
             Close = campaign.Close,
-            // IsHighlight = campaign.IsHighlight,
             CountJobs = campaign.CountJobs,
             Status = campaign.Status
         };
@@ -160,29 +154,23 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         }
 
         var recruiterId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty);
-        var campaign = await context.Campaigns
-            .Include(c => c.Jobs)
-            .ThenInclude(j => j.Major)
-            .Include(c => c.Jobs)
-            .ThenInclude(j => j.Location)
-            .Include(c => c.Jobs)
-            .ThenInclude(j => j.Skills)
-            .Include(c => c.Jobs)
-            .ThenInclude(j => j.ContractTypes)
-            .Include(c => c.Jobs)
-            .ThenInclude(j => j.JobLevels)
-            .Include(c => c.Jobs)
-            .ThenInclude(j => j.JobTypes)
-            .Include(c => c.Jobs)
-            .ThenInclude(j => j.Applications)
-            .SingleOrDefaultAsync(c => c.Id == campaignId && c.RecruiterId == recruiterId);
 
-        if (campaign == null)
+        var campaignExists = await context.Campaigns
+            .AnyAsync(c => c.Id == campaignId && c.RecruiterId == recruiterId);
+
+        if (!campaignExists)
         {
             return NotFound(new { Message = "Campaign not found or you are not authorized to view its jobs." });
         }
 
-        var query = campaign.Jobs.AsQueryable();
+        var query = context.Jobs
+            .Include(j => j.Major)
+            .Include(j => j.Location)
+            .Include(j => j.Skills)
+            .Include(j => j.ContractTypes)
+            .Include(j => j.JobLevels)
+            .Include(j => j.JobTypes)
+            .Where(j => j.CampaignId == campaignId);
 
         if (!string.IsNullOrEmpty(search))
         {
@@ -204,7 +192,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             query = query.Where(j => contractTypes.Any(t => j.ContractTypes.Any(ct => ct.Name == t)));
         }
 
-        var totalItems = query.Count();
+        var totalItems = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var jobs = await query
@@ -221,25 +209,54 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             OfficeAddress = j.OfficeAddress,
             Quantity = j.Quantity,
             Status = j.Status,
-            Level = j.Level,
+            EducationLevelRequire = j.EducationLevelRequire,
             YearOfExperience = j.YearOfExperience,
             MinSalary = j.MinSalary,
             MaxSalary = j.MaxSalary,
             IsHighlight = j.IsHighlight,
             HighlightStart = j.HighlightStart,
             HighlightEnd = j.HighlightEnd,
-            Major = j.Major,
-            Location = j.Location,
+            Major = new MajorResponse
+            {
+                Id = j.Major.Id,
+                Name = j.Major.Name
+            },
+            Location = new LocationResponse
+            {
+                Id = j.Location.Id,
+                Name = j.Location.Name
+            },
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)
                 .Select(f => new FileResponse
-                    { Id = f.Id, Name = f.Name, Path = f.Path, UploadedById = f.UploadedById, Uploaded = f.Uploaded })
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
                 .SingleOrDefault(),
-            Skills = j.Skills,
-            ContractTypes = j.ContractTypes,
-            JobLevels = j.JobLevels,
-            JobTypes = j.JobTypes,
-            Applications = j.Applications,
+            Skills = j.Skills.Select(s => new SkillResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description
+            }).ToList(),
+            ContractTypes = j.ContractTypes.Select(ct => new ContractTypeResponse
+            {
+                Id = ct.Id,
+                Name = ct.Name
+            }).ToList(),
+            JobLevels = j.JobLevels.Select(jl => new JobLevelResponse
+            {
+                Id = jl.Id,
+                Name = jl.Name
+            }).ToList(),
+            JobTypes = j.JobTypes.Select(jt => new JobTypeResponse
+            {
+                Id = jt.Id,
+                Name = jt.Name
+            }).ToList(),
             Created = j.Created,
             Modified = j.Modified
         });
@@ -256,9 +273,93 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         });
     }
 
-    // [HttpGet("highlight")]
-    // public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetHighlightCampaigns()
-    // {
-    //     
-    // }
+    [HttpGet("{campaignId:guid}/jobs/{jobId:guid}")]
+    public async Task<ActionResult<JobResponse>> GetJobForRecruiter([FromRoute] Guid campaignId, [FromRoute] Guid jobId)
+    {
+        var recruiterId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty);
+        var campaignExists = await context.Campaigns
+            .AnyAsync(c => c.Id == campaignId && c.RecruiterId == recruiterId);
+
+        if (!campaignExists)
+        {
+            return NotFound(new { Message = "Campaign not found or you are not authorized to view its jobs." });
+        }
+
+        var job = await context.Jobs
+            .Include(j => j.Major)
+            .Include(j => j.Location)
+            .Include(j => j.Skills)
+            .Include(j => j.ContractTypes)
+            .Include(j => j.JobLevels)
+            .Include(j => j.JobTypes)
+            .Where(j => j.CampaignId == campaignId && j.Id == jobId)
+            .SingleOrDefaultAsync();
+
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        var response = new JobResponse
+        {
+            Id = job.Id,
+            Title = job.Title,
+            Description = job.Description,
+            OfficeAddress = job.OfficeAddress,
+            Quantity = job.Quantity,
+            Status = job.Status,
+            EducationLevelRequire = job.EducationLevelRequire,
+            YearOfExperience = job.YearOfExperience,
+            MinSalary = job.MinSalary,
+            MaxSalary = job.MaxSalary,
+            IsHighlight = job.IsHighlight,
+            HighlightStart = job.HighlightStart,
+            HighlightEnd = job.HighlightEnd,
+            Major = new MajorResponse
+            {
+                Id = job.Major.Id,
+                Name = job.Major.Name
+            },
+            Location = new LocationResponse
+            {
+                Id = job.Location.Id,
+                Name = job.Location.Name
+            },
+            JobDescription = context.AttachedFiles
+                .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
+                .Select(f => new FileResponse
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
+                .SingleOrDefault(),
+            Skills = job.Skills.Select(s => new SkillResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description
+            }).ToList(),
+            ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
+            {
+                Id = ct.Id,
+                Name = ct.Name
+            }).ToList(),
+            JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
+            {
+                Id = jl.Id,
+                Name = jl.Name
+            }).ToList(),
+            JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
+            {
+                Id = jt.Id,
+                Name = jt.Name
+            }).ToList(),
+            Created = job.Created,
+            Modified = job.Modified
+        };
+
+        return Ok(response);
+    }
 }

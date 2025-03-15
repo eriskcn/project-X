@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 using ProjectX.Data;
 
 namespace ProjectX.Models;
@@ -16,22 +17,26 @@ public class Post : BaseEntity
     public bool IsEdited { get; set; }
     public DateTime? Edited { get; set; }
 
-    // Relationship
     public Guid UserId { get; set; }
 
+    [JsonIgnore]
     [ForeignKey("UserId")]
     [InverseProperty("Posts")]
     public User User { get; set; } = null!;
 
-    [InverseProperty("LikedPosts")] public ICollection<User> LikedUsers { get; set; } = new List<User>();
-    [InverseProperty("DislikedPosts")] public ICollection<User> DislikedUsers { get; set; } = new List<User>();
+    [JsonIgnore]
+    [InverseProperty("LikedPosts")]
+    public ICollection<User> LikedUsers { get; set; } = new List<User>();
+
+    [JsonIgnore]
+    [InverseProperty("DislikedPosts")]
+    public ICollection<User> DislikedUsers { get; set; } = new List<User>();
 
     public Guid? ParentId { get; set; }
-    [ForeignKey("ParentId")] public Post ParentPost { get; set; } = null!;
+    [JsonIgnore] [ForeignKey("ParentId")] public Post ParentPost { get; set; } = null!;
 
-    public ICollection<Post> ChildrenPosts { get; set; } = new List<Post>();
+    [JsonIgnore] public ICollection<Post> ChildrenPosts { get; set; } = new List<Post>();
 
-    // Tracking
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     public DateTime Modified { get; set; } = DateTime.UtcNow;

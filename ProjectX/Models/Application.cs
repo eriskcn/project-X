@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 using ProjectX.Data;
 
 namespace ProjectX.Models;
@@ -22,15 +23,15 @@ public class Application : BaseEntity
     [Column(TypeName = "nvarchar(50)")] public ApplicationStatus Status { get; set; } = ApplicationStatus.Draft;
     [Column(TypeName = "nvarchar(50)")] public ApplicationProcess Process { get; set; } = ApplicationProcess.Pending;
 
-    // Relationship - Candidate
     [Required] public Guid CandidateId { get; set; }
-    [ForeignKey("CandidateId")] public User Candidate { get; set; } = null!;
 
-    // Relationship - Job
+    [JsonIgnore]
+    [ForeignKey("CandidateId")]
+    public User Candidate { get; set; } = null!;
+
     [Required] public Guid JobId { get; set; }
-    [ForeignKey("JobId")] public Job Job { get; set; } = null!;
+    [JsonIgnore] [ForeignKey("JobId")] public Job Job { get; set; } = null!;
 
-    // Tracking
     public DateTime? Submitted { get; set; }
 
     public DateTime Created { get; set; } = DateTime.UtcNow;

@@ -10,7 +10,6 @@ public class Role : IdentityRole<Guid>, ISoftDelete
 
     public DateTime? Deleted { get; set; }
 
-    // Tracking
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     public DateTime Modified { get; set; } = DateTime.UtcNow;

@@ -2,13 +2,14 @@ using ProjectX.Models;
 
 namespace ProjectX.DTOs;
 
-public class ApplicationResponse
+public class ApplicationResponseForCandidate
 {
     public Guid Id { get; set; }
     public required string FullName { get; set; }
     public required string Email { get; set; }
     public required string PhoneNumber { get; set; }
     public string? Introduction { get; set; }
+    public JobResponseForCandidate Job { get; set; } = null!;
     public required FileResponse? Resume { get; set; }
     public ApplicationStatus Status { get; set; }
     public ApplicationProcess Process { get; set; }

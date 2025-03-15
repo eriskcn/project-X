@@ -2,9 +2,9 @@ using ProjectX.Models;
 
 namespace ProjectX.DTOs;
 
-public class BusinessVerificationResponse
+public class BusinessVerifyResponse
 {
-    public Guid UserId { get; set; }
+    public Guid CompanyId { get; set; }
     public required string FullName { get; set; }
     public required string Email { get; set; }
     public required string PhoneNumber { get; set; }

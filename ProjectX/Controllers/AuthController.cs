@@ -13,7 +13,7 @@ namespace ProjectX.Controllers;
 public class AuthController(
     UserManager<User> userManager,
     RoleManager<Role> roleManager,
-    GoogleAuthService googleAuthService,
+    IGoogleAuthService googleAuthService,
     ITokenService tokenService)
     : ControllerBase
 {
@@ -30,6 +30,11 @@ public class AuthController(
             return BadRequest(new { Message = "Email is already in use" });
         }
 
+        // if (request.RoleName == "Admin")
+        // {
+        //     return BadRequest(new {Messsage = "Cannot create an admin user"});
+        // }
+
         if (!await roleManager.RoleExistsAsync(request.RoleName))
         {
             var role = new Role { Name = request.RoleName };
@@ -45,9 +50,6 @@ public class AuthController(
             UserName = request.Email,
             Email = request.Email,
             FullName = request.FullName,
-            GitHubProfile = request.GitHubProfile,
-            LinkedInProfile = request.LinkedInProfile,
-            Modified = DateTime.UtcNow
         };
 
         var result = await userManager.CreateAsync(user, request.Password);
@@ -173,7 +175,8 @@ public class AuthController(
     }
 
     [Authorize]
-    [HttpPost("log-out")]
+    [HttpPost("sign-out")]
+    [Authorize]
     public async Task<IActionResult> LogOut()
     {
         Response.Cookies.Delete("AccessToken");
@@ -190,12 +193,12 @@ public class AuthController(
 
         var result = await userManager.UpdateAsync(user);
         return !result.Succeeded
-            ? StatusCode(500, new { Message = "Failed to update user" })
+            ? StatusCode(500, new { Message = "Failed to sign-out user" })
             : Ok(new { Message = "Sign-out successful" });
     }
-    
-    [HttpPost("google-login")]
-    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+
+    [HttpPost("google-sign-in")]
+    public async Task<IActionResult> GoogleSignIn([FromBody] GoogleSignInRequest request)
     {
         var payload = await googleAuthService.VerifyGoogleTokenAsync(request.IdToken);
 

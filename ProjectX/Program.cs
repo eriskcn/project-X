@@ -10,6 +10,7 @@ using ProjectX.Authorization;
 using ProjectX.Data;
 using ProjectX.Models;
 using ProjectX.Services;
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,8 +33,14 @@ builder.Services.Configure<IdentityOptions>(options =>
 });
 
 // Configure database context
+
+Env.Load();
+var saPassword = Environment.GetEnvironmentVariable("SA_PASSWORD");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?.Replace("PLACEHOLDER_PASSWORD", saPassword);
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
 // Configure cookie policy
 builder.Services.Configure<CookiePolicyOptions>(options =>

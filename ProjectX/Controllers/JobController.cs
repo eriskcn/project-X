@@ -14,9 +14,13 @@ namespace ProjectX.Controllers;
 public class JobController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<JobResponse>>> GetJobs([FromQuery] string? search,
-        [FromQuery] List<string>? jobLevels, [FromQuery] List<string>? jobTypes,
-        [FromQuery] List<string>? contractTypes, [FromQuery] List<string>? majors, [FromQuery] List<string>? locations,
+    public async Task<ActionResult<IEnumerable<JobResponseForCandidate>>> GetJobs(
+        [FromQuery] string? search,
+        [FromQuery] List<string>? jobLevels,
+        [FromQuery] List<string>? jobTypes,
+        [FromQuery] List<string>? contractTypes,
+        [FromQuery] List<string>? majors,
+        [FromQuery] List<string>? locations,
         [FromQuery] int pageSize = 10,
         [FromQuery] int page = 1)
     {
@@ -26,18 +30,24 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         }
 
         var query = context.Jobs
-            // .Include(j => j.Major)
+            .Include(j => j.Campaign)
+            .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
             .Include(j => j.ContractTypes)
             .Include(j => j.JobLevels)
             .Include(j => j.JobTypes)
-            .Include(j => j.Applications)
+            .Where(j => j.Status == JobStatus.Active && j.Campaign.Status == CampaignStatus.Opened)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
         {
-            query = query.Where(j => j.Title.Contains(search) || j.Description.Contains(search));
+            query = query.Where(j =>
+                j.Campaign.Recruiter.CompanyDetail != null &&
+                (j.Title.Contains(search) || j.Description.Contains(search) ||
+                 j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search)));
         }
 
         if (jobLevels is { Count: > 0 })
@@ -55,10 +65,10 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             query = query.Where(j => contractTypes.Any(t => j.ContractTypes.Any(ct => ct.Name == t)));
         }
 
-        // if (majors is { Count: > 0 })
-        // {
-        //     query = query.Where(j => majors.Any(m => j.Major.Name == m));
-        // }
+        if (majors is { Count: > 0 })
+        {
+            query = query.Where(j => majors.Any(m => j.Major.Name == m));
+        }
 
         if (locations is { Count: > 0 })
         {
@@ -73,7 +83,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         var totalItems = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
-        var items = jobs.Select(j => new JobResponse
+        var items = jobs.Select(j => new JobResponseForCandidate
         {
             Id = j.Id,
             Title = j.Title,
@@ -81,22 +91,61 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             OfficeAddress = j.OfficeAddress,
             Quantity = j.Quantity,
             Status = j.Status,
-            Level = j.Level,
+            EducationLevelRequire = j.EducationLevelRequire,
             YearOfExperience = j.YearOfExperience,
             MinSalary = j.MinSalary,
             MaxSalary = j.MaxSalary,
-            // Major = j.Major,
-            Location = j.Location,
+            Major = new MajorResponse
+            {
+                Id = j.Major.Id,
+                Name = j.Major.Name
+            },
+            Location = new LocationResponse
+            {
+                Id = j.Location.Id,
+                Name = j.Location.Name
+            },
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)
                 .Select(f => new FileResponse
-                    { Id = f.Id, Name = f.Name, Path = f.Path, UploadedById = f.UploadedById, Uploaded = f.Uploaded })
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
                 .SingleOrDefault(),
-            Skills = j.Skills,
-            ContractTypes = j.ContractTypes,
-            JobLevels = j.JobLevels,
-            JobTypes = j.JobTypes,
-            Applications = j.Applications,
+            Skills = j.Skills.Select(s => new SkillResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description
+            }).ToList(),
+            ContractTypes = j.ContractTypes.Select(ct => new ContractTypeResponse
+            {
+                Id = ct.Id,
+                Name = ct.Name
+            }).ToList(),
+            JobLevels = j.JobLevels.Select(jl => new JobLevelResponse
+            {
+                Id = jl.Id,
+                Name = jl.Name
+            }).ToList(),
+            JobTypes = j.JobTypes.Select(jt => new JobTypeResponse
+            {
+                Id = jt.Id,
+                Name = jt.Name
+            }).ToList(),
+            Recruiter = new RecruiterResponse
+            {
+                Id = j.Campaign.Recruiter.Id,
+                CompanyName = j.Campaign.Recruiter.CompanyDetail!.CompanyName,
+                HeadQuarterAddress = j.Campaign.Recruiter.CompanyDetail.HeadQuarterAddress,
+                Logo = j.Campaign.Recruiter.CompanyDetail.Logo,
+                ContactEmail = j.Campaign.Recruiter.CompanyDetail.ContactEmail,
+                FoundedYear = j.Campaign.Recruiter.CompanyDetail.FoundedYear,
+                Introduction = j.Campaign.Recruiter.CompanyDetail.Introduction
+            },
             Created = j.Created,
             Modified = j.Modified
         });
@@ -115,17 +164,19 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         return Ok(response);
     }
 
-    [HttpGet("{id:Guid}")]
-    public async Task<ActionResult<JobResponse>> GetJob(Guid id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<JobResponseForCandidate>> GetJob(Guid id)
     {
         var job = await context.Jobs
-            // .Include(j => j.Major)
+            .Include(j => j.Campaign)
+            .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
             .Include(j => j.ContractTypes)
             .Include(j => j.JobLevels)
             .Include(j => j.JobTypes)
-            .Include(j => j.Applications)
             .SingleOrDefaultAsync(j => j.Id == id);
 
         if (job == null)
@@ -133,7 +184,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             return NotFound(new { Message = "Job not found." });
         }
 
-        var response = new JobResponse
+        var response = new JobResponseForCandidate
         {
             Id = job.Id,
             Title = job.Title,
@@ -141,27 +192,123 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             OfficeAddress = job.OfficeAddress,
             Quantity = job.Quantity,
             Status = job.Status,
-            Level = job.Level,
+            EducationLevelRequire = job.EducationLevelRequire,
             YearOfExperience = job.YearOfExperience,
             MinSalary = job.MinSalary,
             MaxSalary = job.MaxSalary,
-            // Major = job.Major,
-            Location = job.Location,
+            Major = new MajorResponse
+            {
+                Id = job.Major.Id,
+                Name = job.Major.Name
+            },
+            Location = new LocationResponse
+            {
+                Id = job.Location.Id,
+                Name = job.Location.Name
+            },
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
                 .Select(f => new FileResponse
-                    { Id = f.Id, Name = f.Name, Path = f.Path, UploadedById = f.UploadedById, Uploaded = f.Uploaded })
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
                 .SingleOrDefault(),
-            Skills = job.Skills,
-            ContractTypes = job.ContractTypes,
-            JobLevels = job.JobLevels,
-            JobTypes = job.JobTypes,
-            Applications = job.Applications,
+            Skills = job.Skills.Select(s => new SkillResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description
+            }).ToList(),
+            ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
+            {
+                Id = ct.Id,
+                Name = ct.Name
+            }).ToList(),
+            JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
+            {
+                Id = jl.Id,
+                Name = jl.Name
+            }).ToList(),
+            JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
+            {
+                Id = jt.Id,
+                Name = jt.Name
+            }).ToList(),
+            Recruiter = new RecruiterResponse
+            {
+                Id = job.Campaign.Recruiter.Id,
+                CompanyName = job.Campaign.Recruiter.CompanyDetail!.CompanyName,
+                HeadQuarterAddress = job.Campaign.Recruiter.CompanyDetail.HeadQuarterAddress,
+                Logo = job.Campaign.Recruiter.CompanyDetail.Logo,
+                ContactEmail = job.Campaign.Recruiter.CompanyDetail.ContactEmail,
+                FoundedYear = job.Campaign.Recruiter.CompanyDetail.FoundedYear,
+                Introduction = job.Campaign.Recruiter.CompanyDetail.Introduction
+            },
             Created = job.Created,
             Modified = job.Modified
         };
 
         return Ok(response);
+    }
+
+    [HttpPost("{jobId:guid}/apply")]
+    [Authorize(Roles = "Candidate")]
+    public async Task<IActionResult> ApplyJob([FromRoute] Guid jobId, [FromForm] ApplicationRequest request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+        {
+            return Unauthorized(new { Message = "User ID not found in access token." });
+        }
+
+        var job = await context.Jobs.FindAsync(jobId);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        var application = new Application
+        {
+            JobId = jobId,
+            CandidateId = Guid.Parse(userId),
+            FullName = request.FullName,
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber,
+            Introduction = request.Introduction,
+            Status = request.Status,
+            Process = ApplicationProcess.Pending
+        };
+
+        context.Applications.Add(application);
+        await context.SaveChangesAsync();
+
+        var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
+        if (!Directory.Exists(uploadsFolder))
+        {
+            Directory.CreateDirectory(uploadsFolder);
+        }
+
+        var resumeFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.Resume.FileName)}";
+        var filePath = Path.Combine(uploadsFolder, resumeFileName);
+        await using var stream = new FileStream(filePath, FileMode.Create);
+        await request.Resume.CopyToAsync(stream);
+
+        var resume = new AttachedFile
+        {
+            Id = Guid.NewGuid(),
+            Name = resumeFileName,
+            Path = filePath,
+            Type = TargetType.Application,
+            TargetId = application.Id,
+            UploadedById = Guid.Parse(userId)
+        };
+        context.AttachedFiles.Add(resume);
+        await context.SaveChangesAsync();
+
+        return Ok(new { Message = "Application submitted successfully." });
     }
 
     [HttpPost]
@@ -217,11 +364,14 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             Description = request.Description,
             OfficeAddress = request.OfficeAddress,
             Quantity = request.Quantity,
-            Level = request.Level,
+            EducationLevelRequire = request.EducationLevelRequire,
             YearOfExperience = request.YearOfExperience,
             MinSalary = request.MinSalary,
             MaxSalary = request.MaxSalary,
-            // MajorId = request.MajorId,
+            MajorId = request.MajorId,
+            IsHighlight = request.IsHighlight,
+            HighlightStart = request.HighlightStart,
+            HighlightEnd = request.HighlightEnd,
             CampaignId = request.CampaignId,
             LocationId = request.LocationId,
         };
@@ -239,22 +389,51 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             OfficeAddress = job.OfficeAddress,
             Quantity = job.Quantity,
             Status = job.Status,
-            Level = job.Level,
+            EducationLevelRequire = job.EducationLevelRequire,
             YearOfExperience = job.YearOfExperience,
             MinSalary = job.MinSalary,
             MaxSalary = job.MaxSalary,
-            // Major = job.Major,
-            Location = job.Location,
+            Major = new MajorResponse
+            {
+                Id = job.Major.Id,
+                Name = job.Major.Name
+            },
+            Location = new LocationResponse
+            {
+                Id = job.Location.Id,
+                Name = job.Location.Name
+            },
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
                 .Select(f => new FileResponse
-                    { Id = f.Id, Name = f.Name, Path = f.Path, UploadedById = f.UploadedById, Uploaded = f.Uploaded })
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
                 .SingleOrDefault(),
-            Skills = job.Skills,
-            ContractTypes = job.ContractTypes,
-            JobLevels = job.JobLevels,
-            JobTypes = job.JobTypes,
-            Applications = job.Applications,
+            Skills = job.Skills.Select(s => new SkillResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description
+            }).ToList(),
+            ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
+            {
+                Id = ct.Id,
+                Name = ct.Name
+            }).ToList(),
+            JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
+            {
+                Id = jl.Id,
+                Name = jl.Name
+            }).ToList(),
+            JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
+            {
+                Id = jt.Id,
+                Name = jt.Name
+            }).ToList(),
             Created = job.Created,
             Modified = job.Modified
         };
@@ -262,17 +441,17 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         return CreatedAtAction(nameof(GetJob), new { id = job.Id }, response);
     }
 
-    [HttpPatch("{id:Guid}")]
-    public async Task<ActionResult<JobResponse>> UpdateJob(Guid id, [FromForm] UpdateJobRequest request)
+    [HttpPatch("{id:guid}")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    public async Task<ActionResult<JobResponse>> UpdateJob([FromRoute] Guid id, [FromForm] UpdateJobRequest request)
     {
         var job = await context.Jobs
-            // .Include(j => j.Major)
+            .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
             .Include(j => j.ContractTypes)
             .Include(j => j.JobLevels)
             .Include(j => j.JobTypes)
-            .Include(j => j.Applications)
             .SingleOrDefaultAsync(j => j.Id == id);
 
         if (job == null)
@@ -300,11 +479,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             job.Quantity = request.Quantity.Value;
         }
 
-        job.Level = request.Level;
+        job.EducationLevelRequire = request.EducationLevelRequire;
         job.YearOfExperience = request.YearOfExperience;
         job.MinSalary = request.MinSalary;
         job.MaxSalary = request.MaxSalary;
-        // job.MajorId = request.MajorId;
+        job.MajorId = request.MajorId;
         job.CampaignId = request.CampaignId;
         job.LocationId = request.LocationId;
 
@@ -345,22 +524,51 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             OfficeAddress = job.OfficeAddress,
             Quantity = job.Quantity,
             Status = job.Status,
-            Level = job.Level,
+            EducationLevelRequire = job.EducationLevelRequire,
             YearOfExperience = job.YearOfExperience,
             MinSalary = job.MinSalary,
             MaxSalary = job.MaxSalary,
-            // Major = job.Major,
-            Location = job.Location,
+            Major = new MajorResponse
+            {
+                Id = job.Major.Id,
+                Name = job.Major.Name
+            },
+            Location = new LocationResponse
+            {
+                Id = job.Location.Id,
+                Name = job.Location.Name
+            },
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
                 .Select(f => new FileResponse
-                    { Id = f.Id, Name = f.Name, Path = f.Path, UploadedById = f.UploadedById, Uploaded = f.Uploaded })
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
                 .SingleOrDefault(),
-            Skills = job.Skills,
-            ContractTypes = job.ContractTypes,
-            JobLevels = job.JobLevels,
-            JobTypes = job.JobTypes,
-            Applications = job.Applications,
+            Skills = job.Skills.Select(s => new SkillResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description
+            }).ToList(),
+            ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
+            {
+                Id = ct.Id,
+                Name = ct.Name
+            }).ToList(),
+            JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
+            {
+                Id = jl.Id,
+                Name = jl.Name
+            }).ToList(),
+            JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
+            {
+                Id = jt.Id,
+                Name = jt.Name
+            }).ToList(),
             Created = job.Created,
             Modified = job.Modified
         };
@@ -368,7 +576,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         return Ok(response);
     }
 
-    [HttpDelete]
+    [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
     public async Task<ActionResult> DeleteJob(Guid id)
     {
@@ -382,5 +590,130 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         await context.SaveChangesAsync();
 
         return Ok(new { Message = "Job deleted successfully." });
+    }
+
+    [HttpGet("{jobId:Guid}/applications")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetJobApplications([FromRoute] Guid jobId,
+        [FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+        {
+            return Unauthorized(new { Message = "User ID not found in access token." });
+        }
+
+        var job = await context.Jobs
+            .Include(j => j.Campaign)
+            .SingleOrDefaultAsync(j => j.Id == jobId);
+
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        if (Guid.Parse(userId) != job.Campaign.RecruiterId)
+        {
+            return Forbid("You are not authorized to view applications for this job.");
+        }
+
+        var query = context.Applications
+            .Include(a => a.Job)
+            .ThenInclude(j => j.Campaign)
+            .Where(a => a.JobId == jobId)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(a =>
+                a.Introduction != null && (a.FullName.Contains(search) || a.Introduction.Contains(search) ||
+                                           a.PhoneNumber.Contains(search) || a.Email.Contains(search)));
+        }
+
+        var totalItems = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var applications = await query
+            .OrderByDescending(a => a.Created)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var items = applications.Select(async a => new ApplicationResponse
+        {
+            Id = a.Id,
+            FullName = a.FullName,
+            Email = a.Email,
+            PhoneNumber = a.PhoneNumber,
+            Introduction = a.Introduction,
+            Resume = await context.AttachedFiles
+                .Where(f => f.Type == TargetType.Application && f.TargetId == a.Id)
+                .Select(f => new FileResponse
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
+                .SingleOrDefaultAsync(),
+            Status = a.Status,
+            Process = a.Process,
+            Applied = a.Created,
+            Submitted = a.Submitted,
+            Created = a.Created,
+            Modified = a.Modified
+        });
+
+        return Ok(new
+        {
+            TotalItems = totalItems,
+            TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
+            PageNumber = page,
+            PageSize = pageSize,
+            Items = items
+        });
+    }
+
+    [HttpGet("{jobId:Guid}/applications/{applicationId:Guid}")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    public async Task<ActionResult<ApplicationResponse>> GetJobApplication([FromRoute] Guid jobId,
+        [FromRoute] Guid applicationId)
+    {
+        var application = await context.Applications
+            .SingleOrDefaultAsync(a => a.Id == applicationId && a.JobId == jobId);
+
+        if (application == null)
+        {
+            return NotFound(new { Message = "Application not found." });
+        }
+
+        var response = new ApplicationResponse
+        {
+            Id = application.Id,
+            FullName = application.FullName,
+            Email = application.Email,
+            PhoneNumber = application.PhoneNumber,
+            Introduction = application.Introduction,
+            Resume = await context.AttachedFiles
+                .Where(f => f.Type == TargetType.Application && f.TargetId == application.Id)
+                .Select(f => new FileResponse
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
+                .SingleOrDefaultAsync(),
+            Status = application.Status,
+            Process = application.Process,
+            Applied = application.Created,
+            Submitted = application.Submitted,
+            Created = application.Created,
+            Modified = application.Modified
+        };
+
+        return Ok(response);
     }
 }

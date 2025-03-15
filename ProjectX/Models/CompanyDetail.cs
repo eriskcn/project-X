@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Newtonsoft.Json;
 using ProjectX.Data;
 
 namespace ProjectX.Models;
@@ -29,20 +30,18 @@ public class CompanyDetail : BaseEntity
 
     [Required] [StringLength(2500)] public required string Introduction { get; set; }
 
-    // For relationship
     [Required] public Guid CompanyId { get; set; }
-    [ForeignKey("CompanyId")] public User Company { get; set; } = null!;
-
-    // [Required] public Guid RegistrationFileId { get; set; }
-    // [ForeignKey("RegistrationFileId")] public required AttachedFile RegistrationAttachedFile { get; set; }
-
+    [JsonIgnore] [ForeignKey("CompanyId")] public User Company { get; set; } = null!;
+    
     [Required] public Guid LocationId { get; set; }
-    [ForeignKey("LocationId")] public Location Location { get; set; } = null!;
+
+    [JsonIgnore]
+    [ForeignKey("LocationId")]
+    public Location Location { get; set; } = null!;
 
     [Required] public Guid MajorId { get; set; }
-    [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
+    [JsonIgnore] [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
 
-    // For tracking
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     public DateTime Modified { get; set; } = DateTime.UtcNow;

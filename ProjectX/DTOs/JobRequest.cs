@@ -8,18 +8,18 @@ public class JobRequest
     public required string Description { set; get; }
     public required string OfficeAddress { set; get; }
     public int Quantity { set; get; } = 1;
-    public EducationLevel? Level { set; get; } = EducationLevel.University;
+    public EducationLevel? EducationLevelRequire { set; get; } = EducationLevel.University;
     public double? YearOfExperience { set; get; }
     public double? MinSalary { set; get; }
     public double? MaxSalary { set; get; }
-    
+
     public Guid MajorId { set; get; }
-    
-    
-    public byte IsHighlight { set; get; } = 0;
-    
+
+
+    public bool IsHighlight { set; get; }
+
     public DateTime? HighlightStart { set; get; }
-    
+
     public DateTime? HighlightEnd { set; get; }
     public Guid CampaignId { set; get; }
     public Guid LocationId { set; get; }
