@@ -21,6 +21,8 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         [FromQuery] List<string>? contractTypes,
         [FromQuery] List<string>? majors,
         [FromQuery] List<string>? locations,
+        [FromQuery] double? minSalary,
+        [FromQuery] double? maxSalary,
         [FromQuery] int pageSize = 10,
         [FromQuery] int page = 1)
     {
@@ -73,6 +75,16 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         if (locations is { Count: > 0 })
         {
             query = query.Where(j => locations.Any(l => j.Location.Name == l));
+        }
+        
+        if (minSalary.HasValue)
+        {
+            query = query.Where(j => j.MinSalary >= minSalary);
+        }
+
+        if (maxSalary.HasValue)
+        {
+            query = query.Where(j=>j.MaxSalary <= maxSalary);
         }
 
         var jobs = await query
