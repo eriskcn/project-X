@@ -77,6 +77,11 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<MajorResponse>> CreateMajor([FromBody] MajorRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var major = new Major
         {
             Id = Guid.NewGuid(),

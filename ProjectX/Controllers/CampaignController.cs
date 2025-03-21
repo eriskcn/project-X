@@ -17,6 +17,11 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
     public async Task<ActionResult<CampaignResponse>> CreateCampaign([FromBody] CampaignRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (recruiterId == null)
         {

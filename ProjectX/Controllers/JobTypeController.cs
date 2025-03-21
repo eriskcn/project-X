@@ -51,7 +51,6 @@ public class JobTypeController(ApplicationDbContext context) : ControllerBase
             Last = page == totalPages,
             PageNumber = page,
             PageSize = pageSize
-            
         };
 
         return Ok(response);
@@ -79,6 +78,11 @@ public class JobTypeController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<JobTypeResponse>> CreateJobType(
         [FromBody] JobTypeRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         var jobType = new JobType
         {
             Name = request.Name

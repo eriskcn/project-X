@@ -78,6 +78,11 @@ public class JobLevelController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<JobTypeResponse>> CreateJobLevel(
         [FromBody] JobLevelRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         var jobType = new JobType
         {
             Name = request.Name

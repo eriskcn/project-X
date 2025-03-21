@@ -78,6 +78,11 @@ public class ContractTypeController(ApplicationDbContext context) : ControllerBa
     [HttpPost]
     public async Task<ActionResult<ContractTypeResponse>> CreateContractType([FromBody] ContractTypeRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var contractType = new ContractType
         {
             Name = request.Name

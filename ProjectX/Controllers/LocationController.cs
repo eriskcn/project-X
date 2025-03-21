@@ -87,6 +87,11 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateLocation([FromBody] LocationRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         var location = new Location
         {
             Name = request.Name,
@@ -99,7 +104,7 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
         return CreatedAtAction(nameof(GetLocation), new { id = location.Id },
             new { Message = "Create location successfully" });
     }
-    
+
     [HttpPatch("{id:guid}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateLocation(

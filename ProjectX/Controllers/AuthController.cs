@@ -1,7 +1,9 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Models;
 using ProjectX.Services;
@@ -13,6 +15,7 @@ namespace ProjectX.Controllers;
 public class AuthController(
     UserManager<User> userManager,
     RoleManager<Role> roleManager,
+    ApplicationDbContext context,
     IGoogleAuthService googleAuthService,
     ITokenService tokenService)
     : ControllerBase
@@ -32,7 +35,7 @@ public class AuthController(
 
         // if (request.RoleName == "Admin")
         // {
-        //     return BadRequest(new {Messsage = "Cannot create an admin user"});
+        //     return BadRequest(new { Message = "Cannot create an admin user" });
         // }
 
         if (!await roleManager.RoleExistsAsync(request.RoleName))
@@ -176,30 +179,61 @@ public class AuthController(
 
     [Authorize]
     [HttpPost("sign-out")]
-    [Authorize]
     public async Task<IActionResult> LogOut()
     {
-        Response.Cookies.Delete("AccessToken");
-        Response.Cookies.Delete("RefreshToken");
-
-        var user = await userManager.GetUserAsync(User);
-        if (user == null)
+        try
         {
-            return Unauthorized(new { Message = "User not found" });
+            var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdString))
+            {
+                return Unauthorized(new { Message = "User not authenticated" });
+            }
+
+            var user = await context.Users.FindAsync(Guid.Parse(userIdString));
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found" });
+            }
+
+            user.RefreshToken = null;
+            user.RefreshTokenExpiry = DateTime.UtcNow;
+
+            await context.SaveChangesAsync();
+
+            Response.Cookies.Append("AccessToken", "", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(-1)
+            });
+
+            Response.Cookies.Append("RefreshToken", "", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(-1)
+            });
+
+            return Ok(new { Message = "Sign-out successful" });
         }
-
-        user.RefreshToken = null;
-        user.RefreshTokenExpiry = DateTime.UtcNow;
-
-        var result = await userManager.UpdateAsync(user);
-        return !result.Succeeded
-            ? StatusCode(500, new { Message = "Failed to sign-out user" })
-            : Ok(new { Message = "Sign-out successful" });
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new { Message = "An error occurred during sign-out", Error = ex.Message });
+        }
     }
+
 
     [HttpPost("google-sign-in")]
     public async Task<IActionResult> GoogleSignIn([FromBody] GoogleSignInRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         var payload = await googleAuthService.VerifyGoogleTokenAsync(request.IdToken);
 
         var user = await userManager.FindByEmailAsync(payload.Email);

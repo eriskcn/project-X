@@ -4,12 +4,14 @@ namespace ProjectX.DTOs;
 
 public class ProfileInfoResponse
 {
+    public Guid Id { get; set; }
     public required string FullName { get; set; }
     public required string Email { get; set; }
     public string? PhoneNumber { get; set; }
     public string? ProfilePicture { get; set; }
     public string? GitHubProfile { get; set; }
     public string? LinkedInProfile { get; set; }
+    public ICollection<string> Roles { get; set; } = new List<string>();
     public bool BusinessVerified { get; set; }
     public double BusinessPoints { get; set; }
     public bool IsExternalLogin { get; set; }

@@ -16,6 +16,11 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
     [Authorize(Roles = "Business")]
     public async Task<IActionResult> BusinessVerify([FromForm] BusinessVerifyRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+        
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
         {

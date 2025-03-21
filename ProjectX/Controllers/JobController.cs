@@ -258,6 +258,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     [Authorize(Roles = "Candidate")]
     public async Task<IActionResult> ApplyJob([FromRoute] Guid jobId, [FromForm] ApplicationRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
         {
@@ -315,6 +320,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
     public async Task<ActionResult<JobResponse>> CreateJob([FromForm] JobRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (recruiterId == null)
         {

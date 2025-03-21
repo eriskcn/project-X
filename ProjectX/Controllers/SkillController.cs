@@ -72,6 +72,11 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<SkillResponse>> CreateSkill([FromBody] SkillRequest request)
     {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
         var skill = new Skill
         {
             Name = request.Name,
