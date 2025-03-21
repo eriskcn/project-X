@@ -21,7 +21,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         {
             return BadRequest(ModelState);
         }
-        
+
         var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (recruiterId == null)
         {
@@ -84,68 +84,72 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
-    public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
-        [FromQuery] string? search, [FromQuery] string? status,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+[Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
+    [FromQuery] string? search, [FromQuery] string? status, [FromQuery] bool? newApplications,
+    [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+{
+    if (page <= 0 || pageSize <= 0)
     {
-        if (page <= 0 || pageSize <= 0)
-        {
-            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
-        }
-
-        var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (recruiterId == null)
-        {
-            return Unauthorized(new { Message = "User ID not found in access token." });
-        }
-
-        var query = context.Campaigns
-            .Where(c => c.RecruiterId == Guid.Parse(recruiterId))
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(search))
-        {
-            query = query.Where(c => c.Name.Contains(search) || c.Description.Contains(search));
-        }
-
-        if (!string.IsNullOrEmpty(status))
-        {
-            query = query.Where(c => c.Status.ToString() == status);
-        }
-
-        var totalItems = await query.CountAsync();
-        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-
-        var campaigns = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Select(c => new CampaignResponse
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Description = c.Description,
-                Open = c.Open,
-                Close = c.Close,
-                // IsHighlight = c.IsHighlight,
-                CountJobs = c.CountJobs,
-                Status = c.Status
-            })
-            .ToListAsync();
-
-        var response = new
-        {
-            Items = campaigns,
-            TotalItems = totalItems,
-            TotalPages = totalPages,
-            First = page == 1,
-            Last = page == totalPages,
-            PageNumber = page,
-            PageSize = pageSize
-        };
-
-        return Ok(response);
+        return BadRequest(new { Message = "Page number and page size must be greater than zero." });
     }
+
+    var recruiterIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    if (!Guid.TryParse(recruiterIdStr, out var recruiterId))
+    {
+        return Unauthorized(new { Message = "Invalid or missing User ID in access token." });
+    }
+
+    var query = context.Campaigns.Where(c => c.RecruiterId == recruiterId);
+
+    if (newApplications == true)
+    {
+        query = query.Include(c => c.Jobs)
+                     .ThenInclude(j => j.Applications)
+                     .Where(c => c.Jobs.Any(j => j.Applications.Any(a => a.Status == ApplicationStatus.Submitted)));
+    }
+
+    if (!string.IsNullOrEmpty(search))
+    {
+        query = query.Where(c => c.Name.Contains(search) || c.Description.Contains(search));
+    }
+
+    if (!string.IsNullOrEmpty(status) && Enum.TryParse(status, out CampaignStatus parsedStatus))
+    {
+        query = query.Where(c => c.Status == parsedStatus);
+    }
+
+    var totalItems = await query.CountAsync();
+    var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+    var campaigns = await query
+        .OrderByDescending(c => c.Open)
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .Select(c => new CampaignResponse
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Description = c.Description,
+            Open = c.Open,
+            Close = c.Close,
+            CountJobs = c.CountJobs,
+            Status = c.Status
+        })
+        .ToListAsync();
+
+    return Ok(new
+    {
+        Items = campaigns,
+        TotalItems = totalItems,
+        TotalPages = totalPages,
+        First = page == 1,
+        Last = page == totalPages,
+        PageNumber = page,
+        PageSize = pageSize
+    });
+}
+
 
     [HttpGet("{campaignId:guid}/jobs")]
     public async Task<ActionResult<IEnumerable<JobResponse>>> GetCampaignJobs([FromRoute] Guid campaignId,
