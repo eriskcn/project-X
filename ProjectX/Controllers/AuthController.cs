@@ -81,14 +81,14 @@ public class AuthController(
         {
             return Unauthorized(new { Message = "Invalid email or password" });
         }
-        
+
         Response.Cookies.Delete("AccessToken", new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None
         });
-    
+
         Response.Cookies.Delete("RefreshToken", new CookieOptions
         {
             HttpOnly = true,
@@ -145,19 +145,20 @@ public class AuthController(
             return Unauthorized(new { Message = "Refresh token is missing" });
         }
 
-        var user = await userManager.Users
-            .Where(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiry > DateTime.UtcNow)
-            .SingleOrDefaultAsync();
+        var userToUpdate = await userManager.Users
+            .SingleOrDefaultAsync(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiry > DateTime.UtcNow);
 
-        if (user == null || user.RefreshTokenExpiry <= DateTime.UtcNow)
-        {
-            return Unauthorized(new { Message = "Invalid or expired refresh token" });
-        }
-
-        var userToUpdate = await userManager.FindByIdAsync(user.Id.ToString());
         if (userToUpdate == null)
         {
-            return Unauthorized(new { Message = "User not found" });
+            return Unauthorized(new { Message = "Invalid or expired refresh token. Please log in again." });
+        }
+
+        if (userToUpdate.RefreshToken != refreshToken)
+        {
+            userToUpdate.RefreshToken = null;
+            userToUpdate.RefreshTokenExpiry = DateTime.UtcNow;
+            await userManager.UpdateAsync(userToUpdate);
+            return Unauthorized(new { Message = "Suspicious activity detected. Please log in again." });
         }
 
         var newAccessToken = await tokenService.GenerateAccessTokenAsync(userToUpdate);
@@ -178,15 +179,13 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            // Expires = DateTime.UtcNow.AddMinutes(2)
         });
 
         Response.Cookies.Append("RefreshToken", newRefreshToken, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
-            SameSite = SameSiteMode.None,
-            // Expires = DateTime.UtcNow.AddDays(7)
+            SameSite = SameSiteMode.None, 
         });
 
         return Ok(new { Message = "Token refreshed successfully" });

@@ -162,14 +162,39 @@ app.UseCookiePolicy();
 
 app.Use(async (context, next) =>
 {
-    await next();
-
     if (context.Items.ContainsKey("TokenExpired"))
     {
-        context.Response.StatusCode = StatusCodes.Status419AuthenticationTimeout;
+        context.Response.Clear(); 
+        context.Response.StatusCode = 419; 
         context.Response.ContentType = "application/json";
         var result = JsonSerializer.Serialize(new { Status = 419, Message = "Access token has expired" });
         await context.Response.WriteAsync(result);
+        return; 
+    }
+
+    try
+    {
+        await next();
+        
+        if (!context.Response.HasStarted && context.Items.ContainsKey("TokenExpired"))
+        {
+            context.Response.Clear();
+            context.Response.StatusCode = 419;
+            context.Response.ContentType = "application/json";
+            var result = JsonSerializer.Serialize(new { Status = 419, Message = "Access token has expired" });
+            await context.Response.WriteAsync(result);
+        }
+    }
+    catch (Exception ex)
+    {
+        if (!context.Response.HasStarted)
+        {
+            context.Response.StatusCode = 500;
+            context.Response.ContentType = "application/json";
+            var result = JsonSerializer.Serialize(new
+                { Status = 500, Message = "An error occurred", Error = ex.Message });
+            await context.Response.WriteAsync(result);
+        }
     }
 });
 // Enable authentication
