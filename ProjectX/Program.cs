@@ -76,20 +76,30 @@ builder.Services.AddAuthentication(options =>
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            ClockSkew = TimeSpan.Zero,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey =
-                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ??
-                                                                throw new InvalidOperationException(
-                                                                    "JWT Key is not configured")))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ??
+                                                                               throw new InvalidOperationException(
+                                                                                   "JWT Key is not configured")))
         };
 
-        // Configure JWT bearer to read token from cookies
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
-                context.Token = context.Request.Cookies["AccessToken"];
+                context.Token = context.Request.Headers.Authorization.FirstOrDefault()?.Replace("Bearer ", "") ??
+                                context.Request.Cookies["AccessToken"];
+                return Task.CompletedTask;
+            },
+
+            OnAuthenticationFailed = context =>
+            {
+                if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                {
+                    context.HttpContext.Items["TokenExpired"] = true;
+                }
+
                 return Task.CompletedTask;
             },
             OnForbidden = context =>
@@ -97,15 +107,6 @@ builder.Services.AddAuthentication(options =>
                 context.Response.StatusCode = StatusCodes.Status403Forbidden;
                 context.Response.ContentType = "application/json";
                 var result = JsonSerializer.Serialize(new { message = "No permission" });
-                return context.Response.WriteAsync(result);
-            },
-
-            OnAuthenticationFailed = context =>
-            {
-                if (context.Exception.GetType() != typeof(SecurityTokenExpiredException)) return Task.CompletedTask;
-                context.Response.StatusCode = StatusCodes.Status419AuthenticationTimeout;
-                context.Response.ContentType = "application/json";
-                var result = JsonSerializer.Serialize(new { message = "Access token has expired" });
                 return context.Response.WriteAsync(result);
             }
         };
@@ -159,6 +160,18 @@ app.UseHttpsRedirection();
 // Enable cookie policy - must be before authentication
 app.UseCookiePolicy();
 
+app.Use(async (context, next) =>
+{
+    await next();
+
+    if (context.Items.ContainsKey("TokenExpired"))
+    {
+        context.Response.StatusCode = StatusCodes.Status419AuthenticationTimeout;
+        context.Response.ContentType = "application/json";
+        var result = JsonSerializer.Serialize(new { Status = 419, Message = "Access token has expired" });
+        await context.Response.WriteAsync(result);
+    }
+});
 // Enable authentication
 app.UseAuthentication();
 

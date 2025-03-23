@@ -34,7 +34,7 @@ public class TokenService(IConfiguration configuration, UserManager<User> userMa
             issuer: configuration["Jwt:Issuer"],
             audience: configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
+            expires: DateTime.UtcNow.AddMinutes(2),
             signingCredentials: creds);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
@@ -44,7 +44,7 @@ public class TokenService(IConfiguration configuration, UserManager<User> userMa
     {
         return Guid.NewGuid().ToString();
     }
-    
+
     public bool IsAccessTokenExpired(string accessToken)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -55,7 +55,7 @@ public class TokenService(IConfiguration configuration, UserManager<User> userMa
         var expirationDate = jwtToken.ValidTo;
         return expirationDate < DateTime.UtcNow;
     }
-    
+
     public bool IsBusinessVerified(string accessToken)
     {
         var tokenHandler = new JwtSecurityTokenHandler();

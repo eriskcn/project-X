@@ -94,7 +94,7 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            Expires = DateTime.UtcNow.AddMinutes(30)
+            // Expires = DateTime.UtcNow.AddMinutes(2)
         });
 
         Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
@@ -102,7 +102,7 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            Expires = DateTime.UtcNow.AddDays(7)
+            // Expires = DateTime.UtcNow.AddDays(7)
         });
 
         return Ok(new { Message = "Sign-in successful" });
@@ -163,7 +163,7 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            Expires = DateTime.UtcNow.AddMinutes(30)
+            // Expires = DateTime.UtcNow.AddMinutes(2)
         });
 
         Response.Cookies.Append("RefreshToken", newRefreshToken, new CookieOptions
@@ -171,7 +171,7 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            Expires = DateTime.UtcNow.AddDays(7)
+            // Expires = DateTime.UtcNow.AddDays(7)
         });
 
         return Ok(new { Message = "Token refreshed successfully" });
@@ -270,7 +270,7 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            Expires = DateTime.UtcNow.AddMinutes(30)
+            // Expires = DateTime.UtcNow.AddMinutes(2)
         });
 
         Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
@@ -278,7 +278,7 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            Expires = DateTime.UtcNow.AddDays(7)
+            // Expires = DateTime.UtcNow.AddDays(7)
         });
 
         return Ok(new { Message = "Sign-in successful" });
