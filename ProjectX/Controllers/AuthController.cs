@@ -68,6 +68,7 @@ public class AuthController(
     }
 
     [HttpPost("sign-in")]
+    [AllowAnonymous]
     public async Task<IActionResult> SignIn([FromBody] SignInRequest request)
     {
         if (!ModelState.IsValid)
@@ -80,6 +81,20 @@ public class AuthController(
         {
             return Unauthorized(new { Message = "Invalid email or password" });
         }
+        
+        Response.Cookies.Delete("AccessToken", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
+    
+        Response.Cookies.Delete("RefreshToken", new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
 
         var accessToken = await tokenService.GenerateAccessTokenAsync(user);
         var refreshToken = tokenService.GenerateRefreshToken();
@@ -94,7 +109,6 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            // Expires = DateTime.UtcNow.AddMinutes(2)
         });
 
         Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
@@ -102,8 +116,9 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            // Expires = DateTime.UtcNow.AddDays(7)
         });
+        Response.Headers.Append("Cache-Control", "no-store, no-cache, must-revalidate");
+        Response.Headers.Append("Pragma", "no-cache");
 
         return Ok(new { Message = "Sign-in successful" });
     }
