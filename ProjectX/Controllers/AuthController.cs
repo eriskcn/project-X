@@ -35,7 +35,13 @@ public class AuthController(
             await roleManager.CreateAsync(new Role { Name = request.RoleName });
         }
 
-        var user = new User { UserName = request.Email, Email = request.Email, FullName = request.FullName };
+        var user = new User
+        {
+            UserName = request.Email,
+            Email = request.Email,
+            FullName = request.FullName
+        };
+
         var result = await userManager.CreateAsync(user, request.Password);
         if (!result.Succeeded) return BadRequest(result.Errors);
 
@@ -55,7 +61,7 @@ public class AuthController(
             return Unauthorized(new { Message = "Invalid email or password" });
         }
 
-        var accessTokenTask = tokenService.GenerateAccessTokenAsync(user);
+        var accessToken = await tokenService.GenerateAccessTokenAsync(user);
         var refreshToken = tokenService.GenerateRefreshToken();
 
         user.RefreshToken = refreshToken;
@@ -63,10 +69,18 @@ public class AuthController(
         user.LoginAttempts++;
         await userManager.UpdateAsync(user);
 
-        Response.Cookies.Append("AccessToken", await accessTokenTask,
-            new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
-        Response.Cookies.Append("RefreshToken", refreshToken,
-            new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
+        Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
+        Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
 
         return Ok(new { Message = "Sign-in successful" });
     }
@@ -79,7 +93,7 @@ public class AuthController(
             return Unauthorized(new { Message = "Refresh token is missing" });
         }
 
-        var userToUpdate = await userManager.Users
+        var userToUpdate = await context.Users
             .Where(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiry > DateTime.UtcNow)
             .SingleOrDefaultAsync();
 
@@ -95,10 +109,18 @@ public class AuthController(
                 .SetProperty(u => u.RefreshToken, newRefreshToken)
                 .SetProperty(u => u.RefreshTokenExpiry, DateTime.UtcNow.AddDays(7)));
 
-        Response.Cookies.Append("AccessToken", newAccessToken,
-            new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
-        Response.Cookies.Append("RefreshToken", newRefreshToken,
-            new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
+        Response.Cookies.Append("AccessToken", newAccessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
+        Response.Cookies.Append("RefreshToken", newRefreshToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None
+        });
 
         return Ok(new { Message = "Token refreshed successfully" });
     }
@@ -115,7 +137,7 @@ public class AuthController(
                 return Unauthorized(new { Message = "User not authenticated" });
             }
 
-            var user = await context.Users.FindAsync(Guid.Parse(userIdString));
+            var user = await context.Users.AsNoTracking().SingleOrDefaultAsync(u => u.Id == Guid.Parse(userIdString));
             if (user == null)
             {
                 return NotFound(new { Message = "User not found" });
@@ -124,6 +146,7 @@ public class AuthController(
             user.RefreshToken = null;
             user.RefreshTokenExpiry = DateTime.UtcNow;
 
+            context.Update(user);
             await context.SaveChangesAsync();
 
             Response.Cookies.Append("AccessToken", "", new CookieOptions
@@ -196,7 +219,6 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            // Expires = DateTime.UtcNow.AddMinutes(2)
         });
 
         Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
@@ -204,7 +226,6 @@ public class AuthController(
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            // Expires = DateTime.UtcNow.AddDays(7)
         });
 
         return Ok(new { Message = "Sign-in successful" });

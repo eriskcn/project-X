@@ -164,18 +164,18 @@ app.Use(async (context, next) =>
 {
     if (context.Items.ContainsKey("TokenExpired"))
     {
-        context.Response.Clear(); 
-        context.Response.StatusCode = 419; 
+        context.Response.Clear();
+        context.Response.StatusCode = 419;
         context.Response.ContentType = "application/json";
         var result = JsonSerializer.Serialize(new { Status = 419, Message = "Access token has expired" });
         await context.Response.WriteAsync(result);
-        return; 
+        return;
     }
 
     try
     {
         await next();
-        
+
         if (!context.Response.HasStarted && context.Items.ContainsKey("TokenExpired"))
         {
             context.Response.Clear();
