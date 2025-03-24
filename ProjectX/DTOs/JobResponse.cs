@@ -17,6 +17,7 @@ public class JobResponse
     public bool IsHighlight { set; get; }
     public DateTime? HighlightStart { set; get; }
     public DateTime? HighlightEnd { set; get; }
+    public int CountApplications { set; get; }
     public MajorResponse Major { set; get; } = null!;
     public LocationResponse Location { set; get; } = null!;
     public FileResponse? JobDescription { set; get; }

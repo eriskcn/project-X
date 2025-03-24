@@ -84,71 +84,117 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
     }
 
     [HttpGet]
-[Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
-public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
-    [FromQuery] string? search, [FromQuery] string? status, [FromQuery] bool? newApplications,
-    [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
-{
-    if (page <= 0 || pageSize <= 0)
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
+        [FromQuery] string? search, [FromQuery] string? status, [FromQuery] bool? newApplications,
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        return BadRequest(new { Message = "Page number and page size must be greater than zero." });
-    }
-
-    var recruiterIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-    if (!Guid.TryParse(recruiterIdStr, out var recruiterId))
-    {
-        return Unauthorized(new { Message = "Invalid or missing User ID in access token." });
-    }
-
-    var query = context.Campaigns.Where(c => c.RecruiterId == recruiterId);
-
-    if (newApplications == true)
-    {
-        query = query.Include(c => c.Jobs)
-                     .ThenInclude(j => j.Applications)
-                     .Where(c => c.Jobs.Any(j => j.Applications.Any(a => a.Status == ApplicationStatus.Submitted)));
-    }
-
-    if (!string.IsNullOrEmpty(search))
-    {
-        query = query.Where(c => c.Name.Contains(search) || c.Description.Contains(search));
-    }
-
-    if (!string.IsNullOrEmpty(status) && Enum.TryParse(status, out CampaignStatus parsedStatus))
-    {
-        query = query.Where(c => c.Status == parsedStatus);
-    }
-
-    var totalItems = await query.CountAsync();
-    var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-
-    var campaigns = await query
-        .OrderByDescending(c => c.Open)
-        .Skip((page - 1) * pageSize)
-        .Take(pageSize)
-        .Select(c => new CampaignResponse
+        if (page <= 0 || pageSize <= 0)
         {
-            Id = c.Id,
-            Name = c.Name,
-            Description = c.Description,
-            Open = c.Open,
-            Close = c.Close,
-            CountJobs = c.CountJobs,
-            Status = c.Status
-        })
-        .ToListAsync();
+            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+        }
 
-    return Ok(new
+        var recruiterIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(recruiterIdStr, out var recruiterId))
+        {
+            return Unauthorized(new { Message = "Invalid or missing User ID in access token." });
+        }
+
+        var query = context.Campaigns.Where(c => c.RecruiterId == recruiterId);
+
+        if (newApplications == true)
+        {
+            query = query.Include(c => c.Jobs)
+                .ThenInclude(j => j.Applications)
+                .Where(c => c.Jobs.Any(j => j.Applications.Any(a => a.Status == ApplicationStatus.Submitted)));
+        }
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(c => c.Name.Contains(search) || c.Description.Contains(search));
+        }
+
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse(status, out CampaignStatus parsedStatus))
+        {
+            query = query.Where(c => c.Status == parsedStatus);
+        }
+
+        var totalItems = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var campaigns = await query
+            .OrderByDescending(c => c.Open)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(c => new CampaignResponse
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Description = c.Description,
+                Open = c.Open,
+                Close = c.Close,
+                CountJobs = c.CountJobs,
+                Status = c.Status
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            Items = campaigns,
+            TotalItems = totalItems,
+            TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
+            PageNumber = page,
+            PageSize = pageSize
+        });
+    }
+
+    [HttpPatch("{id:guid}")]
+    public async Task<ActionResult<CampaignResponse>> UpdateCampaign([FromRoute] Guid id,
+        [FromBody] UpdateCampaignRequest request)
     {
-        Items = campaigns,
-        TotalItems = totalItems,
-        TotalPages = totalPages,
-        First = page == 1,
-        Last = page == totalPages,
-        PageNumber = page,
-        PageSize = pageSize
-    });
-}
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var recruiterIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(recruiterIdString) || !Guid.TryParse(recruiterIdString, out var recruiterId))
+        {
+            return Unauthorized(new { Message = "Invalid or missing recruiter ID." });
+        }
+
+        var campaign = await context.Campaigns
+            .SingleOrDefaultAsync(c => c.Id == id && c.RecruiterId == recruiterId);
+
+        if (campaign == null)
+        {
+            return NotFound(new { Message = "Campaign not found or you are not authorized to update it." });
+        }
+
+        campaign.Name = request.Name ?? campaign.Name;
+        campaign.Description = request.Description ?? campaign.Description;
+        campaign.Open = request.Open ?? campaign.Open;
+        campaign.Close = request.Close ?? campaign.Close;
+        campaign.Status = request.Status ?? campaign.Status;
+
+        context.Campaigns.Update(campaign);
+        await context.SaveChangesAsync();
+
+        var response = new CampaignResponse
+        {
+            Id = campaign.Id,
+            Name = campaign.Name,
+            Description = campaign.Description,
+            Open = campaign.Open,
+            Close = campaign.Close,
+            CountJobs = campaign.CountJobs,
+            Status = campaign.Status
+        };
+
+        return Ok(response);
+    }
 
 
     [HttpGet("{campaignId:guid}/jobs")]
@@ -210,6 +256,12 @@ public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
             .Take(pageSize)
             .ToListAsync();
 
+        var jobApplications = await context.Applications
+            .Where(a => jobs.Select(j => j.Id).Contains(a.JobId))
+            .GroupBy(a => a.JobId)
+            .Select(g => new { JobId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.JobId, g => g.Count);
+
         var response = jobs.Select(j => new JobResponse
         {
             Id = j.Id,
@@ -225,6 +277,8 @@ public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
             IsHighlight = j.IsHighlight,
             HighlightStart = j.HighlightStart,
             HighlightEnd = j.HighlightEnd,
+            CountApplications =
+                jobApplications.GetValueOrDefault(j.Id, 0),
             Major = new MajorResponse
             {
                 Id = j.Major.Id,
@@ -286,6 +340,7 @@ public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
     public async Task<ActionResult<JobResponse>> GetJobForRecruiter([FromRoute] Guid campaignId, [FromRoute] Guid jobId)
     {
         var recruiterId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty);
+
         var campaignExists = await context.Campaigns
             .AnyAsync(c => c.Id == campaignId && c.RecruiterId == recruiterId);
 
@@ -294,20 +349,21 @@ public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
             return NotFound(new { Message = "Campaign not found or you are not authorized to view its jobs." });
         }
 
-        var job = await context.Jobs
-            .Include(j => j.Major)
-            .Include(j => j.Location)
-            .Include(j => j.Skills)
-            .Include(j => j.ContractTypes)
-            .Include(j => j.JobLevels)
-            .Include(j => j.JobTypes)
+        var jobWithApplications = await context.Jobs
             .Where(j => j.CampaignId == campaignId && j.Id == jobId)
+            .Select(j => new
+            {
+                Job = j,
+                CountApplications = context.Applications.Count(a => a.JobId == j.Id)
+            })
             .SingleOrDefaultAsync();
 
-        if (job == null)
+        if (jobWithApplications == null)
         {
             return NotFound(new { Message = "Job not found." });
         }
+
+        var job = jobWithApplications.Job;
 
         var response = new JobResponse
         {
@@ -324,6 +380,7 @@ public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
             IsHighlight = job.IsHighlight,
             HighlightStart = job.HighlightStart,
             HighlightEnd = job.HighlightEnd,
+            CountApplications = jobWithApplications.CountApplications,
             Major = new MajorResponse
             {
                 Id = job.Major.Id,
@@ -334,7 +391,7 @@ public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
                 Id = job.Location.Id,
                 Name = job.Location.Name
             },
-            JobDescription = context.AttachedFiles
+            JobDescription = await context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
                 .Select(f => new FileResponse
                 {
@@ -343,7 +400,7 @@ public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
                     Path = f.Path,
                     Uploaded = f.Uploaded
                 })
-                .SingleOrDefault(),
+                .SingleOrDefaultAsync(),
             Skills = job.Skills.Select(s => new SkillResponse
             {
                 Id = s.Id,
