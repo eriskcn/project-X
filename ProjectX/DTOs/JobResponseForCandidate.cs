@@ -24,7 +24,8 @@ public class JobResponseForCandidate
     public ICollection<ContractTypeResponse> ContractTypes { set; get; } = new List<ContractTypeResponse>();
     public ICollection<JobLevelResponse> JobLevels { set; get; } = new List<JobLevelResponse>();
     public ICollection<JobTypeResponse> JobTypes { set; get; } = new List<JobTypeResponse>();
-    public RecruiterResponse Recruiter { set; get; } = null!;
+    public FreelanceRecruiterResponse FreelanceRecruiter { set; get; } = null!;
+    public CompanyRecruiterResponse CompanyRecruiter { set; get; } = null!;
     public DateTime Created { set; get; }
     public DateTime Modified { set; get; }
 }

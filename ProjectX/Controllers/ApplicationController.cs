@@ -34,8 +34,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
             .ThenInclude(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
             .ThenInclude(r => r.CompanyDetail)
-            .Where(a => a.CandidateId == Guid.Parse(userId)
-                        && a.Job.Campaign.Recruiter.CompanyDetail != null)
+            .Where(a => a.CandidateId == Guid.Parse(userId))
             .AsNoTracking()
             .AsQueryable();
 
@@ -48,56 +47,26 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
             .Take(pageSize)
             .ToListAsync();
 
-        var items = applications.Select(a => new ApplicationResponseForCandidate
+        var items = await Task.WhenAll(applications.Select(async a =>
         {
-            Id = a.Id,
-            FullName = a.FullName,
-            Email = a.Email,
-            PhoneNumber = a.PhoneNumber,
-            Introduction = a.Introduction,
-            Resume = context.AttachedFiles
-                .Where(f => f.Type == TargetType.Application && f.TargetId == a.Id)
-                .Select(f => new FileResponse
-                {
-                    Id = f.Id,
-                    Name = f.Name,
-                    Path = f.Path,
-                    Uploaded = f.Uploaded
-                })
-                .SingleOrDefault(),
-            Status = a.Status,
-            Process = a.Process,
-            Applied = a.Created,
-            Submitted = a.Submitted,
-            Created = a.Created,
-            Modified = a.Modified,
-            Job = new JobResponseForCandidate
+            var recruiter = a.Job.Campaign.Recruiter;
+            var freelanceRecruiterRoleId = await context.Roles
+                .Where(r => r.Name == "FreelanceRecruiter")
+                .Select(r => r.Id)
+                .FirstOrDefaultAsync();
+
+            var isFreelanceRecruiter = await context.UserRoles
+                .AnyAsync(ur => ur.UserId == recruiter.Id && ur.RoleId == freelanceRecruiterRoleId);
+
+            return new ApplicationResponseForCandidate
             {
-                Id = a.Job.Id,
-                Title = a.Job.Title,
-                Description = a.Job.Description,
-                OfficeAddress = a.Job.OfficeAddress,
-                Quantity = a.Job.Quantity,
-                Status = a.Job.Status,
-                EducationLevelRequire = a.Job.EducationLevelRequire,
-                YearOfExperience = a.Job.YearOfExperience,
-                MinSalary = a.Job.MinSalary,
-                MaxSalary = a.Job.MaxSalary,
-                IsHighlight = a.Job.IsHighlight,
-                HighlightStart = a.Job.HighlightStart,
-                HighlightEnd = a.Job.HighlightEnd,
-                Major = new MajorResponse
-                {
-                    Id = a.Job.Major.Id,
-                    Name = a.Job.Major.Name
-                },
-                Location = new LocationResponse
-                {
-                    Id = a.Job.Location.Id,
-                    Name = a.Job.Location.Name
-                },
-                JobDescription = context.AttachedFiles
-                    .Where(f => f.Type == TargetType.JobDescription && f.TargetId == a.Job.Id)
+                Id = a.Id,
+                FullName = a.FullName,
+                Email = a.Email,
+                PhoneNumber = a.PhoneNumber,
+                Introduction = a.Introduction,
+                Resume = await context.AttachedFiles
+                    .Where(f => f.Type == TargetType.Application && f.TargetId == a.Id)
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
@@ -105,42 +74,77 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                         Path = f.Path,
                         Uploaded = f.Uploaded
                     })
-                    .SingleOrDefault(),
-                Skills = a.Job.Skills.Select(s => new SkillResponse
+                    .SingleOrDefaultAsync(),
+                Status = a.Status,
+                Process = a.Process,
+                Applied = a.Created,
+                Submitted = a.Submitted,
+                Created = a.Created,
+                Modified = a.Modified,
+                Job = new JobResponseForCandidate
                 {
-                    Id = s.Id,
-                    Name = s.Name,
-                    Description = s.Description
-                }).ToList(),
-                ContractTypes = a.Job.ContractTypes.Select(st => new ContractTypeResponse
-                {
-                    Id = st.Id,
-                    Name = st.Name
-                }).ToList(),
-                JobLevels = a.Job.JobLevels.Select(jl => new JobLevelResponse
-                {
-                    Id = jl.Id,
-                    Name = jl.Name
-                }).ToList(),
-                JobTypes = a.Job.JobTypes.Select(jt => new JobTypeResponse
-                {
-                    Id = jt.Id,
-                    Name = jt.Name
-                }).ToList(),
-                Recruiter = new RecruiterResponse
-                {
-                    Id = a.Job.Campaign.Recruiter.Id,
-                    CompanyName = a.Job.Campaign.Recruiter.CompanyDetail!.CompanyName,
-                    HeadQuarterAddress = a.Job.Campaign.Recruiter.CompanyDetail.HeadQuarterAddress,
-                    Logo = a.Job.Campaign.Recruiter.CompanyDetail.Logo,
-                    ContactEmail = a.Job.Campaign.Recruiter.CompanyDetail.ContactEmail,
-                    FoundedYear = a.Job.Campaign.Recruiter.CompanyDetail.FoundedYear,
-                    Introduction = a.Job.Campaign.Recruiter.CompanyDetail.Introduction
-                },
-                Created = a.Job.Created,
-                Modified = a.Job.Modified
-            }
-        });
+                    Id = a.Job.Id,
+                    Title = a.Job.Title,
+                    Description = a.Job.Description,
+                    OfficeAddress = a.Job.OfficeAddress,
+                    Quantity = a.Job.Quantity,
+                    Status = a.Job.Status,
+                    EducationLevelRequire = a.Job.EducationLevelRequire,
+                    YearOfExperience = a.Job.YearOfExperience,
+                    MinSalary = a.Job.MinSalary,
+                    MaxSalary = a.Job.MaxSalary,
+                    IsHighlight = a.Job.IsHighlight,
+                    HighlightStart = a.Job.HighlightStart,
+                    HighlightEnd = a.Job.HighlightEnd,
+                    Major = new MajorResponse { Id = a.Job.Major.Id, Name = a.Job.Major.Name },
+                    Location = new LocationResponse { Id = a.Job.Location.Id, Name = a.Job.Location.Name },
+                    JobDescription = await context.AttachedFiles
+                        .Where(f => f.Type == TargetType.JobDescription && f.TargetId == a.Job.Id)
+                        .Select(f => new FileResponse
+                        {
+                            Id = f.Id,
+                            Name = f.Name,
+                            Path = f.Path,
+                            Uploaded = f.Uploaded
+                        })
+                        .SingleOrDefaultAsync(),
+                    Skills = a.Job.Skills.Select(s => new SkillResponse
+                            { Id = s.Id, Name = s.Name, Description = s.Description })
+                        .ToList(),
+                    ContractTypes = a.Job.ContractTypes.Select(ct => new ContractTypeResponse
+                            { Id = ct.Id, Name = ct.Name })
+                        .ToList(),
+                    JobLevels = a.Job.JobLevels.Select(jl => new JobLevelResponse { Id = jl.Id, Name = jl.Name })
+                        .ToList(),
+                    JobTypes = a.Job.JobTypes.Select(jt => new JobTypeResponse { Id = jt.Id, Name = jt.Name }).ToList(),
+                    FreelanceRecruiter = isFreelanceRecruiter
+                        ? new FreelanceRecruiterResponse
+                        {
+                            Id = recruiter.Id,
+                            FullName = recruiter.FullName,
+                            Email = recruiter.Email ?? string.Empty,
+                            ProfilePicture = recruiter.ProfilePicture,
+                            LinkedInProfile = recruiter.LinkedInProfile ?? string.Empty,
+                            GitHubProfile = recruiter.GitHubProfile ?? string.Empty,
+                        }
+                        : new FreelanceRecruiterResponse(),
+                    CompanyRecruiter = recruiter.CompanyDetail != null
+                        ? new CompanyRecruiterResponse
+                        {
+                            Id = recruiter.Id,
+                            CompanyName = recruiter.CompanyDetail.CompanyName,
+                            HeadQuarterAddress = recruiter.CompanyDetail.HeadQuarterAddress,
+                            Logo = recruiter.CompanyDetail.Logo,
+                            ContactEmail = recruiter.CompanyDetail.ContactEmail,
+                            FoundedYear = recruiter.CompanyDetail.FoundedYear,
+                            Introduction = recruiter.CompanyDetail.Introduction
+                        }
+                        : new CompanyRecruiterResponse(),
+                    Created = a.Job.Created,
+                    Modified = a.Job.Modified
+                }
+            };
+        }));
 
         return Ok(new
         {
@@ -156,7 +160,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
 
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Candidate")]
-    public async Task<ActionResult<ApplicationResponse>> GetOwnApplication(Guid id)
+    public async Task<ActionResult<ApplicationResponseForCandidate>> GetOwnApplication(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
@@ -173,97 +177,12 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
             .ThenInclude(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
             .ThenInclude(r => r.CompanyDetail)
-            .Where(a => a.CandidateId == Guid.Parse(userId) && a.Id == id &&
-                        a.Job.Campaign.Recruiter.CompanyDetail != null)
-            .Select(a => new ApplicationResponseForCandidate
-            {
-                Id = a.Id,
-                Job = new JobResponseForCandidate
-                {
-                    Id = a.Job.Id,
-                    Title = a.Job.Title,
-                    Description = a.Job.Description,
-                    OfficeAddress = a.Job.OfficeAddress,
-                    Quantity = a.Job.Quantity,
-                    Status = a.Job.Status,
-                    EducationLevelRequire = a.Job.EducationLevelRequire,
-                    YearOfExperience = a.Job.YearOfExperience,
-                    MinSalary = a.Job.MinSalary,
-                    MaxSalary = a.Job.MaxSalary,
-                    IsHighlight = a.Job.IsHighlight,
-                    HighlightStart = a.Job.HighlightStart,
-                    HighlightEnd = a.Job.HighlightEnd,
-                    Major = new MajorResponse
-                    {
-                        Id = a.Job.Major.Id,
-                        Name = a.Job.Major.Name
-                    },
-                    Location = new LocationResponse
-                    {
-                        Id = a.Job.Location.Id,
-                        Name = a.Job.Location.Name
-                    },
-                    JobDescription = context.AttachedFiles
-                        .Where(f => f.Type == TargetType.JobDescription && f.TargetId == a.Job.Id)
-                        .Select(f => new FileResponse
-                        {
-                            Id = f.Id,
-                            Name = f.Name,
-                            Path = f.Path,
-                            Uploaded = f.Uploaded
-                        })
-                        .SingleOrDefault(),
-                    Skills = a.Job.Skills.Select(s => new SkillResponse
-                    {
-                        Id = s.Id,
-                        Name = s.Name,
-                        Description = s.Description
-                    }).ToList(),
-                    ContractTypes = a.Job.ContractTypes.Select(st => new ContractTypeResponse
-                    {
-                        Id = st.Id,
-                        Name = st.Name
-                    }).ToList(),
-                    JobLevels = a.Job.JobLevels.Select(jl => new JobLevelResponse
-                    {
-                        Id = jl.Id,
-                        Name = jl.Name
-                    }).ToList(),
-                    JobTypes = a.Job.JobTypes.Select(jt => new JobTypeResponse
-                    {
-                        Id = jt.Id,
-                        Name = jt.Name
-                    }).ToList(),
-                    Recruiter = new RecruiterResponse
-                    {
-                        Id = a.Job.Campaign.Recruiter.Id,
-                        CompanyName = a.Job.Campaign.Recruiter.CompanyDetail!.CompanyName,
-                        HeadQuarterAddress = a.Job.Campaign.Recruiter.CompanyDetail.HeadQuarterAddress,
-                        Logo = a.Job.Campaign.Recruiter.CompanyDetail.Logo,
-                        ContactEmail = a.Job.Campaign.Recruiter.CompanyDetail.ContactEmail,
-                        FoundedYear = a.Job.Campaign.Recruiter.CompanyDetail.FoundedYear,
-                        Introduction = a.Job.Campaign.Recruiter.CompanyDetail.Introduction
-                    },
-                    Created = a.Job.Created,
-                    Modified = a.Job.Modified
-                },
-                FullName = a.FullName,
-                Email = a.Email,
-                PhoneNumber = a.PhoneNumber,
-                Resume = context.AttachedFiles
-                    .Where(f => f.Type == TargetType.Application && f.TargetId == a.Id)
-                    .Select(f => new FileResponse
-                    {
-                        Id = f.Id,
-                        Name = f.Name,
-                        Path = f.Path,
-                        Uploaded = f.Uploaded
-                    })
-                    .SingleOrDefault(),
-                Introduction = a.Introduction,
-                Status = a.Status,
-                Created = a.Created
-            })
+            .Include(application => application.Job).ThenInclude(job => job.Skills)
+            .Include(application => application.Job).ThenInclude(job => job.ContractTypes)
+            .Include(application => application.Job).ThenInclude(job => job.JobLevels)
+            .Include(application => application.Job).ThenInclude(job => job.JobTypes)
+            .Where(a => a.CandidateId == Guid.Parse(userId) && a.Id == id)
+            .AsNoTracking()
             .SingleOrDefaultAsync();
 
         if (application == null)
@@ -271,7 +190,117 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
             return NotFound(new { Message = "Application not found." });
         }
 
-        return Ok(application);
+        var recruiter = application.Job.Campaign.Recruiter;
+        var freelanceRecruiterRoleId = await context.Roles
+            .Where(r => r.Name == "FreelanceRecruiter")
+            .Select(r => r.Id)
+            .FirstOrDefaultAsync();
+
+        var isFreelanceRecruiter = await context.UserRoles
+            .AnyAsync(ur => ur.UserId == recruiter.Id && ur.RoleId == freelanceRecruiterRoleId);
+
+        var resume = await context.AttachedFiles
+            .Where(f => f.Type == TargetType.Application && f.TargetId == application.Id)
+            .Select(f => new FileResponse
+            {
+                Id = f.Id,
+                Name = f.Name,
+                Path = f.Path,
+                Uploaded = f.Uploaded
+            })
+            .SingleOrDefaultAsync();
+
+        var jobDescription = await context.AttachedFiles
+            .Where(f => f.Type == TargetType.JobDescription && f.TargetId == application.Job.Id)
+            .Select(f => new FileResponse
+            {
+                Id = f.Id,
+                Name = f.Name,
+                Path = f.Path,
+                Uploaded = f.Uploaded
+            })
+            .SingleOrDefaultAsync();
+
+        var response = new ApplicationResponseForCandidate
+        {
+            Id = application.Id,
+            FullName = application.FullName,
+            Email = application.Email,
+            PhoneNumber = application.PhoneNumber,
+            Introduction = application.Introduction,
+            Resume = resume,
+            Status = application.Status,
+            Applied = application.Created,
+            Submitted = application.Submitted,
+            Created = application.Created,
+            Modified = application.Modified,
+            Job = new JobResponseForCandidate
+            {
+                Id = application.Job.Id,
+                Title = application.Job.Title,
+                Description = application.Job.Description,
+                OfficeAddress = application.Job.OfficeAddress,
+                Quantity = application.Job.Quantity,
+                Status = application.Job.Status,
+                EducationLevelRequire = application.Job.EducationLevelRequire,
+                YearOfExperience = application.Job.YearOfExperience,
+                MinSalary = application.Job.MinSalary,
+                MaxSalary = application.Job.MaxSalary,
+                IsHighlight = application.Job.IsHighlight,
+                HighlightStart = application.Job.HighlightStart,
+                HighlightEnd = application.Job.HighlightEnd,
+                Major = new MajorResponse
+                {
+                    Id = application.Job.Major.Id,
+                    Name = application.Job.Major.Name
+                },
+                Location = new LocationResponse
+                {
+                    Id = application.Job.Location.Id,
+                    Name = application.Job.Location.Name
+                },
+                JobDescription = jobDescription,
+                Skills = application.Job.Skills
+                    .Select(s => new SkillResponse { Id = s.Id, Name = s.Name, Description = s.Description })
+                    .ToList(),
+                ContractTypes = application.Job.ContractTypes
+                    .Select(ct => new ContractTypeResponse { Id = ct.Id, Name = ct.Name })
+                    .ToList(),
+                JobLevels = application.Job.JobLevels
+                    .Select(jl => new JobLevelResponse { Id = jl.Id, Name = jl.Name })
+                    .ToList(),
+                JobTypes = application.Job.JobTypes
+                    .Select(jt => new JobTypeResponse { Id = jt.Id, Name = jt.Name })
+                    .ToList(),
+                FreelanceRecruiter = isFreelanceRecruiter
+                    ? new FreelanceRecruiterResponse
+                    {
+                        Id = recruiter.Id,
+                        FullName = recruiter.FullName,
+                        Email = recruiter.Email ?? string.Empty,
+                        ProfilePicture = recruiter.ProfilePicture,
+                        LinkedInProfile = recruiter.LinkedInProfile ?? string.Empty,
+                        GitHubProfile = recruiter.GitHubProfile ?? string.Empty
+                    }
+                    : new FreelanceRecruiterResponse(),
+                CompanyRecruiter = recruiter.CompanyDetail != null
+                    ? new CompanyRecruiterResponse
+                    {
+                        Id = recruiter.Id,
+                        CompanyName = recruiter.CompanyDetail.CompanyName,
+                        HeadQuarterAddress = recruiter.CompanyDetail.HeadQuarterAddress,
+                        Logo = recruiter.CompanyDetail.Logo,
+                        ContactEmail = recruiter.CompanyDetail.ContactEmail,
+                        FoundedYear = recruiter.CompanyDetail.FoundedYear,
+                        Introduction = recruiter.CompanyDetail.Introduction
+                    }
+                    : new CompanyRecruiterResponse(),
+                Created = application.Job.Created,
+                Modified = application.Job.Modified
+            }
+        };
+
+        return Ok(response);
     }
 
     [HttpPatch("{id:guid}/seen")]

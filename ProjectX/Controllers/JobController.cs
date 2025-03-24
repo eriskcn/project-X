@@ -11,7 +11,8 @@ namespace ProjectX.Controllers;
 [ApiController]
 [Route("capablanca/api/v0/jobs")]
 [Authorize]
-public class JobController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
+public class JobController(ApplicationDbContext context, IWebHostEnvironment env)
+    : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<JobResponseForCandidate>>> GetJobs(
@@ -34,7 +35,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         var query = context.Jobs
             .Include(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
-            .ThenInclude(r => r.CompanyDetail)
             .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
@@ -47,9 +47,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         if (!string.IsNullOrEmpty(search))
         {
             query = query.Where(j =>
-                j.Campaign.Recruiter.CompanyDetail != null &&
-                (j.Title.Contains(search) || j.Description.Contains(search) ||
-                 j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search)));
+                j.Title.Contains(search) ||
+                j.Description.Contains(search) ||
+                (j.Campaign.Recruiter.CompanyDetail != null &&
+                 j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search))
+            );
         }
 
         if (jobLevels is { Count: > 0 })
@@ -76,7 +78,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         {
             query = query.Where(j => locations.Any(l => j.Location.Name == l));
         }
-        
+
         if (minSalary.HasValue)
         {
             query = query.Where(j => j.MinSalary >= minSalary);
@@ -84,85 +86,96 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
         if (maxSalary.HasValue)
         {
-            query = query.Where(j=>j.MaxSalary <= maxSalary);
+            query = query.Where(j => j.MaxSalary <= maxSalary);
         }
+
+        var totalItems = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var jobs = await query
             .OrderByDescending(j => j.Created)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
-        var totalItems = await query.CountAsync();
-        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
-        var items = jobs.Select(j => new JobResponseForCandidate
+        var freelanceRecruiterRoleId = await context.Roles
+            .Where(r => r.Name == "FreelanceRecruiter")
+            .Select(r => r.Id)
+            .SingleOrDefaultAsync();
+
+        var freelanceRecruiterIds = await context.UserRoles
+            .Where(ur => ur.RoleId == freelanceRecruiterRoleId)
+            .Select(ur => ur.UserId)
+            .ToListAsync();
+
+        var items = jobs.Select(j =>
         {
-            Id = j.Id,
-            Title = j.Title,
-            Description = j.Description,
-            OfficeAddress = j.OfficeAddress,
-            Quantity = j.Quantity,
-            Status = j.Status,
-            EducationLevelRequire = j.EducationLevelRequire,
-            YearOfExperience = j.YearOfExperience,
-            MinSalary = j.MinSalary,
-            MaxSalary = j.MaxSalary,
-            Major = new MajorResponse
+            var recruiter = j.Campaign.Recruiter;
+            var isFreelanceRecruiter = freelanceRecruiterIds.Contains(recruiter.Id);
+
+            return new JobResponseForCandidate
             {
-                Id = j.Major.Id,
-                Name = j.Major.Name
-            },
-            Location = new LocationResponse
-            {
-                Id = j.Location.Id,
-                Name = j.Location.Name
-            },
-            JobDescription = context.AttachedFiles
-                .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)
-                .Select(f => new FileResponse
-                {
-                    Id = f.Id,
-                    Name = f.Name,
-                    Path = f.Path,
-                    Uploaded = f.Uploaded
-                })
-                .SingleOrDefault(),
-            Skills = j.Skills.Select(s => new SkillResponse
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description
-            }).ToList(),
-            ContractTypes = j.ContractTypes.Select(ct => new ContractTypeResponse
-            {
-                Id = ct.Id,
-                Name = ct.Name
-            }).ToList(),
-            JobLevels = j.JobLevels.Select(jl => new JobLevelResponse
-            {
-                Id = jl.Id,
-                Name = jl.Name
-            }).ToList(),
-            JobTypes = j.JobTypes.Select(jt => new JobTypeResponse
-            {
-                Id = jt.Id,
-                Name = jt.Name
-            }).ToList(),
-            Recruiter = new RecruiterResponse
-            {
-                Id = j.Campaign.Recruiter.Id,
-                CompanyName = j.Campaign.Recruiter.CompanyDetail!.CompanyName,
-                HeadQuarterAddress = j.Campaign.Recruiter.CompanyDetail.HeadQuarterAddress,
-                Logo = j.Campaign.Recruiter.CompanyDetail.Logo,
-                ContactEmail = j.Campaign.Recruiter.CompanyDetail.ContactEmail,
-                FoundedYear = j.Campaign.Recruiter.CompanyDetail.FoundedYear,
-                Introduction = j.Campaign.Recruiter.CompanyDetail.Introduction
-            },
-            Created = j.Created,
-            Modified = j.Modified
+                Id = j.Id,
+                Title = j.Title,
+                Description = j.Description,
+                OfficeAddress = j.OfficeAddress,
+                Quantity = j.Quantity,
+                Status = j.Status,
+                EducationLevelRequire = j.EducationLevelRequire,
+                YearOfExperience = j.YearOfExperience,
+                MinSalary = j.MinSalary,
+                MaxSalary = j.MaxSalary,
+                Major = new MajorResponse { Id = j.Major.Id, Name = j.Major.Name },
+                Location = new LocationResponse { Id = j.Location.Id, Name = j.Location.Name },
+                JobDescription = context.AttachedFiles
+                    .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)
+                    .Select(f => new FileResponse
+                    {
+                        Id = f.Id,
+                        Name = f.Name,
+                        Path = f.Path,
+                        Uploaded = f.Uploaded
+                    })
+                    .SingleOrDefault(),
+                Skills = j.Skills.Select(s => new SkillResponse
+                        { Id = s.Id, Name = s.Name, Description = s.Description })
+                    .ToList(),
+                ContractTypes = j.ContractTypes.Select(ct => new ContractTypeResponse { Id = ct.Id, Name = ct.Name })
+                    .ToList(),
+                JobLevels = j.JobLevels.Select(jl => new JobLevelResponse { Id = jl.Id, Name = jl.Name }).ToList(),
+                JobTypes = j.JobTypes.Select(jt => new JobTypeResponse { Id = jt.Id, Name = jt.Name }).ToList(),
+
+                FreelanceRecruiter = isFreelanceRecruiter
+                    ? new FreelanceRecruiterResponse
+                    {
+                        Id = recruiter.Id,
+                        FullName = recruiter.FullName,
+                        Email = recruiter.Email ?? string.Empty,
+                        ProfilePicture = recruiter.ProfilePicture,
+                        LinkedInProfile = recruiter.LinkedInProfile ?? string.Empty,
+                        GitHubProfile = recruiter.GitHubProfile ?? string.Empty,
+                    }
+                    : new FreelanceRecruiterResponse(),
+
+                CompanyRecruiter = recruiter.CompanyDetail != null
+                    ? new CompanyRecruiterResponse
+                    {
+                        Id = recruiter.Id,
+                        CompanyName = recruiter.CompanyDetail.CompanyName,
+                        HeadQuarterAddress = recruiter.CompanyDetail.HeadQuarterAddress,
+                        Logo = recruiter.CompanyDetail.Logo,
+                        ContactEmail = recruiter.CompanyDetail.ContactEmail,
+                        FoundedYear = recruiter.CompanyDetail.FoundedYear,
+                        Introduction = recruiter.CompanyDetail.Introduction
+                    }
+                    : new CompanyRecruiterResponse(),
+
+                Created = j.Created,
+                Modified = j.Modified
+            };
         });
 
-        var response = new
+        return Ok(new
         {
             Items = items,
             TotalItems = totalItems,
@@ -171,9 +184,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             Last = page == totalPages,
             PageNumber = page,
             PageSize = pageSize
-        };
-
-        return Ok(response);
+        });
     }
 
     [HttpGet("{id:guid}")]
@@ -195,6 +206,16 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         {
             return NotFound(new { Message = "Job not found." });
         }
+
+        var freelanceRecruiterRoleId = await context.Roles
+            .Where(r => r.Name == "FreelanceRecruiter")
+            .Select(r => r.Id)
+            .SingleOrDefaultAsync();
+
+        var isFreelanceRecruiter = await context.UserRoles
+            .AnyAsync(ur => ur.UserId == job.Campaign.Recruiter.Id && ur.RoleId == freelanceRecruiterRoleId);
+
+        var recruiter = job.Campaign.Recruiter;
 
         var response = new JobResponseForCandidate
         {
@@ -218,7 +239,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 Id = job.Location.Id,
                 Name = job.Location.Name
             },
-            JobDescription = context.AttachedFiles
+            JobDescription = await context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
                 .Select(f => new FileResponse
                 {
@@ -227,38 +248,58 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     Path = f.Path,
                     Uploaded = f.Uploaded
                 })
-                .SingleOrDefault(),
+                .SingleOrDefaultAsync(),
+
             Skills = job.Skills.Select(s => new SkillResponse
             {
                 Id = s.Id,
                 Name = s.Name,
                 Description = s.Description
             }).ToList(),
+
             ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
             {
                 Id = ct.Id,
                 Name = ct.Name
             }).ToList(),
+
             JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
             {
                 Id = jl.Id,
                 Name = jl.Name
             }).ToList(),
+
             JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
             {
                 Id = jt.Id,
                 Name = jt.Name
             }).ToList(),
-            Recruiter = new RecruiterResponse
-            {
-                Id = job.Campaign.Recruiter.Id,
-                CompanyName = job.Campaign.Recruiter.CompanyDetail!.CompanyName,
-                HeadQuarterAddress = job.Campaign.Recruiter.CompanyDetail.HeadQuarterAddress,
-                Logo = job.Campaign.Recruiter.CompanyDetail.Logo,
-                ContactEmail = job.Campaign.Recruiter.CompanyDetail.ContactEmail,
-                FoundedYear = job.Campaign.Recruiter.CompanyDetail.FoundedYear,
-                Introduction = job.Campaign.Recruiter.CompanyDetail.Introduction
-            },
+
+            FreelanceRecruiter = isFreelanceRecruiter
+                ? new FreelanceRecruiterResponse
+                {
+                    Id = recruiter.Id,
+                    FullName = recruiter.FullName,
+                    Email = recruiter.Email ?? string.Empty,
+                    ProfilePicture = recruiter.ProfilePicture,
+                    LinkedInProfile = recruiter.LinkedInProfile ?? string.Empty,
+                    GitHubProfile = recruiter.GitHubProfile ?? string.Empty,
+                }
+                : new FreelanceRecruiterResponse(),
+
+            CompanyRecruiter = recruiter.CompanyDetail != null
+                ? new CompanyRecruiterResponse
+                {
+                    Id = recruiter.Id,
+                    CompanyName = recruiter.CompanyDetail.CompanyName,
+                    HeadQuarterAddress = recruiter.CompanyDetail.HeadQuarterAddress,
+                    Logo = recruiter.CompanyDetail.Logo,
+                    ContactEmail = recruiter.CompanyDetail.ContactEmail,
+                    FoundedYear = recruiter.CompanyDetail.FoundedYear,
+                    Introduction = recruiter.CompanyDetail.Introduction
+                }
+                : new CompanyRecruiterResponse(),
+
             Created = job.Created,
             Modified = job.Modified
         };
