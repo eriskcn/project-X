@@ -23,58 +23,31 @@ public class AuthController(
     [HttpPost("sign-up")]
     public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        if (await userManager.FindByEmailAsync(request.Email) != null)
+        if (await userManager.Users.AnyAsync(u => u.Email == request.Email))
         {
             return BadRequest(new { Message = "Email is already in use" });
         }
 
-        // if (request.RoleName == "Admin")
-        // {
-        //     return BadRequest(new { Message = "Cannot create an admin user" });
-        // }
-
         if (!await roleManager.RoleExistsAsync(request.RoleName))
         {
-            var role = new Role { Name = request.RoleName };
-            var roleResult = await roleManager.CreateAsync(role);
-            if (!roleResult.Succeeded)
-            {
-                return BadRequest(new { Message = "Failed to create role" });
-            }
+            await roleManager.CreateAsync(new Role { Name = request.RoleName });
         }
 
-        var user = new User
-        {
-            UserName = request.Email,
-            Email = request.Email,
-            FullName = request.FullName,
-        };
-
+        var user = new User { UserName = request.Email, Email = request.Email, FullName = request.FullName };
         var result = await userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded)
-        {
-            return BadRequest(result.Errors);
-        }
+        if (!result.Succeeded) return BadRequest(result.Errors);
 
-        result = await userManager.AddToRoleAsync(user, request.RoleName);
-        if (result.Succeeded) return Ok(new { Message = "User created successfully" });
-        await userManager.DeleteAsync(user);
-        return BadRequest(new { Message = "Failed to assign role" });
+        await userManager.AddToRoleAsync(user, request.RoleName);
+        return Ok(new { Message = "User created successfully" });
     }
 
     [HttpPost("sign-in")]
     [AllowAnonymous]
     public async Task<IActionResult> SignIn([FromBody] SignInRequest request)
     {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
+        if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var user = await userManager.FindByEmailAsync(request.Email);
         if (user == null || !await userManager.CheckPasswordAsync(user, request.Password))
@@ -82,21 +55,7 @@ public class AuthController(
             return Unauthorized(new { Message = "Invalid email or password" });
         }
 
-        Response.Cookies.Delete("AccessToken", new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None
-        });
-
-        Response.Cookies.Delete("RefreshToken", new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None
-        });
-
-        var accessToken = await tokenService.GenerateAccessTokenAsync(user);
+        var accessTokenTask = tokenService.GenerateAccessTokenAsync(user);
         var refreshToken = tokenService.GenerateRefreshToken();
 
         user.RefreshToken = refreshToken;
@@ -104,37 +63,12 @@ public class AuthController(
         user.LoginAttempts++;
         await userManager.UpdateAsync(user);
 
-        Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-        });
-
-        Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-        });
-        Response.Headers.Append("Cache-Control", "no-store, no-cache, must-revalidate");
-        Response.Headers.Append("Pragma", "no-cache");
+        Response.Cookies.Append("AccessToken", await accessTokenTask,
+            new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
+        Response.Cookies.Append("RefreshToken", refreshToken,
+            new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
 
         return Ok(new { Message = "Sign-in successful" });
-    }
-
-    [HttpGet("check-business-verified")]
-    [Authorize(Roles = "Business")]
-    public IActionResult CheckBusinessVerified()
-    {
-        var businessVerifiedClaim = User.FindFirst("BusinessVerified")?.Value;
-        var isBusinessVerified = businessVerifiedClaim != null && bool.Parse(businessVerifiedClaim);
-
-        return Ok(new
-        {
-            IsAuthenticated = true,
-            IsBusinessVerified = isBusinessVerified
-        });
     }
 
     [HttpPost("refresh-token")]
@@ -146,47 +80,25 @@ public class AuthController(
         }
 
         var userToUpdate = await userManager.Users
-            .SingleOrDefaultAsync(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiry > DateTime.UtcNow);
+            .Where(u => u.RefreshToken == refreshToken && u.RefreshTokenExpiry > DateTime.UtcNow)
+            .SingleOrDefaultAsync();
 
         if (userToUpdate == null)
-        {
             return Unauthorized(new { Message = "Invalid or expired refresh token. Please log in again." });
-        }
-
-        if (userToUpdate.RefreshToken != refreshToken)
-        {
-            userToUpdate.RefreshToken = null;
-            userToUpdate.RefreshTokenExpiry = DateTime.UtcNow;
-            await userManager.UpdateAsync(userToUpdate);
-            return Unauthorized(new { Message = "Suspicious activity detected. Please log in again." });
-        }
 
         var newAccessToken = await tokenService.GenerateAccessTokenAsync(userToUpdate);
         var newRefreshToken = tokenService.GenerateRefreshToken();
 
-        userToUpdate.RefreshToken = newRefreshToken;
-        userToUpdate.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
-        userToUpdate.Modified = DateTime.UtcNow;
+        await context.Users
+            .Where(u => u.Id == userToUpdate.Id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(u => u.RefreshToken, newRefreshToken)
+                .SetProperty(u => u.RefreshTokenExpiry, DateTime.UtcNow.AddDays(7)));
 
-        var userUpdateResult = await userManager.UpdateAsync(userToUpdate);
-        if (!userUpdateResult.Succeeded)
-        {
-            return StatusCode(500, new { Message = "Failed to update refresh token" });
-        }
-
-        Response.Cookies.Append("AccessToken", newAccessToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-        });
-
-        Response.Cookies.Append("RefreshToken", newRefreshToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None, 
-        });
+        Response.Cookies.Append("AccessToken", newAccessToken,
+            new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
+        Response.Cookies.Append("RefreshToken", newRefreshToken,
+            new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.None });
 
         return Ok(new { Message = "Token refreshed successfully" });
     }
