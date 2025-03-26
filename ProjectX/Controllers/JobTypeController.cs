@@ -12,14 +12,15 @@ namespace ProjectX.Controllers;
 [Route("capablanca/api/v0/job-types")]
 public class JobTypeController(ApplicationDbContext context) : ControllerBase
 {
-    [HttpGet]
+   [HttpGet]
     public async Task<ActionResult<IEnumerable<JobTypeResponse>>> GetJobTypes(
         [FromQuery] string? search,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10) 
     {
-        if (page <= 0 || pageSize <= 0)
+        if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+            return BadRequest(new { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
 
         var query = context.JobTypes.AsQueryable();
@@ -30,6 +31,29 @@ public class JobTypeController(ApplicationDbContext context) : ControllerBase
         }
 
         var totalItems = await query.CountAsync();
+
+        if (pageSize == 0)
+        {
+            var allJobTypes = await query
+                .Select(jobType => new JobTypeResponse
+                {
+                    Id = jobType.Id,
+                    Name = jobType.Name
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                Items = allJobTypes,
+                TotalItems = totalItems,
+                TotalPages = 1,
+                First = true,
+                Last = true,
+                PageNumber = 1,
+                PageSize = totalItems
+            });
+        }
+
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var jobTypes = await query
@@ -42,7 +66,7 @@ public class JobTypeController(ApplicationDbContext context) : ControllerBase
             })
             .ToListAsync();
 
-        var response = new
+        return Ok(new
         {
             Items = jobTypes,
             TotalItems = totalItems,
@@ -51,10 +75,10 @@ public class JobTypeController(ApplicationDbContext context) : ControllerBase
             Last = page == totalPages,
             PageNumber = page,
             PageSize = pageSize
-        };
-
-        return Ok(response);
+        });
     }
+
+
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<JobTypeResponse>> GetJobType(Guid id)

@@ -20,9 +20,9 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
         [FromQuery] int pageSize = 10
     )
     {
-        if (page <= 0 || pageSize <= 0)
+        if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+            return BadRequest(new { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
 
         var query = context.Locations.AsQueryable();
@@ -38,9 +38,33 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
         }
 
         var totalItems = await query.CountAsync();
+        
+        if (pageSize == 0)
+        {
+            var locations = await query
+                .Select(location => new LocationResponse
+                {
+                    Id = location.Id,
+                    Name = location.Name,
+                    Region = location.Region
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                Items = locations,
+                TotalItems = totalItems,
+                TotalPages = 1,
+                First = true,
+                Last = true,
+                PageNumber = 1,
+                PageSize = totalItems
+            });
+        }
+        
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
-        var locations = await query
+        var locationsWithPagination = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(location => new LocationResponse
@@ -51,18 +75,16 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
             })
             .ToListAsync();
 
-        var response = new
+        return Ok(new
         {
-            Items = locations,
+            Items = locationsWithPagination,
             TotalItems = totalItems,
             TotalPages = totalPages,
             First = page == 1,
             Last = page == totalPages,
             PageNumber = page,
             PageSize = pageSize
-        };
-
-        return Ok(response);
+        });
     }
 
     [HttpGet("{id:guid}")]

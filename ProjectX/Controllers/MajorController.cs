@@ -18,9 +18,9 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        if (page <= 0 || pageSize <= 0)
+        if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+            return BadRequest(new { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
 
         var query = context.Majors.AsQueryable();
@@ -31,9 +31,32 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
         }
 
         var totalItems = await query.CountAsync();
+        
+        if (pageSize == 0)
+        {
+            var majors = await query
+                .Select(m => new MajorResponse
+                {
+                    Id = m.Id,
+                    Name = m.Name
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                Items = majors,
+                TotalItems = totalItems,
+                TotalPages = 1,
+                First = true,
+                Last = true,
+                PageNumber = 1,
+                PageSize = totalItems
+            });
+        }
+        
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
-        var majors = await query
+        var majorsWithPagination = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(m => new MajorResponse
@@ -43,18 +66,16 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
             })
             .ToListAsync();
 
-        var response = new
+        return Ok(new
         {
-            Items = majors,
+            Items = majorsWithPagination,
             TotalItems = totalItems,
             TotalPages = totalPages,
             First = page == 1,
             Last = page == totalPages,
             PageNumber = page,
             PageSize = pageSize
-        };
-
-        return Ok(response);
+        });
     }
 
     [HttpGet("{id:guid}")]
