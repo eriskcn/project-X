@@ -111,5 +111,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             new Major { Id = Guid.NewGuid(), Name = "Khoa học Dữ liệu" },
             new Major { Id = Guid.NewGuid(), Name = "Khoa học Máy tính" }
         );
+
+        builder.Entity<Skill>().HasData(
+            new Skill { Id = Guid.NewGuid(), Name = "ASP.NET Core" },
+            new Skill { Id = Guid.NewGuid(), Name = "C#" },
+            new Skill { Id = Guid.NewGuid(), Name = "JavaScript" },
+            new Skill { Id = Guid.NewGuid(), Name = "Nextjs" },
+            new Skill { Id = Guid.NewGuid(), Name = "Angular" }
+        );
     }
 }
