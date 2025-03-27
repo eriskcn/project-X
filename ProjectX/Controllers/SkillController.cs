@@ -68,6 +68,7 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
             Description = skill.Description
         });
     }
+    
 
     [HttpPost]
     public async Task<ActionResult<SkillResponse>> CreateSkill([FromBody] SkillRequest request)
