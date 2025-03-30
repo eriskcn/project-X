@@ -17,9 +17,10 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
         [FromQuery] string? search,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
-        if (page <= 0 || pageSize <= 0)
+        if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+            return BadRequest(new
+                { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
 
         var query = context.Skills.AsQueryable();
@@ -30,6 +31,30 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
         }
 
         var totalItems = await query.CountAsync();
+
+        if (pageSize == 0)
+        {
+            var allSkills = await query
+                .Select(skill => new SkillResponse
+                {
+                    Id = skill.Id,
+                    Name = skill.Name,
+                    Description = skill.Description
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                Items = allSkills,
+                TotalItems = totalItems,
+                TotalPages = 1,
+                First = true,
+                Last = true,
+                PageNumber = 1,
+                PageSize = totalItems
+            });
+        }
+
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var skills = await query
@@ -47,7 +72,6 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
             PageNumber = page,
             PageSize = pageSize
         };
-
         return Ok(response);
     }
 
@@ -68,7 +92,7 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
             Description = skill.Description
         });
     }
-    
+
 
     [HttpPost]
     public async Task<ActionResult<SkillResponse>> CreateSkill([FromBody] SkillRequest request)
