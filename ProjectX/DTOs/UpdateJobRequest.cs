@@ -13,7 +13,7 @@ public class UpdateJobRequest
     public double? MinSalary { set; get; }
     public double? MaxSalary { set; get; }
     public Guid MajorId { set; get; }
-    public Guid CampaignId { set; get; }
+    // public Guid CampaignId { set; get; } đ ai cho đổi campaign của job cả 
     public Guid LocationId { set; get; }
     public IFormFile? JobDescriptionFile { set; get; }
     public ICollection<Guid> Skills { set; get; } = new List<Guid>();
