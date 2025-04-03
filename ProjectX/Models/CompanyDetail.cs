@@ -11,9 +11,11 @@ public class CompanyDetail : BaseEntity
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; } = Guid.NewGuid();
 
-    [StringLength(450)] public required string CompanyName { get; set; }
+    [Required] [StringLength(450)] public required string CompanyName { get; set; }
 
-    [Required] [StringLength(10)] public string? ShortName { get; set; }
+    [StringLength(10)] public string? ShortName { get; set; }
+
+    [Required] [StringLength(10)] public required string TaxCode { get; set; }
 
     [Required] [StringLength(256)] public required string HeadQuarterAddress { get; set; }
 
@@ -24,6 +26,14 @@ public class CompanyDetail : BaseEntity
     [StringLength(50)]
     public required string ContactEmail { get; set; }
 
+    [Required]
+    [Phone]
+    [StringLength(10)]
+    public required string ContactPhone { get; set; }
+    
+    [StringLength(256)]
+    public string? Website { get; set; }
+
     [Range(1900, 2100)] public required int FoundedYear { get; set; }
 
     [Column(TypeName = "nvarchar(50)")] public CompanySize Size { get; set; } = CompanySize.Tiny;
@@ -32,7 +42,7 @@ public class CompanyDetail : BaseEntity
 
     [Required] public Guid CompanyId { get; set; }
     [JsonIgnore] [ForeignKey("CompanyId")] public User Company { get; set; } = null!;
-    
+
     [Required] public Guid LocationId { get; set; }
 
     [JsonIgnore]
