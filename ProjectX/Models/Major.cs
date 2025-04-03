@@ -16,7 +16,7 @@ public class Major : BaseEntity
     [JsonIgnore] public ICollection<Job> Jobs { get; set; } = new List<Job>();
 
     [JsonIgnore]
-    [InverseProperty("FocusMajors")]
+    [InverseProperty(nameof(User.FocusMajors))]
     public ICollection<User> Users { get; set; } = new List<User>();
 
     [JsonIgnore] public ICollection<CompanyDetail> Companies { get; set; } = new List<CompanyDetail>();

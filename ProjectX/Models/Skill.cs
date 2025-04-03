@@ -14,8 +14,15 @@ public class Skill : BaseEntity
     [StringLength(256)] public required string Name { get; set; }
     [StringLength(256)] public string? Description { get; set; }
 
-    [JsonIgnore] public ICollection<Job> Jobs { get; set; } = new List<Job>();
-    [JsonIgnore] public ICollection<User> Users { get; set; } = new List<User>();
+    // n-n relationship
+    [InverseProperty(nameof(Job.Skills))]
+    [JsonIgnore]
+    public ICollection<Job> Jobs { get; set; } = new List<Job>();
+
+    // n-n relationship
+    [InverseProperty(nameof(User.Skills))]
+    [JsonIgnore]
+    public ICollection<User> Users { get; set; } = new List<User>();
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
 

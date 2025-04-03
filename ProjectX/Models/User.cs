@@ -25,12 +25,16 @@ public class User : IdentityUser<Guid>, ISoftDelete
     public DateTime? Deleted { get; set; }
 
     [JsonIgnore] public CompanyDetail? CompanyDetail { get; set; }
-    [JsonIgnore] public ICollection<Skill> Skills { get; set; } = new List<Skill>();
+
+    [InverseProperty(nameof(Skill.Users))]
+    [JsonIgnore]
+    public ICollection<Skill> Skills { get; set; } = new List<Skill>();
+
     [JsonIgnore] public ICollection<Message> SentMessages { get; set; } = new List<Message>();
     [JsonIgnore] public ICollection<Conversation> Conversations { get; set; } = new List<Conversation>();
 
     [JsonIgnore]
-    [InverseProperty("Users")]
+    [InverseProperty(nameof(Major.Users))]
     public ICollection<Major> FocusMajors { get; set; } = new List<Major>();
 
     [JsonIgnore] public ICollection<Post> Posts { get; set; } = new List<Post>();

@@ -22,7 +22,8 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
     {
         if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number must be greater than zero, and page size must be zero or greater." });
+            return BadRequest(new
+                { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
 
         var query = context.Locations.AsQueryable();
@@ -38,7 +39,7 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
         }
 
         var totalItems = await query.CountAsync();
-        
+
         if (pageSize == 0)
         {
             var locations = await query
@@ -61,7 +62,7 @@ public class LocationController(ApplicationDbContext context) : ControllerBase
                 PageSize = totalItems
             });
         }
-        
+
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var locationsWithPagination = await query

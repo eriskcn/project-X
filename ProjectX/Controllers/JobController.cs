@@ -384,125 +384,208 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             return Unauthorized(new { Message = "User ID not found in access token." });
         }
 
-        var campaign = await context.Campaigns.FindAsync(request.CampaignId);
-        if (campaign == null)
-        {
-            return NotFound(new { Message = "Campaign not found." });
-        }
+        await using var transaction = await context.Database.BeginTransactionAsync();
 
-        if (campaign.RecruiterId != Guid.Parse(recruiterId))
+        try
         {
-            return Forbid("You are not authorized to add jobs to this campaign.");
-        }
-
-        if (request.JobDescriptionFile != null)
-        {
-            var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
-            if (!Directory.Exists(uploadsFolder))
+            var campaign = await context.Campaigns.FindAsync(request.CampaignId);
+            if (campaign == null)
             {
-                Directory.CreateDirectory(uploadsFolder);
+                return NotFound(new { Message = "Campaign not found." });
             }
 
-            var jobDescriptionFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.JobDescriptionFile.FileName)}";
-            var filePath = Path.Combine(uploadsFolder, jobDescriptionFileName);
-            await using var stream = new FileStream(filePath, FileMode.Create);
-            await request.JobDescriptionFile.CopyToAsync(stream);
+            if (campaign.RecruiterId != Guid.Parse(recruiterId))
+            {
+                return Forbid("You are not authorized to add jobs to this campaign.");
+            }
 
-            var jobDescription = new AttachedFile
+            var skills = await context.Skills
+                .Where(s => request.Skills.Contains(s.Id))
+                .ToListAsync();
+
+            if (skills.Count != request.Skills.Count)
+            {
+                return BadRequest(new { Message = "Some skills not found." });
+            }
+
+            var contractTypes = await context.ContractTypes
+                .Where(ct => request.ContractTypes.Contains(ct.Id))
+                .ToListAsync();
+
+            if (contractTypes.Count != request.ContractTypes.Count)
+            {
+                return BadRequest(new { Message = "Some contract types not found." });
+            }
+
+            var jobTypes = await context.JobTypes
+                .Where(jt => request.JobTypes.Contains(jt.Id))
+                .ToListAsync();
+
+            if (jobTypes.Count != request.JobTypes.Count)
+            {
+                return BadRequest(new { Message = "Some job types not found." });
+            }
+
+            var jobLevels = await context.JobLevels
+                .Where(jl => request.JobLevels.Contains(jl.Id))
+                .ToListAsync();
+
+            if (jobLevels.Count != request.JobLevels.Count)
+            {
+                return BadRequest(new { Message = "Some job levels not found." });
+            }
+
+            var major = await context.Majors
+                .Where(m => m.Id == request.MajorId)
+                .AsNoTracking()
+                .SingleOrDefaultAsync();
+            if (major == null)
+            {
+                return NotFound(new { Message = "Major not found" });
+            }
+
+            var location = await context.Locations
+                .Where(l => l.Id == request.LocationId)
+                .AsNoTracking()
+                .SingleOrDefaultAsync();
+
+            if (location == null)
+            {
+                return NotFound(new { Message = "Location not found" });
+            }
+
+            // Create a new job
+            var job = new Job
             {
                 Id = Guid.NewGuid(),
-                Name = jobDescriptionFileName,
-                Path = filePath,
-                Type = TargetType.JobDescription,
-                TargetId = Guid.NewGuid(),
-                UploadedById = Guid.Parse(recruiterId)
+                Title = request.Title,
+                Description = request.Description,
+                OfficeAddress = request.OfficeAddress,
+                Quantity = request.Quantity,
+                EducationLevelRequire = request.EducationLevelRequire,
+                YearOfExperience = request.YearOfExperience,
+                MinSalary = request.MinSalary,
+                MaxSalary = request.MaxSalary,
+                MajorId = request.MajorId,
+                IsHighlight = request.IsHighlight,
+                HighlightStart = request.HighlightStart,
+                HighlightEnd = request.HighlightEnd,
+                CampaignId = request.CampaignId,
+                LocationId = request.LocationId,
+                Skills = skills,
+                ContractTypes = contractTypes,
+                JobLevels = jobLevels,
+                JobTypes = jobTypes
             };
-            context.AttachedFiles.Add(jobDescription);
-            await context.SaveChangesAsync();
-        }
 
-        var job = new Job
-        {
-            Title = request.Title,
-            Description = request.Description,
-            OfficeAddress = request.OfficeAddress,
-            Quantity = request.Quantity,
-            EducationLevelRequire = request.EducationLevelRequire,
-            YearOfExperience = request.YearOfExperience,
-            MinSalary = request.MinSalary,
-            MaxSalary = request.MaxSalary,
-            MajorId = request.MajorId,
-            IsHighlight = request.IsHighlight,
-            HighlightStart = request.HighlightStart,
-            HighlightEnd = request.HighlightEnd,
-            CampaignId = request.CampaignId,
-            LocationId = request.LocationId,
-        };
+            context.Jobs.Add(job);
 
-        campaign.CountJobs++;
-        context.Entry(campaign).State = EntityState.Modified;
-        context.Jobs.Add(job);
-        await context.SaveChangesAsync();
-
-        var response = new JobResponse
-        {
-            Id = job.Id,
-            Title = job.Title,
-            Description = job.Description,
-            OfficeAddress = job.OfficeAddress,
-            Quantity = job.Quantity,
-            Status = job.Status,
-            EducationLevelRequire = job.EducationLevelRequire,
-            YearOfExperience = job.YearOfExperience,
-            MinSalary = job.MinSalary,
-            MaxSalary = job.MaxSalary,
-            Major = new MajorResponse
+            // Process job description file if uploaded
+            if (request.JobDescriptionFile != null)
             {
-                Id = job.Major.Id,
-                Name = job.Major.Name
-            },
-            Location = new LocationResponse
-            {
-                Id = job.Location.Id,
-                Name = job.Location.Name
-            },
-            JobDescription = context.AttachedFiles
-                .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
-                .Select(f => new FileResponse
+                var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
+                if (!Directory.Exists(uploadsFolder))
                 {
-                    Id = f.Id,
-                    Name = f.Name,
-                    Path = f.Path,
-                    Uploaded = f.Uploaded
-                })
-                .SingleOrDefault(),
-            Skills = job.Skills.Select(s => new SkillResponse
-            {
-                Id = s.Id,
-                Name = s.Name,
-                Description = s.Description
-            }).ToList(),
-            ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
-            {
-                Id = ct.Id,
-                Name = ct.Name
-            }).ToList(),
-            JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
-            {
-                Id = jl.Id,
-                Name = jl.Name
-            }).ToList(),
-            JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
-            {
-                Id = jt.Id,
-                Name = jt.Name
-            }).ToList(),
-            Created = job.Created,
-            Modified = job.Modified
-        };
+                    Directory.CreateDirectory(uploadsFolder);
+                }
 
-        return CreatedAtAction(nameof(GetJob), new { id = job.Id }, response);
+                var jobDescriptionFileName =
+                    $"{Guid.NewGuid()}{Path.GetExtension(request.JobDescriptionFile.FileName)}";
+                var filePath = Path.Combine(uploadsFolder, jobDescriptionFileName);
+
+                await using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await request.JobDescriptionFile.CopyToAsync(stream);
+                }
+
+                var jobDescription = new AttachedFile
+                {
+                    Id = Guid.NewGuid(),
+                    Name = jobDescriptionFileName,
+                    Path = filePath,
+                    Type = TargetType.JobDescription,
+                    TargetId = job.Id,
+                    UploadedById = Guid.Parse(recruiterId)
+                };
+                context.AttachedFiles.Add(jobDescription);
+            }
+
+            // Update campaign count
+            campaign.CountJobs++;
+            context.Entry(campaign).State = EntityState.Modified;
+
+            await context.SaveChangesAsync();
+
+            var response = new JobResponse
+            {
+                Id = job.Id,
+                Title = job.Title,
+                Description = job.Description,
+                OfficeAddress = job.OfficeAddress,
+                Quantity = job.Quantity,
+                Status = job.Status,
+                EducationLevelRequire = job.EducationLevelRequire,
+                YearOfExperience = job.YearOfExperience,
+                MinSalary = job.MinSalary,
+                MaxSalary = job.MaxSalary,
+                Major = new MajorResponse
+                {
+                    Id = major.Id,
+                    Name = major.Name
+                },
+                Location = new LocationResponse
+                {
+                    Id = location.Id,
+                    Name = location.Name
+                },
+                JobDescription = await context.AttachedFiles
+                    .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
+                    .Select(f => new FileResponse
+                    {
+                        Id = f.Id,
+                        Name = f.Name,
+                        Path = f.Path,
+                        Uploaded = f.Uploaded
+                    })
+                    .AsNoTracking()
+                    .SingleOrDefaultAsync(),
+                Skills = job.Skills.Select(s => new SkillResponse
+                {
+                    Id = s.Id,
+                    Name = s.Name,
+                    Description = s.Description
+                }).ToList(),
+                ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
+                {
+                    Id = ct.Id,
+                    Name = ct.Name
+                }).ToList(),
+                JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
+                {
+                    Id = jl.Id,
+                    Name = jl.Name
+                }).ToList(),
+                JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
+                {
+                    Id = jt.Id,
+                    Name = jt.Name
+                }).ToList(),
+                Created = job.Created,
+                Modified = job.Modified
+            };
+
+            await transaction.CommitAsync();
+
+            return CreatedAtAction(nameof(GetJob), new { id = job.Id }, response);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return StatusCode(500,
+                new { Message = "An error occurred while creating the job.", Error = ex.Message });
+        }
     }
+
 
     [HttpPatch("{id:guid}")]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
@@ -558,7 +641,8 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 Directory.CreateDirectory(uploadsFolder);
             }
 
-            var jobDescriptionFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.JobDescriptionFile.FileName)}";
+            var jobDescriptionFileName =
+                $"{Guid.NewGuid()}{Path.GetExtension(request.JobDescriptionFile.FileName)}";
             var filePath = Path.Combine(uploadsFolder, jobDescriptionFileName);
             await using var stream = new FileStream(filePath, FileMode.Create);
             await request.JobDescriptionFile.CopyToAsync(stream);

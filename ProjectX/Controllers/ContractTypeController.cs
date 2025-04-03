@@ -12,7 +12,7 @@ namespace ProjectX.Controllers;
 [Route("capablanca/api/v0/contract-types")]
 public class ContractTypeController(ApplicationDbContext context) : ControllerBase
 {
-   [HttpGet]
+    [HttpGet]
     public async Task<ActionResult<IEnumerable<ContractTypeResponse>>> GetContractTypes(
         [FromQuery] string? search,
         [FromQuery] int page = 1,
@@ -20,7 +20,8 @@ public class ContractTypeController(ApplicationDbContext context) : ControllerBa
     {
         if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number must be greater than zero, and page size must be zero or greater." });
+            return BadRequest(new
+                { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
 
         var query = context.ContractTypes.AsQueryable();
@@ -31,7 +32,7 @@ public class ContractTypeController(ApplicationDbContext context) : ControllerBa
         }
 
         var totalItems = await query.CountAsync();
-        
+
         if (pageSize == 0)
         {
             var allContractTypes = await query
@@ -53,7 +54,7 @@ public class ContractTypeController(ApplicationDbContext context) : ControllerBa
                 PageSize = totalItems
             });
         }
-        
+
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var contractTypes = await query
@@ -104,7 +105,7 @@ public class ContractTypeController(ApplicationDbContext context) : ControllerBa
         {
             return BadRequest(ModelState);
         }
-        
+
         var contractType = new ContractType
         {
             Name = request.Name

@@ -12,15 +12,16 @@ namespace ProjectX.Controllers;
 [Route("capablanca/api/v0/job-types")]
 public class JobTypeController(ApplicationDbContext context) : ControllerBase
 {
-   [HttpGet]
+    [HttpGet]
     public async Task<ActionResult<IEnumerable<JobTypeResponse>>> GetJobTypes(
         [FromQuery] string? search,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10) 
+        [FromQuery] int pageSize = 10)
     {
         if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number must be greater than zero, and page size must be zero or greater." });
+            return BadRequest(new
+                { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
 
         var query = context.JobTypes.AsQueryable();
@@ -77,7 +78,6 @@ public class JobTypeController(ApplicationDbContext context) : ControllerBase
             PageSize = pageSize
         });
     }
-
 
 
     [HttpGet("{id:guid}")]

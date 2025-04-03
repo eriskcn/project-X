@@ -20,7 +20,8 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
     {
         if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number must be greater than zero, and page size must be zero or greater." });
+            return BadRequest(new
+                { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
 
         var query = context.Majors.AsQueryable();
@@ -31,7 +32,7 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
         }
 
         var totalItems = await query.CountAsync();
-        
+
         if (pageSize == 0)
         {
             var majors = await query
@@ -53,7 +54,7 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
                 PageSize = totalItems
             });
         }
-        
+
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var majorsWithPagination = await query
@@ -102,7 +103,7 @@ public class MajorController(ApplicationDbContext context) : ControllerBase
         {
             return BadRequest(ModelState);
         }
-        
+
         var major = new Major
         {
             Id = Guid.NewGuid(),

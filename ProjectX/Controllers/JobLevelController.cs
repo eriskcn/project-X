@@ -15,13 +15,15 @@ public class JobLevelController(ApplicationDbContext context) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<JobLevelResponse>>> GetJobLevels(
         [FromQuery] string? search,
-        [FromQuery] int page = 1, 
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
         if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number must be greater than zero, and page size must be zero or greater." });
+            return BadRequest(new
+                { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
+
         var query = context.JobLevels.AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
@@ -29,8 +31,8 @@ public class JobLevelController(ApplicationDbContext context) : ControllerBase
             query = query.Where(jobLevel => jobLevel.Name.Contains(search));
         }
 
-            var totalItems = await query.CountAsync();
-    
+        var totalItems = await query.CountAsync();
+
         if (pageSize == 0)
         {
             var allJobLevels = await query
@@ -52,7 +54,7 @@ public class JobLevelController(ApplicationDbContext context) : ControllerBase
                 PageSize = totalItems
             });
         }
-        
+
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var jobLevels = await query
@@ -64,7 +66,7 @@ public class JobLevelController(ApplicationDbContext context) : ControllerBase
                 Name = jobLevel.Name
             })
             .ToListAsync();
-            
+
         return Ok(new
         {
             Items = jobLevels,

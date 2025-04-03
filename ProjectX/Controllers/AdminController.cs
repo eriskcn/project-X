@@ -22,9 +22,10 @@ public class AdminController(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        if (page <= 0 || pageSize <= 0)
+        if (page <= 0 || pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+            return BadRequest(new
+                { Message = "Page number must be greater than zero, and page size must be zero or greater." });
         }
 
         var businessRole = await roleManager.Roles.SingleOrDefaultAsync(r => r.Name == "Business");
@@ -90,6 +91,12 @@ public class AdminController(
         }
 
         var totalItems = await query.CountAsync();
+        if (pageSize == 0)
+        {   
+            var allVerifications = await query
+                .ToListAsync();
+        }
+        
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var verifications = await query

@@ -71,6 +71,31 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(u => u.Email)
             .IsUnique();
 
+        builder.Entity<Job>()
+            .HasMany(j => j.Skills)
+            .WithMany(s => s.Jobs)
+            .UsingEntity(j => j.ToTable("JobSkills"));
+
+        builder.Entity<Job>()
+            .HasMany(j => j.JobLevels)
+            .WithMany(jl => jl.Jobs)
+            .UsingEntity(j => j.ToTable("JobJobLevels"));
+
+        builder.Entity<Job>()
+            .HasMany(j => j.ContractTypes)
+            .WithMany(ct => ct.Jobs)
+            .UsingEntity(j => j.ToTable("JobContractTypes"));
+
+        builder.Entity<Job>()
+            .HasMany(j => j.JobTypes)
+            .WithMany(jt => jt.Jobs)
+            .UsingEntity(j => j.ToTable("JobJobTypes"));
+
+        builder.Entity<User>()
+            .HasMany(u => u.FocusMajors)
+            .WithMany(m => m.Users)
+            .UsingEntity(u => u.ToTable("UserFocusMajors"));
+
         builder.Entity<Role>().HasData(
             new Role { Id = Guid.NewGuid(), Name = "Admin", NormalizedName = "ADMIN" },
             new Role { Id = Guid.NewGuid(), Name = "Candidate", NormalizedName = "CANDIDATE" },

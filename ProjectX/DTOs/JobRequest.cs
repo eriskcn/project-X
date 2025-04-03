@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using ProjectX.Models;
 
 namespace ProjectX.DTOs;
@@ -15,7 +16,6 @@ public class JobRequest
 
     public Guid MajorId { set; get; }
 
-
     public bool IsHighlight { set; get; }
 
     public DateTime? HighlightStart { set; get; }
@@ -24,8 +24,12 @@ public class JobRequest
     public Guid CampaignId { set; get; }
     public Guid LocationId { set; get; }
     public IFormFile? JobDescriptionFile { set; get; }
-    public ICollection<Guid> Skills { set; get; } = new List<Guid>();
-    public ICollection<Guid> ContractTypes { set; get; } = new List<Guid>();
-    public ICollection<Guid> JobLevels { set; get; } = new List<Guid>();
-    public ICollection<Guid> JobTypes { set; get; } = new List<Guid>();
+    
+    [FromForm(Name = "Skills[]")] public ICollection<Guid> Skills { get; set; } = new List<Guid>();
+
+    [FromForm(Name = "ContractTypes[]")] public ICollection<Guid> ContractTypes { get; set; } = new List<Guid>();
+
+    [FromForm(Name = "JobLevels[]")] public ICollection<Guid> JobLevels { get; set; } = new List<Guid>();
+
+    [FromForm(Name = "JobTypes[]")] public ICollection<Guid> JobTypes { get; set; } = new List<Guid>();
 }

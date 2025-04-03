@@ -13,7 +13,10 @@ public class JobLevel : BaseEntity
 
     [Required] [StringLength(50)] public required string Name { get; set; }
 
-    [JsonIgnore] public ICollection<Job> Jobs { get; set; } = new List<Job>();
+    // n-n relationship
+    [InverseProperty(nameof(Job.JobLevels))]
+    [JsonIgnore]
+    public ICollection<Job> Jobs { get; set; } = new List<Job>();
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
 

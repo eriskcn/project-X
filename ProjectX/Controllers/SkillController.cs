@@ -60,6 +60,12 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
         var skills = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
+            .Select(skill => new SkillResponse
+            {
+                Id = skill.Id,
+                Name = skill.Name,
+                Description = skill.Description
+            })
             .ToListAsync();
 
         var response = new
