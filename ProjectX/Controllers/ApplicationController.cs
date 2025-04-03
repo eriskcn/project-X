@@ -133,10 +133,15 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                         {
                             Id = recruiter.Id,
                             CompanyName = recruiter.CompanyDetail.CompanyName,
+                            ShortName = recruiter.CompanyDetail.ShortName,
+                            TaxCode = recruiter.CompanyDetail.TaxCode,
                             HeadQuarterAddress = recruiter.CompanyDetail.HeadQuarterAddress,
                             Logo = recruiter.CompanyDetail.Logo,
                             ContactEmail = recruiter.CompanyDetail.ContactEmail,
+                            ContactPhone = recruiter.CompanyDetail.ContactPhone,
+                            Website = recruiter.CompanyDetail.Website,
                             FoundedYear = recruiter.CompanyDetail.FoundedYear,
+                            Size = recruiter.CompanyDetail.Size,
                             Introduction = recruiter.CompanyDetail.Introduction
                         }
                         : new CompanyRecruiterResponse(),
@@ -288,10 +293,15 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                     {
                         Id = recruiter.Id,
                         CompanyName = recruiter.CompanyDetail.CompanyName,
+                        ShortName = recruiter.CompanyDetail.ShortName,
+                        TaxCode = recruiter.CompanyDetail.TaxCode,
                         HeadQuarterAddress = recruiter.CompanyDetail.HeadQuarterAddress,
                         Logo = recruiter.CompanyDetail.Logo,
                         ContactEmail = recruiter.CompanyDetail.ContactEmail,
+                        ContactPhone = recruiter.CompanyDetail.ContactPhone,
+                        Website = recruiter.CompanyDetail.Website,
                         FoundedYear = recruiter.CompanyDetail.FoundedYear,
+                        Size = recruiter.CompanyDetail.Size,
                         Introduction = recruiter.CompanyDetail.Introduction
                     }
                     : new CompanyRecruiterResponse(),

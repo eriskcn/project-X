@@ -56,9 +56,12 @@ public class AdminController(
                         Id = company.Id,
                         CompanyName = company.CompanyName,
                         ShortName = company.ShortName,
+                        TaxCode = company.TaxCode,
                         HeadQuarterAddress = company.HeadQuarterAddress,
                         Logo = company.Logo,
                         ContactEmail = company.ContactEmail,
+                        ContactPhone = company.ContactPhone,
+                        Website = company.Website,
                         FoundedYear = company.FoundedYear,
                         Size = company.Size,
                         Introduction = company.Introduction,
@@ -92,11 +95,11 @@ public class AdminController(
 
         var totalItems = await query.CountAsync();
         if (pageSize == 0)
-        {   
+        {
             var allVerifications = await query
                 .ToListAsync();
         }
-        
+
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var verifications = await query
@@ -147,9 +150,12 @@ public class AdminController(
                         Id = company.Id,
                         CompanyName = company.CompanyName,
                         ShortName = company.ShortName,
+                        TaxCode = company.TaxCode,
                         HeadQuarterAddress = company.HeadQuarterAddress,
                         Logo = company.Logo,
                         ContactEmail = company.ContactEmail,
+                        ContactPhone = company.ContactPhone,
+                        Website = company.Website,
                         FoundedYear = company.FoundedYear,
                         Size = company.Size,
                         Introduction = company.Introduction,
