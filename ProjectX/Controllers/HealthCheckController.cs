@@ -13,6 +13,7 @@ public class HealthCheckController : ControllerBase
         return Ok(new
         {
             Message = "Server is warm",
+            Signature = "hoaideeptryvcl",
             Bingo = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         });
     }
