@@ -33,6 +33,18 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
             return NotFound("User not found.");
         }
 
+        var allowedImageExtensions = new[] { ".jpg", ".jpeg", ".png" };
+        var logoExtension = Path.GetExtension(request.Logo.FileName).ToLowerInvariant();
+        if (!allowedImageExtensions.Contains(logoExtension))
+        {
+            return BadRequest("Invalid logo file extension. Only image files are allowed.");
+        }
+
+        if (request.Logo.Length > 5 * 1024 * 1024)
+        {
+            return BadRequest("Logo file size exceeds the 5MB limit.");
+        }
+
         var logosFolder = Path.Combine(env.WebRootPath, "logos");
         if (!Directory.Exists(logosFolder))
         {
@@ -52,6 +64,18 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
         if (!Directory.Exists(uploadsFolder))
         {
             Directory.CreateDirectory(uploadsFolder);
+        }
+
+        var allowedDocExtensions = new[] { ".pdf", ".docx", ".doc" };
+        var registrationFileExtension = Path.GetExtension(request.RegistrationFile.FileName).ToLowerInvariant();
+        if (!allowedDocExtensions.Contains(registrationFileExtension))
+        {
+            return BadRequest("Invalid registration file extension. Only .pdf, .docx, and .doc files are allowed.");
+        }
+
+        if (request.RegistrationFile.Length > 5 * 1024 * 1024)
+        {
+            return BadRequest("Registration file size exceeds the 5MB limit.");
         }
 
         var registrationFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.RegistrationFile.FileName)}";

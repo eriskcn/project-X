@@ -363,6 +363,18 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 Directory.CreateDirectory(uploadsFolder);
             }
 
+            var allowedDocExtensions = new[] { ".pdf", ".docx", ".doc" };
+            var registrationFileExtension = Path.GetExtension(request.Resume.FileName).ToLowerInvariant();
+            if (!allowedDocExtensions.Contains(registrationFileExtension))
+            {
+                return BadRequest("Invalid registration file extension. Only .pdf, .docx, and .doc files are allowed.");
+            }
+
+            if (request.Resume.Length > 5 * 1024 * 1024)
+            {
+                return BadRequest("Registration file size exceeds the 5MB limit.");
+            }
+
             var resumeFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.Resume.FileName)}";
             var filePath = Path.Combine(uploadsFolder, resumeFileName);
             await using var stream = new FileStream(filePath, FileMode.Create);
@@ -748,24 +760,33 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 job.JobTypes = jobTypesToUpdate;
             }
 
+            if (request.Status.HasValue)
+            {
+                job.Status = request.Status.Value;
+            }
+
             // Handle Job Description File Upload
             AttachedFile? jobDescription = null;
             if (request.JobDescriptionFile != null)
             {
-                var allowedExtensions = new[] { ".pdf", ".docx" };
+                var allowedExtensions = new[] { ".pdf", ".docx", ".doc" };
                 var extension = Path.GetExtension(request.JobDescriptionFile.FileName).ToLower();
                 if (!allowedExtensions.Contains(extension))
                 {
-                    return BadRequest(new { Message = "Invalid file type. Only PDF and DOCX are allowed." });
+                    return BadRequest(new { Message = "Invalid file type. Only PDF, DOCX and DOC are allowed." });
                 }
 
-                if (request.JobDescriptionFile.Length > 5 * 1024 * 1024) // 5MB limit
+                if (request.JobDescriptionFile.Length > 5 * 1024 * 1024)
                 {
                     return BadRequest(new { Message = "File size exceeds 5MB limit." });
                 }
 
                 var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
-                Directory.CreateDirectory(uploadsFolder); // Safe if already exists
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
                 var jobDescriptionFileName = $"{Guid.NewGuid()}{extension}";
                 var filePath = Path.Combine(uploadsFolder, jobDescriptionFileName);
                 await using var stream = new FileStream(filePath, FileMode.Create);
