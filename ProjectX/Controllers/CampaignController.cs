@@ -428,4 +428,93 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpGet("{campaignId:guid}/applications")]
+    public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetCampaignApplications(
+        [FromRoute] Guid campaignId,
+        [FromQuery] string? search,
+        [FromQuery] ApplicationProcess? process,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        if (page <= 0 || pageSize <= 0)
+        {
+            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+        }
+
+        var recruiterId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty);
+        var campaign = await context.Campaigns
+            .SingleOrDefaultAsync(c => c.Id == campaignId && c.RecruiterId == recruiterId);
+
+        if (campaign == null)
+        {
+            return BadRequest(
+                new { Message = "Campaign not found or you are not authorized to view its applications." });
+        }
+
+        var query = context.Applications
+            .Include(a => a.Job)
+            .Include(a => a.Candidate)
+            .Where(a => a.Job.CampaignId == campaignId && a.Status != ApplicationStatus.Draft)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(a =>
+                a.FullName.Contains(search) ||
+                a.Email.Contains(search) ||
+                a.PhoneNumber.Contains(search) ||
+                (a.Introduction != null && a.Introduction.Contains(search)));
+        }
+
+        if (process.HasValue)
+        {
+            query = query.Where(a => a.Process == process.Value);
+        }
+
+        var totalItems = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var applications = await query
+            .OrderByDescending(a => a.Created)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var items = applications.Select(a => new ApplicationResponse
+        {
+            Id = a.Id,
+            FullName = a.FullName,
+            Email = a.Email,
+            PhoneNumber = a.PhoneNumber,
+            Introduction = a.Introduction,
+            Resume = context.AttachedFiles
+                .Where(f => f.Type == TargetType.Application && f.TargetId == a.Id)
+                .Select(f => new FileResponse
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
+                .SingleOrDefault(),
+            Status = a.Status,
+            Process = a.Process,
+            Applied = a.Applied,
+            Submitted = a.Submitted,
+            Created = a.Created,
+            Modified = a.Modified
+        });
+
+        return Ok(new
+        {
+            Items = items,
+            TotalItems = totalItems,
+            TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
+            PageNumber = page,
+            PageSize = pageSize
+        });
+    }
 }
