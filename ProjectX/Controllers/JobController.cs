@@ -544,10 +544,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 context.AttachedFiles.Add(jobDescription);
             }
 
-            // Update campaign count
-            campaign.CountJobs++;
-            context.Entry(campaign).State = EntityState.Modified;
-
             await context.SaveChangesAsync();
 
             var response = new JobResponse

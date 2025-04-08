@@ -18,7 +18,7 @@ public class Campaign : BaseEntity
     [Required] public DateTime Open { get; set; } = DateTime.UtcNow;
 
     [Required] public DateTime Close { get; set; } = DateTime.UtcNow.AddDays(7);
-    public int CountJobs { get; set; }
+    // public int CountJobs { get; set; }
 
     [Required] public Guid RecruiterId { get; set; }
 

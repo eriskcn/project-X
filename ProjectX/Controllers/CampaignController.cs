@@ -35,7 +35,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Open = request.Open,
             Close = request.Close,
             Status = request.Status,
-            CountJobs = 0,
             RecruiterId = Guid.Parse(recruiterId)
         };
 
@@ -49,7 +48,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Description = campaign.Description,
             Open = campaign.Open,
             Close = campaign.Close,
-            CountJobs = campaign.CountJobs,
             Status = campaign.Status
         };
 
@@ -61,13 +59,15 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<CampaignResponse>> GetCampaign(Guid id)
     {
         var campaign = await context.Campaigns
-            .Include(c => c.Jobs)
+            .AsNoTracking()
             .SingleOrDefaultAsync(c => c.Id == id);
 
         if (campaign == null)
         {
             return NotFound(new { Message = "Campaign not found." });
         }
+
+        var countJobs = await context.Jobs.CountAsync(j => j.CampaignId == id);
 
         var response = new CampaignResponse
         {
@@ -76,12 +76,13 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Description = campaign.Description,
             Open = campaign.Open,
             Close = campaign.Close,
-            CountJobs = campaign.CountJobs,
+            CountJobs = countJobs,
             Status = campaign.Status
         };
 
         return Ok(response);
     }
+
 
     [HttpGet]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
@@ -122,21 +123,30 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         var totalItems = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
-        var campaigns = await query
+        var campaignList = await query
             .OrderByDescending(c => c.Open)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => new CampaignResponse
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Description = c.Description,
-                Open = c.Open,
-                Close = c.Close,
-                CountJobs = c.CountJobs,
-                Status = c.Status
-            })
             .ToListAsync();
+
+        var campaignIds = campaignList.Select(c => c.Id).ToList();
+
+        var jobCounts = await context.Jobs
+            .Where(j => campaignIds.Contains(j.CampaignId))
+            .GroupBy(j => j.CampaignId)
+            .Select(g => new { CampaignId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.CampaignId, g => g.Count);
+
+        var campaigns = campaignList.Select(c => new CampaignResponse
+        {
+            Id = c.Id,
+            Name = c.Name,
+            Description = c.Description,
+            Open = c.Open,
+            Close = c.Close,
+            CountJobs = jobCounts.GetValueOrDefault(c.Id, 0),
+            Status = c.Status
+        }).ToList();
 
         return Ok(new
         {
@@ -149,6 +159,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             PageSize = pageSize
         });
     }
+
 
     [HttpPatch("{id:guid}")]
     public async Task<ActionResult<CampaignResponse>> UpdateCampaign([FromRoute] Guid id,
@@ -189,7 +200,8 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Description = campaign.Description,
             Open = campaign.Open,
             Close = campaign.Close,
-            CountJobs = campaign.CountJobs,
+            CountJobs = await context.Jobs
+                .CountAsync(j => j.CampaignId == campaign.Id),
             Status = campaign.Status
         };
 
