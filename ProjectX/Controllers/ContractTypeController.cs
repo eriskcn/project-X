@@ -211,7 +211,7 @@ public class ContractTypeController(ApplicationDbContext context) : ControllerBa
     public async Task<ActionResult<ContractTypeResponse>> RestoreContractType(Guid id)
     {
         var contractType = await context.ContractTypes.IgnoreSoftDelete()
-            .FirstOrDefaultAsync(contractType => contractType.Id == id);
+            .SingleOrDefaultAsync(contractType => contractType.Id == id);
         if (contractType == null)
         {
             return NotFound(new { Message = "Contract type not found." });

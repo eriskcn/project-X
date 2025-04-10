@@ -53,7 +53,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
             var freelanceRecruiterRoleId = await context.Roles
                 .Where(r => r.Name == "FreelanceRecruiter")
                 .Select(r => r.Id)
-                .FirstOrDefaultAsync();
+                .SingleOrDefaultAsync();
 
             var isFreelanceRecruiter = await context.UserRoles
                 .AnyAsync(ur => ur.UserId == recruiter.Id && ur.RoleId == freelanceRecruiterRoleId);
@@ -199,7 +199,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
         var freelanceRecruiterRoleId = await context.Roles
             .Where(r => r.Name == "FreelanceRecruiter")
             .Select(r => r.Id)
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync();
 
         var isFreelanceRecruiter = await context.UserRoles
             .AnyAsync(ur => ur.UserId == recruiter.Id && ur.RoleId == freelanceRecruiterRoleId);
