@@ -13,7 +13,6 @@ namespace ProjectX.Controllers;
 public class BusinessController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
 {
     [HttpPost("verify")]
-    [Authorize(Roles = "Business")]
     public async Task<IActionResult> BusinessVerify([FromForm] BusinessVerifyRequest request)
     {
         if (!ModelState.IsValid)
