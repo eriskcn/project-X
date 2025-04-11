@@ -39,9 +39,6 @@ public class User : IdentityUser<Guid>, ISoftDelete
     public ICollection<Major> FocusMajors { get; set; } = new List<Major>();
 
     [JsonIgnore] public ICollection<Post> Posts { get; set; } = new List<Post>();
-    [JsonIgnore] public ICollection<Post> LikedPosts { get; set; } = new List<Post>();
-    [JsonIgnore] public ICollection<Post> DislikedPosts { get; set; } = new List<Post>();
-
     [StringLength(64)] public string? RefreshToken { get; set; }
     public DateTime RefreshTokenExpiry { get; set; } = DateTime.UtcNow.AddDays(7);
 
