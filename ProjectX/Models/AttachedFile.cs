@@ -33,10 +33,10 @@ public class AttachedFile : BaseEntity
 public enum TargetType
 {
     Application,
-    CompanyDetail,
+    BusinessRegistration,
     JobDescription,
     FrontIdCard, 
     BackIdCard,
-    Message,
-    Post
+    MessageAttachment,
+    PostAttachment
 }

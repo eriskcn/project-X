@@ -77,7 +77,7 @@ public class AdminController(
                             Name = company.Major.Name
                         },
                         RegistrationFile = context.AttachedFiles
-                            .Where(f => f.Type == TargetType.CompanyDetail && f.TargetId == company.Id)
+                            .Where(f => f.Type == TargetType.BusinessRegistration && f.TargetId == company.Id)
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,
@@ -171,7 +171,7 @@ public class AdminController(
                             Name = company.Major.Name
                         },
                         RegistrationFile = context.AttachedFiles
-                            .Where(f => f.Type == TargetType.CompanyDetail && f.TargetId == company.Id)
+                            .Where(f => f.Type == TargetType.BusinessRegistration && f.TargetId == company.Id)
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,

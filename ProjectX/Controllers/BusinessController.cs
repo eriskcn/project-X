@@ -108,7 +108,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
         {
             Name = registrationFileName,
             Path = registrationUrl,
-            Type = TargetType.CompanyDetail,
+            Type = TargetType.BusinessRegistration,
             TargetId = companyDetail.Id,
             UploadedById = Guid.Parse(userId)
         };
