@@ -22,6 +22,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Major> Majors { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<Post> Posts { get; set; }
+    public DbSet<Like> Likes { get; set; }
     public DbSet<Skill> Skills { get; set; }
 
     public override int SaveChanges()
