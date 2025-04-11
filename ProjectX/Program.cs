@@ -126,10 +126,10 @@ builder.Services.AddCors(options =>
 // Add authorization services
 builder.Services.AddAuthorizationBuilder()
     // Add authorization services
-    .AddPolicy("BusinessVerifiedOnly", policy =>
-        policy.Requirements.Add(new BusinessVerifiedRequirement()));
+    .AddPolicy("RecruiterVerifiedOnly", policy =>
+        policy.Requirements.Add(new RecruiterVerifiedRequirement()));
 
-builder.Services.AddSingleton<IAuthorizationHandler, BusinessVerifiedHandler>();
+builder.Services.AddSingleton<IAuthorizationHandler, RecruiterVerifiedHandler>();
 
 
 // Register token service for JWT generation

@@ -314,7 +314,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
     }
 
     [HttpPatch("{id:guid}/seen")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<IActionResult> SeenApplication(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -346,7 +346,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
 
 
     [HttpPatch("{id:guid}/shortlist")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<IActionResult> ShortlistApplication(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -377,7 +377,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
     }
 
     [HttpPatch("{id:guid}/reject")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<IActionResult> RejectApplication(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -408,7 +408,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
     }
 
     [HttpPatch("{id:guid}/interview")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<IActionResult> InterviewApplication(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -439,7 +439,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
     }
 
     [HttpPatch("{id:guid}/offer")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<IActionResult> OfferApplication(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -470,7 +470,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
     }
 
     [HttpPatch("{id:guid}/hire")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<IActionResult> HireApplication(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

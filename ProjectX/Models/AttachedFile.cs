@@ -35,6 +35,8 @@ public enum TargetType
     Application,
     CompanyDetail,
     JobDescription,
+    FrontIdCard, 
+    BackIdCard,
     Message,
     Post
 }

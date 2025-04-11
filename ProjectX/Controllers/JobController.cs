@@ -404,7 +404,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     }
 
     [HttpPost]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<JobResponse>> CreateJob([FromForm] JobRequest request)
     {
         if (!ModelState.IsValid)
@@ -618,7 +618,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
 
     [HttpPatch("{id:guid}")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<JobResponse>> UpdateJob([FromRoute] Guid id, [FromForm] UpdateJobRequest request)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
@@ -887,7 +887,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult> DeleteJob(Guid id)
     {
         var job = await context.Jobs.FindAsync(id);
@@ -903,7 +903,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     }
 
     [HttpGet("{jobId:Guid}/applications")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetJobApplications([FromRoute] Guid jobId,
         [FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
@@ -987,7 +987,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     }
 
     [HttpGet("{jobId:Guid}/applications/{applicationId:Guid}")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<ApplicationResponse>> GetJobApplication([FromRoute] Guid jobId,
         [FromRoute] Guid applicationId)
     {

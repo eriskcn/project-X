@@ -6,7 +6,7 @@ public class CompanyDetailResponse
 {
     public Guid Id { get; set; }
     public required string CompanyName { get; set; }
-    public string? ShortName { get; set; }
+    public required string ShortName { get; set; }
     public required string TaxCode { get; set; }
     public required string HeadQuarterAddress { get; set; }
     public required string Logo { get; set; }

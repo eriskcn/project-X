@@ -19,7 +19,7 @@ public class TokenService(IConfiguration configuration, UserManager<User> userMa
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim("BusinessVerified", user.BusinessVerified.ToString())
+            new Claim("RecruiterVerified", user.RecruiterVerified.ToString())
         };
 
         claims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));
@@ -43,27 +43,5 @@ public class TokenService(IConfiguration configuration, UserManager<User> userMa
     public string GenerateRefreshToken()
     {
         return Guid.NewGuid().ToString();
-    }
-
-    public bool IsAccessTokenExpired(string accessToken)
-    {
-        var tokenHandler = new JwtSecurityTokenHandler();
-
-        if (tokenHandler.ReadToken(accessToken) is not JwtSecurityToken jwtToken)
-            throw new ArgumentException("Invalid access token");
-
-        var expirationDate = jwtToken.ValidTo;
-        return expirationDate < DateTime.UtcNow;
-    }
-
-    public bool IsBusinessVerified(string accessToken)
-    {
-        var tokenHandler = new JwtSecurityTokenHandler();
-
-        if (tokenHandler.ReadToken(accessToken) is not JwtSecurityToken jwtToken)
-            throw new ArgumentException("Invalid access token");
-
-        var businessVerified = jwtToken.Claims.FirstOrDefault(c => c.Type == "BusinessVerified")?.Value;
-        return businessVerified == "True";
     }
 }

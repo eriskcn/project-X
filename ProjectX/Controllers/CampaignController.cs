@@ -14,7 +14,7 @@ namespace ProjectX.Controllers;
 public class CampaignController(ApplicationDbContext context) : ControllerBase
 {
     [HttpPost]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<CampaignResponse>> CreateCampaign([FromBody] CampaignRequest request)
     {
         if (!ModelState.IsValid)
@@ -85,7 +85,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
 
     [HttpGet]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "BusinessVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
         [FromQuery] string? search, [FromQuery] string? status, [FromQuery] bool? newApplications,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10)

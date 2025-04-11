@@ -6,7 +6,7 @@ public class CompanyRecruiterResponse
 {
     public Guid Id { get; set; }
     public string CompanyName { get; set; } = string.Empty;
-    public string? ShortName { get; set; }
+    public string ShortName { get; set; } = string.Empty;
     public string TaxCode { get; set; } = string.Empty;
     public string HeadQuarterAddress { get; set; } = string.Empty;
     public string Logo { get; set; } = string.Empty;

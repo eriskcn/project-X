@@ -30,9 +30,14 @@ public class AuthController(
             return BadRequest(new { Message = "Email is already in use" });
         }
 
+        // if (string.Equals(request.RoleName, "Admin", StringComparison.OrdinalIgnoreCase))
+        // {
+        //     return BadRequest(new { Message = "Admin role cannot be assigned via this endpoint" });
+        // }
+
         if (!await roleManager.RoleExistsAsync(request.RoleName))
         {
-            await roleManager.CreateAsync(new Role { Name = request.RoleName });
+            return BadRequest(new { Message = "Role not found" });
         }
 
         var user = new User
@@ -175,59 +180,82 @@ public class AuthController(
     }
 
 
-    [HttpPost("google-sign-in")]
-    public async Task<IActionResult> GoogleSignIn([FromBody] GoogleSignInRequest request)
+    [HttpPost("google-auth")]
+    public async Task<IActionResult> GoogleAuth([FromBody] GoogleAuthRequest request)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        var payload = await googleAuthService.VerifyGoogleTokenAsync(request.IdToken);
-
-        var user = await userManager.FindByEmailAsync(payload.Email);
-        if (user == null)
+        if (string.Equals(request.RoleName, "Admin", StringComparison.OrdinalIgnoreCase))
         {
-            user = new User
-            {
-                UserName = payload.Email,
-                Email = payload.Email,
-                FullName = payload.Name,
-                ProfilePicture = payload.Picture,
-                Provider = "Google",
-                OAuthId = payload.Subject,
-                Modified = DateTime.UtcNow
-            };
-
-            var result = await userManager.CreateAsync(user);
-            if (!result.Succeeded)
-            {
-                return BadRequest(result.Errors);
-            }
+            return BadRequest(new { Message = "Admin role cannot be assigned via this endpoint" });
         }
 
-        var accessToken = await tokenService.GenerateAccessTokenAsync(user);
-        var refreshToken = tokenService.GenerateRefreshToken();
+        var payload = await googleAuthService.VerifyGoogleTokenAsync(request.IdToken);
 
-        user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
-        user.LoginAttempts++;
-        await userManager.UpdateAsync(user);
-
-        Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
         {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-        });
+            var user = await userManager.FindByEmailAsync(payload.Email);
+            if (user == null)
+            {
+                user = new User
+                {
+                    UserName = payload.Email,
+                    Email = payload.Email,
+                    FullName = payload.Name,
+                    ProfilePicture = payload.Picture,
+                    Provider = "Google",
+                    OAuthId = payload.Subject,
+                    Modified = DateTime.UtcNow
+                };
 
-        Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
+                var result = await userManager.CreateAsync(user);
+                if (!result.Succeeded)
+                {
+                    return BadRequest(result.Errors);
+                }
+
+                if (!await roleManager.RoleExistsAsync(request.RoleName))
+                {
+                    return BadRequest(new { Message = "Role not found" });
+                }
+
+                await userManager.AddToRoleAsync(user, request.RoleName);
+            }
+
+            var accessToken = await tokenService.GenerateAccessTokenAsync(user);
+            var refreshToken = tokenService.GenerateRefreshToken();
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+            user.LoginAttempts++;
+            await userManager.UpdateAsync(user);
+
+            await transaction.CommitAsync();
+
+            Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+            });
+
+            Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+            });
+
+            return Ok(new { Message = "Sign-in successful" });
+        }
+        catch (Exception ex)
         {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-        });
-
-        return Ok(new { Message = "Sign-in successful" });
+            await transaction.RollbackAsync();
+            return StatusCode(500, new { Message = "An error occurred during sign-in", Error = ex.Message });
+        }
     }
 }

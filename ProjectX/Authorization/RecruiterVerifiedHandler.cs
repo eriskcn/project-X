@@ -3,19 +3,19 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace ProjectX.Authorization;
 
-public class BusinessVerifiedHandler : AuthorizationHandler<BusinessVerifiedRequirement>
+public class RecruiterVerifiedHandler : AuthorizationHandler<RecruiterVerifiedRequirement>
 {
     protected override Task HandleRequirementAsync(AuthorizationHandlerContext context,
-        BusinessVerifiedRequirement requirement)
+        RecruiterVerifiedRequirement requirement)
     {
         var roles = context.User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
 
-        if (roles.Contains("Business"))
+        if (roles.Contains("Business") || roles.Contains("FreelanceRecruiter"))
         {
-            var businessVerifiedClaim = context.User.FindFirst("BusinessVerified")?.Value;
-            var isBusinessVerified = businessVerifiedClaim != null && bool.Parse(businessVerifiedClaim);
+            var recruiterVerifiedClaim = context.User.FindFirst("RecruiterVerified")?.Value;
+            var isRecruiterVerified = recruiterVerifiedClaim != null && bool.Parse(recruiterVerifiedClaim);
 
-            if (isBusinessVerified)
+            if (isRecruiterVerified)
             {
                 context.Succeed(requirement);
             }

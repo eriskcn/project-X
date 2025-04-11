@@ -6,6 +6,4 @@ public interface ITokenService
 {
     Task<string> GenerateAccessTokenAsync(User user);
     string GenerateRefreshToken();
-    
-    bool IsAccessTokenExpired(string accessToken);
 }

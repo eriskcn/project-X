@@ -13,7 +13,7 @@ public class CompanyDetail : BaseEntity
 
     [Required] [StringLength(450)] public required string CompanyName { get; set; }
 
-    [StringLength(10)] public string? ShortName { get; set; }
+    [StringLength(10)] public required string ShortName { get; set; }
 
     [Required] [StringLength(10)] public required string TaxCode { get; set; }
 

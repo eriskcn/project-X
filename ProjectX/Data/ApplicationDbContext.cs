@@ -11,6 +11,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<AttachedFile> AttachedFiles { get; set; }
     public DbSet<Campaign> Campaigns { get; set; }
     public DbSet<CompanyDetail> CompanyDetails { get; set; }
+    public DbSet<FreelanceRecruiterDetail> FreelanceRecruiterDetails { get; set; }
     public DbSet<ContractType> ContractTypes { get; set; }
     public DbSet<Conversation> Conversations { get; set; }
     public DbSet<Education> Educations { get; set; }
