@@ -40,7 +40,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
             GitHubProfile = user.GitHubProfile,
             LinkedInProfile = user.LinkedInProfile,
             Roles = userRoles,
-            BusinessVerified = user.BusinessVerified,
+            RecruiterVerified = user.RecruiterVerified,
             BusinessPoints = user.BusinessPoints,
             IsExternalLogin = user.IsExternalLogin,
             Provider = user.Provider,

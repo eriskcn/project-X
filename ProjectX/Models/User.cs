@@ -18,13 +18,14 @@ public class User : IdentityUser<Guid>, ISoftDelete
     [StringLength(100)] public string? OAuthId { get; set; }
     public bool IsExternalLogin => !string.IsNullOrEmpty(Provider);
 
-    public bool BusinessVerified { get; set; } = false;
+    public bool RecruiterVerified { get; set; }
     public double BusinessPoints { get; set; } = 0;
 
     public bool IsDeleted { get; set; }
     public DateTime? Deleted { get; set; }
 
     [JsonIgnore] public CompanyDetail? CompanyDetail { get; set; }
+    [JsonIgnore] public FreelanceRecruiterDetail? FreelanceRecruiterDetail { get; set; }
 
     [InverseProperty(nameof(Skill.Users))]
     [JsonIgnore]
