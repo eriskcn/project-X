@@ -359,6 +359,7 @@ public class AdminController(
         return Ok(verification);
     }
 
+    [HttpPatch("freelance-recruiter-verifications/{userId:guid}")]
     public async Task<IActionResult> VerifyFreelanceRecruiter(Guid userId)
     {
         var user = await context.Users.FindAsync(userId);
