@@ -32,6 +32,7 @@ public class User : IdentityUser<Guid>, ISoftDelete
     public ICollection<Skill> Skills { get; set; } = new List<Skill>();
 
     [JsonIgnore] public ICollection<Message> SentMessages { get; set; } = new List<Message>();
+    [JsonIgnore] public ICollection<Message> ReceivedMessages { get; set; } = new List<Message>();
 
     [JsonIgnore]
     [InverseProperty(nameof(Major.Users))]
