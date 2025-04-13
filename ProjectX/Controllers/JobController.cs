@@ -357,10 +357,10 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             context.Applications.Add(application);
             await context.SaveChangesAsync();
 
-            var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
-            if (!Directory.Exists(uploadsFolder))
+            var resumesFolder = Path.Combine(env.WebRootPath, "resumes");
+            if (!Directory.Exists(resumesFolder))
             {
-                Directory.CreateDirectory(uploadsFolder);
+                Directory.CreateDirectory(resumesFolder);
             }
 
             var allowedDocExtensions = new[] { ".pdf", ".docx", ".doc" };
@@ -376,7 +376,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             }
 
             var resumeFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.Resume.FileName)}";
-            var filePath = Path.Combine(uploadsFolder, resumeFileName);
+            var filePath = Path.Combine(resumesFolder, resumeFileName);
             await using var stream = new FileStream(filePath, FileMode.Create);
             await request.Resume.CopyToAsync(stream);
 
@@ -517,15 +517,15 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             // Process job description file if uploaded
             if (request.JobDescriptionFile != null)
             {
-                var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
+                var jobDescriptionsFolder = Path.Combine(env.WebRootPath, "jobDescriptions");
+                if (!Directory.Exists(jobDescriptionsFolder))
                 {
-                    Directory.CreateDirectory(uploadsFolder);
+                    Directory.CreateDirectory(jobDescriptionsFolder);
                 }
 
                 var jobDescriptionFileName =
                     $"{Guid.NewGuid()}{Path.GetExtension(request.JobDescriptionFile.FileName)}";
-                var filePath = Path.Combine(uploadsFolder, jobDescriptionFileName);
+                var filePath = Path.Combine(jobDescriptionsFolder, jobDescriptionFileName);
 
                 await using (var stream = new FileStream(filePath, FileMode.Create))
                 {
@@ -777,14 +777,14 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     return BadRequest(new { Message = "File size exceeds 5MB limit." });
                 }
 
-                var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
+                var jobDescriptionsFolder = Path.Combine(env.WebRootPath, "jobDescriptions");
+                if (!Directory.Exists(jobDescriptionsFolder))
                 {
-                    Directory.CreateDirectory(uploadsFolder);
+                    Directory.CreateDirectory(jobDescriptionsFolder);
                 }
 
                 var jobDescriptionFileName = $"{Guid.NewGuid()}{extension}";
-                var filePath = Path.Combine(uploadsFolder, jobDescriptionFileName);
+                var filePath = Path.Combine(jobDescriptionsFolder, jobDescriptionFileName);
                 await using var stream = new FileStream(filePath, FileMode.Create);
                 await request.JobDescriptionFile.CopyToAsync(stream);
 

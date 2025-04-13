@@ -65,8 +65,8 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
             await request.BackIdCard.CopyToAsync(stream);
         }
 
-        var frontUrl = $"/idCards/{frontIdCardFileName}";
-        var backUrl = $"/idCards/{backIdCardFileName}";
+        var frontUrl = Path.Combine(idCardsFolder, frontIdCardFileName);
+        var backUrl = Path.Combine(idCardsFolder, backIdCardFileName);
 
         var freelanceRecruiterDetail = new FreelanceRecruiterDetail
         {

@@ -68,10 +68,10 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
         user.GitHubProfile = request.GitHubProfile ?? user.GitHubProfile;
         user.LinkedInProfile = request.LinkedInProfile ?? user.LinkedInProfile;
 
-        var imagesFolder = Path.Combine(env.WebRootPath, "images");
-        if (!Directory.Exists(imagesFolder))
+        var avatarsFolder = Path.Combine(env.WebRootPath, "avatars");
+        if (!Directory.Exists(avatarsFolder))
         {
-            Directory.CreateDirectory(imagesFolder);
+            Directory.CreateDirectory(avatarsFolder);
         }
 
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
@@ -88,11 +88,12 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
                 return BadRequest(new { Message = "File size too large" });
             }
 
-            var profilePicturePath = Path.Combine(imagesFolder, request.ProfilePicture.FileName);
+            var avatarFileName = $"{Guid.NewGuid()}{ext}";
+            var profilePicturePath = Path.Combine(avatarsFolder, avatarFileName);
             await using var stream = new FileStream(profilePicturePath, FileMode.Create);
             await request.ProfilePicture.CopyToAsync(stream);
 
-            user.ProfilePicture = $"/images/{request.ProfilePicture.FileName}";
+            user.ProfilePicture = profilePicturePath;
         }
 
         await context.SaveChangesAsync();

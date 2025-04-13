@@ -57,12 +57,12 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
             await request.Logo.CopyToAsync(stream);
         }
 
-        var logoUrl = $"/logos/{logoFileName}";
+        var logoUrl = Path.Combine(logosFolder, logoFileName);
 
-        var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
-        if (!Directory.Exists(uploadsFolder))
+        var businessRegistrationsFolder = Path.Combine(env.WebRootPath, "businessRegistrations");
+        if (!Directory.Exists(businessRegistrationsFolder))
         {
-            Directory.CreateDirectory(uploadsFolder);
+            Directory.CreateDirectory(businessRegistrationsFolder);
         }
 
         var allowedDocExtensions = new[] { ".pdf", ".docx", ".doc" };
@@ -78,12 +78,13 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
         }
 
         var registrationFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.RegistrationFile.FileName)}";
-        await using (var stream = new FileStream(Path.Combine(uploadsFolder, registrationFileName), FileMode.Create))
+        await using (var stream =
+                     new FileStream(Path.Combine(businessRegistrationsFolder, registrationFileName), FileMode.Create))
         {
             await request.RegistrationFile.CopyToAsync(stream);
         }
 
-        var registrationUrl = $"/uploads/{registrationFileName}";
+        var registrationUrl = Path.Combine(businessRegistrationsFolder, registrationFileName);
 
         var companyDetail = new CompanyDetail
         {

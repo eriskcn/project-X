@@ -297,19 +297,19 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 }
 
                 // Prepare upload directory
-                var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
+                var postAttachmentsFolder = Path.Combine(env.WebRootPath, "postAttachments");
+                if (!Directory.Exists(postAttachmentsFolder))
                 {
-                    Directory.CreateDirectory(uploadsFolder);
+                    Directory.CreateDirectory(postAttachmentsFolder);
                 }
 
                 var fileName = $"{Guid.NewGuid()}{fileExtension}";
-                filePath = Path.Combine(uploadsFolder, fileName);
+                filePath = Path.Combine(postAttachmentsFolder, fileName);
 
                 attachedFile = new AttachedFile
                 {
                     Name = request.AttachedFile.FileName,
-                    Path = $"/uploads/{fileName}",
+                    Path = filePath,
                     Type = TargetType.PostAttachment,
                     TargetId = comment.Id,
                     Uploaded = DateTime.UtcNow
@@ -747,19 +747,19 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     return BadRequest("File size exceeds the 5MB limit.");
                 }
 
-                var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
+                var postAttachmentsFolder = Path.Combine(env.WebRootPath, "postAttachments");
+                if (!Directory.Exists(postAttachmentsFolder))
                 {
-                    Directory.CreateDirectory(uploadsFolder);
+                    Directory.CreateDirectory(postAttachmentsFolder);
                 }
 
                 var fileName = $"{Guid.NewGuid()}{fileExtension}";
-                filePath = Path.Combine(uploadsFolder, fileName);
+                filePath = Path.Combine(postAttachmentsFolder, fileName);
 
                 var attachedFile = new AttachedFile
                 {
                     Name = request.AttachedFile.FileName,
-                    Path = $"/uploads/{fileName}",
+                    Path = filePath,
                     Type = TargetType.PostAttachment,
                     TargetId = post.Id,
                     Uploaded = DateTime.UtcNow
@@ -845,7 +845,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 var attachedFile = new AttachedFile
                 {
                     Name = request.AttachedFile.FileName,
-                    Path = $"/uploads/{fileName}",
+                    Path = filePath,
                     Type = TargetType.PostAttachment,
                     TargetId = post.Id,
                     Uploaded = DateTime.UtcNow

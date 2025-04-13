@@ -13,7 +13,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<CompanyDetail> CompanyDetails { get; set; }
     public DbSet<FreelanceRecruiterDetail> FreelanceRecruiterDetails { get; set; }
     public DbSet<ContractType> ContractTypes { get; set; }
-    public DbSet<Conversation> Conversations { get; set; }
     public DbSet<Education> Educations { get; set; }
     public DbSet<Job> Jobs { get; set; }
     public DbSet<JobLevel> JobLevels { get; set; }
