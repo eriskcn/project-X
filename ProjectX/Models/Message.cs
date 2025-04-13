@@ -22,11 +22,11 @@ public class Message : BaseEntity
     [Required] public Guid SenderId { get; set; }
     [JsonIgnore] [ForeignKey("SenderId")] public User Sender { get; set; } = null!;
 
-    [Required] public Guid ConversationId { get; set; }
+    [Required] public Guid ReceiverId { get; set; }
 
     [JsonIgnore]
-    [ForeignKey("ConversationId")]
-    public Conversation Conversation { get; set; } = null!;
+    [ForeignKey("ReceiverId")]
+    public User Receiver { get; set; } = null!;
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
 

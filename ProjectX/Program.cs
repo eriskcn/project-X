@@ -11,11 +11,13 @@ using ProjectX.Data;
 using ProjectX.Models;
 using ProjectX.Services;
 using DotNetEnv;
+using ProjectX.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Register configuration for dependency injection
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+builder.Services.AddSingleton<ConnectionMapping<Guid>>();
 
 // Configure Identity options
 builder.Services.Configure<IdentityOptions>(options =>
@@ -136,6 +138,7 @@ builder.Services.AddSingleton<IAuthorizationHandler, RecruiterVerifiedHandler>()
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 
 // Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
@@ -203,6 +206,7 @@ app.UseAuthentication();
 // Enable authorization
 app.UseAuthorization();
 
+app.MapHub<MessageHub>("/hubs/message");
 app.MapControllers();
 
 app.Run();
