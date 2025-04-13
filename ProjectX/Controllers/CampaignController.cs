@@ -211,9 +211,12 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
     [HttpGet("{campaignId:guid}/jobs")]
     public async Task<ActionResult<IEnumerable<JobResponse>>> GetCampaignJobs([FromRoute] Guid campaignId,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null,
-        [FromQuery] List<string>? jobLevels = null, [FromQuery] List<string>? jobTypes = null,
-        [FromQuery] List<string>? contractTypes = null)
+        [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 10, 
+        [FromQuery] string? search = null,
+        [FromQuery] List<Guid>? jobLevels = null,
+        [FromQuery] List<Guid>? jobTypes = null,
+        [FromQuery] List<Guid>? contractTypes = null)
     {
         if (page <= 0 || pageSize <= 0)
         {
@@ -246,17 +249,17 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
         if (jobLevels is { Count: > 0 })
         {
-            query = query.Where(j => jobLevels.Any(l => j.JobLevels.Any(jl => jl.Name == l)));
+            query = query.Where(j => jobLevels.Any(l => j.JobLevels.Any(jl => jl.Id == l)));
         }
 
         if (jobTypes is { Count: > 0 })
         {
-            query = query.Where(j => jobTypes.Any(t => j.JobTypes.Any(jt => jt.Name == t)));
+            query = query.Where(j => jobTypes.Any(t => j.JobTypes.Any(jt => jt.Id == t)));
         }
 
         if (contractTypes is { Count: > 0 })
         {
-            query = query.Where(j => contractTypes.Any(t => j.ContractTypes.Any(ct => ct.Name == t)));
+            query = query.Where(j => contractTypes.Any(t => j.ContractTypes.Any(ct => ct.Id == t)));
         }
 
         var totalItems = await query.CountAsync();
