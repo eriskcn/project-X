@@ -19,7 +19,7 @@ public class AdminController(
     [HttpGet("business-verifications")]
     public async Task<ActionResult<IEnumerable<BusinessVerifyResponse>>> GetBusinessVerifications(
         [FromQuery] string? search,
-        [FromQuery] string? filter,
+        [FromQuery] bool unverified = false,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -94,7 +94,7 @@ public class AdminController(
             query = query.Where(v => v.Company.CompanyName.Contains(search));
         }
 
-        if (filter == "unverified")
+        if (unverified)
         {
             query = query.Where(v => !v.BusinessVerified);
         }
@@ -211,7 +211,7 @@ public class AdminController(
     [HttpGet("freelance-recruiter-verifications")]
     public async Task<ActionResult<IEnumerable<FreelanceRecruiterVerifyResponse>>> GetFreelanceRecruiterVerifications(
         [FromQuery] string? search,
-        [FromQuery] string? filter,
+        [FromQuery] bool unverified = false,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -278,7 +278,7 @@ public class AdminController(
             query = query.Where(q => q.FullName.Contains(search));
         }
 
-        if (filter == "unverified")
+        if (unverified)
         {
             query = query.Where(q => !q.FreelanceRecruiterVerified);
         }
