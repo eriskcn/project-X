@@ -5,7 +5,7 @@ namespace ProjectX.DTOs;
 public class BusinessVerifyRequest
 {
     public required string CompanyName { get; set; }
-    public string? ShortName { get; set; }
+    public required string ShortName { get; set; }
     public required string HeadQuarterAddress { get; set; }
     public required string TaxCode { get; set; }
     public required IFormFile Logo { get; set; }
