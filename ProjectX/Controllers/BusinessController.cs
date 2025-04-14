@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.Helpers;
 using ProjectX.Models;
 
 namespace ProjectX.Controllers;
@@ -105,7 +106,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
             }
 
             var registrationFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.RegistrationFile.FileName)}";
-            var registrationUrl = $"/businessRegistrations/{registrationFileName}";
+            var registrationUrl = Path.Combine(businessRegistrationsFolder, registrationFileName);
 
             try
             {
@@ -124,7 +125,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 ShortName = request.ShortName,
                 TaxCode = request.TaxCode,
                 HeadQuarterAddress = request.HeadQuarterAddress,
-                Logo = logoUrl,
+                Logo = PathHelper.GetRelativePathFromAbsolute(logoUrl, env.WebRootPath),
                 ContactEmail = request.ContactEmail,
                 ContactPhone = request.ContactPhone,
                 Website = request.Website ?? string.Empty,
@@ -139,7 +140,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
             var registrationAttachedFile = new AttachedFile
             {
                 Name = registrationFileName,
-                Path = registrationUrl,
+                Path = PathHelper.GetRelativePathFromAbsolute(registrationUrl, env.WebRootPath),
                 Type = TargetType.BusinessRegistration,
                 TargetId = companyDetail.Id,
                 UploadedById = Guid.Parse(userId)

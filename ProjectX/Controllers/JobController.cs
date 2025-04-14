@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.Helpers;
 using ProjectX.Models;
 
 namespace ProjectX.Controllers;
@@ -384,7 +385,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             {
                 Id = Guid.NewGuid(),
                 Name = resumeFileName,
-                Path = filePath,
+                Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                 Type = TargetType.Application,
                 TargetId = application.Id,
                 UploadedById = Guid.Parse(userId)
@@ -536,7 +537,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 {
                     Id = Guid.NewGuid(),
                     Name = jobDescriptionFileName,
-                    Path = filePath,
+                    Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = TargetType.JobDescription,
                     TargetId = job.Id,
                     UploadedById = Guid.Parse(recruiterId)
@@ -798,7 +799,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 {
                     Id = Guid.NewGuid(),
                     Name = jobDescriptionFileName,
-                    Path = filePath,
+                    Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = TargetType.JobDescription,
                     TargetId = job.Id,
                     UploadedById = parsedUserId

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.Helpers;
 using ProjectX.Models;
 
 namespace ProjectX.Controllers;
@@ -77,7 +78,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
         var frontIdCard = new AttachedFile
         {
             Name = frontIdCardFileName,
-            Path = frontUrl,
+            Path = PathHelper.GetRelativePathFromAbsolute(frontUrl, env.WebRootPath),
             Type = TargetType.FrontIdCard,
             TargetId = freelanceRecruiterDetail.Id,
             UploadedById = user.Id
@@ -86,7 +87,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
         var backIdCard = new AttachedFile
         {
             Name = backIdCardFileName,
-            Path = backUrl,
+            Path = PathHelper.GetRelativePathFromAbsolute(backUrl, env.WebRootPath),
             Type = TargetType.BackIdCard,
             TargetId = freelanceRecruiterDetail.Id,
             UploadedById = user.Id

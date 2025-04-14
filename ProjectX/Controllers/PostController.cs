@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.Helpers;
 using ProjectX.Models;
 
 namespace ProjectX.Controllers;
@@ -309,7 +310,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 attachedFile = new AttachedFile
                 {
                     Name = request.AttachedFile.FileName,
-                    Path = filePath,
+                    Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = TargetType.PostAttachment,
                     TargetId = comment.Id,
                     Uploaded = DateTime.UtcNow
@@ -759,7 +760,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 var attachedFile = new AttachedFile
                 {
                     Name = request.AttachedFile.FileName,
-                    Path = filePath,
+                    Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = TargetType.PostAttachment,
                     TargetId = post.Id,
                     Uploaded = DateTime.UtcNow
@@ -845,7 +846,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 var attachedFile = new AttachedFile
                 {
                     Name = request.AttachedFile.FileName,
-                    Path = filePath,
+                    Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = TargetType.PostAttachment,
                     TargetId = post.Id,
                     Uploaded = DateTime.UtcNow

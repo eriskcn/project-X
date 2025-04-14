@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.Helpers;
 using ProjectX.Models;
 
 namespace ProjectX.Hubs;
@@ -84,7 +85,7 @@ public class MessageHub(
             var file = new AttachedFile
             {
                 Name = request.AttachedFile.FileName,
-                Path = filePath,
+                Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                 Type = TargetType.MessageAttachment,
                 TargetId = message.Id,
                 Uploaded = DateTime.UtcNow
