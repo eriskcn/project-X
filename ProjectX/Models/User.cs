@@ -24,7 +24,10 @@ public class User : IdentityUser<Guid>, ISoftDelete
     public bool IsDeleted { get; set; }
     public DateTime? Deleted { get; set; }
 
-    [JsonIgnore] public CompanyDetail? CompanyDetail { get; set; }
+    [InverseProperty(nameof(CompanyDetail.Company))]
+    [JsonIgnore]
+    public CompanyDetail? CompanyDetail { get; set; }
+
     [JsonIgnore] public FreelanceRecruiterDetail? FreelanceRecruiterDetail { get; set; }
 
     [InverseProperty(nameof(Skill.Users))]

@@ -37,9 +37,13 @@ public class CompanyDetail : BaseEntity
     [Required] [StringLength(2500)] public required string Introduction { get; set; }
 
     [Required] public Guid CompanyId { get; set; }
-    [JsonIgnore] [ForeignKey("CompanyId")] public User Company { get; set; } = null!;
 
-    [Required] public Guid LocationId { get; set; }
+    [InverseProperty(nameof(User.CompanyDetail))]
+    [JsonIgnore]
+    [ForeignKey("CompanyId")]
+    public User Company { get; set; } = null!;
+
+    [Required] public required Guid LocationId { get; set; }
 
     [JsonIgnore]
     [ForeignKey("LocationId")]

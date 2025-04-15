@@ -115,6 +115,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(m => m.Companies)
             .UsingEntity(cd => cd.ToTable("CompanyDetailMajors"));
 
+        builder.Entity<User>()
+            .HasOne(u => u.CompanyDetail)
+            .WithOne(cd => cd.Company)
+            .HasForeignKey<CompanyDetail>(cd => cd.CompanyId)
+            .IsRequired();
+
+        builder.Entity<Location>()
+            .HasMany(l => l.Companies)
+            .WithOne(cd => cd.Location)
+            .HasForeignKey(cd => cd.LocationId)
+            .IsRequired();
+
         builder.Entity<Role>().HasData(
             new Role { Id = Guid.NewGuid(), Name = "Admin", NormalizedName = "ADMIN" },
             new Role { Id = Guid.NewGuid(), Name = "Candidate", NormalizedName = "CANDIDATE" },
