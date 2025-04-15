@@ -143,9 +143,9 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<SkillResponse>> UpdateSkill(
         Guid id, [FromBody] UpdateSkillRequest request)
     {
-        if (request.Name == null && request.Description == null)
+        if (!ModelState.IsValid)
         {
-            return BadRequest(new { Message = "At least one field must be provided for update." });
+            return BadRequest(ModelState);
         }
 
         var skill = await context.Skills.FindAsync(id);

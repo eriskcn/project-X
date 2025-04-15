@@ -1,12 +1,24 @@
+using System.ComponentModel.DataAnnotations;
 using ProjectX.Models;
 
 namespace ProjectX.DTOs;
 
 public class CampaignRequest
 {
+    [Required]
+    [StringLength(100)]
     public required string Name { get; set; }
+
+    [Required]
+    [StringLength(2500)]
     public required string Description { get; set; }
-    public DateTime Open { get; set; }
-    public DateTime Close { get; set; }
-    public CampaignStatus Status { get; set; }
+
+    [Required]
+    public required DateTime Open { get; set; }
+
+    [Required]
+    public required DateTime Close { get; set; }
+
+    [Required]
+    public required CampaignStatus Status { get; set; }
 }

@@ -1,9 +1,10 @@
+using System.ComponentModel.DataAnnotations;
 using ProjectX.Models;
 
 namespace ProjectX.DTOs;
 
 public class UpdateLocationRequest
 {
-    public string? Name { set; get; }
+    [Required] [StringLength(50)] public string? Name { get; set; }
     public Region? Region { set; get; }
 }
