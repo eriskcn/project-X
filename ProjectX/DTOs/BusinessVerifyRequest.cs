@@ -1,21 +1,38 @@
+using System.ComponentModel.DataAnnotations;
 using ProjectX.Models;
 
 namespace ProjectX.DTOs;
 
 public class BusinessVerifyRequest
 {
-    public required string CompanyName { get; set; }
-    public required string ShortName { get; set; }
-    public required string HeadQuarterAddress { get; set; }
-    public required string TaxCode { get; set; }
-    public required IFormFile Logo { get; set; }
+    [Required] [StringLength(450)] public required string CompanyName { get; set; }
+
+    [Required] [StringLength(10)] public required string ShortName { get; set; }
+
+    [Required] [StringLength(256)] public required string HeadQuarterAddress { get; set; }
+
+    [Required] [StringLength(10)] public required string TaxCode { get; set; }
+
+    [Required] public required IFormFile Logo { get; set; }
+
+    [Required]
+    [EmailAddress]
+    [StringLength(50)]
     public required string ContactEmail { get; set; }
-    public required string ContactPhone { get; set; }
-    public string? Website { get; set; }
-    public required int FoundedYear { get; set; }
+
+    [Required] [Phone] [StringLength(10)] public required string ContactPhone { get; set; }
+
+    [StringLength(256)] public string? Website { get; set; }
+
+    [Required] [Range(1900, 2100)] public required int FoundedYear { get; set; }
+
     public CompanySize Size { get; set; }
-    public required string Introduction { get; set; }
-    public required Guid LocationId { get; set; }
-    public required ICollection<Guid> MajorIds { get; set; } = new List<Guid>();
-    public required IFormFile RegistrationFile { get; set; }
+
+    [Required] [StringLength(2500)] public required string Introduction { get; set; }
+
+    [Required] public required Guid LocationId { get; set; }
+
+    [Required] public required ICollection<Guid> MajorIds { get; set; } = new List<Guid>();
+
+    [Required] public required IFormFile RegistrationFile { get; set; }
 }
