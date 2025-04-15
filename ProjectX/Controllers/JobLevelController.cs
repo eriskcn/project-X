@@ -106,18 +106,18 @@ public class JobLevelController(ApplicationDbContext context) : ControllerBase
             return BadRequest(ModelState);
         }
 
-        var jobType = new JobType
+        var jobLevel = new JobLevel
         {
             Name = request.Name
         };
 
-        context.JobTypes.Add(jobType);
+        context.JobLevels.Add(jobLevel);
         await context.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(GetJobLevel), new { id = jobType.Id }, new JobTypeResponse
+        return CreatedAtAction(nameof(GetJobLevel), new { id = jobLevel.Id }, new JobLevelResponse
         {
-            Id = jobType.Id,
-            Name = jobType.Name
+            Id = jobLevel.Id,
+            Name = jobLevel.Name
         });
     }
 
