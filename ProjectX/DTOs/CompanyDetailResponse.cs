@@ -17,7 +17,7 @@ public class CompanyDetailResponse
     public CompanySize Size { get; set; }
     public required string Introduction { get; set; }
     public LocationResponse Location { get; set; } = null!;
-    public MajorResponse Major { get; set; } = null!;
+    public ICollection<MajorResponse> Majors { get; set; } = new List<MajorResponse>();
     public FileResponse? RegistrationFile { get; set; }
     public DateTime Created { get; set; }
     public DateTime Modified { get; set; }

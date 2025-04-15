@@ -110,6 +110,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(m => m.Users)
             .UsingEntity(u => u.ToTable("UserFocusMajors"));
 
+        builder.Entity<CompanyDetail>()
+            .HasMany(cd => cd.Majors)
+            .WithMany(m => m.Companies)
+            .UsingEntity(cd => cd.ToTable("CompanyDetailMajors"));
+
         builder.Entity<Role>().HasData(
             new Role { Id = Guid.NewGuid(), Name = "Admin", NormalizedName = "ADMIN" },
             new Role { Id = Guid.NewGuid(), Name = "Candidate", NormalizedName = "CANDIDATE" },

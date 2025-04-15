@@ -16,6 +16,6 @@ public class BusinessVerifyRequest
     public CompanySize Size { get; set; }
     public required string Introduction { get; set; }
     public required Guid LocationId { get; set; }
-    public required Guid MajorId { get; set; }
+    public required ICollection<Guid> MajorIds { get; set; } = new List<Guid>();
     public required IFormFile RegistrationFile { get; set; }
 }

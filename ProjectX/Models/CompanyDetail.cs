@@ -26,13 +26,9 @@ public class CompanyDetail : BaseEntity
     [StringLength(50)]
     public required string ContactEmail { get; set; }
 
-    [Required]
-    [Phone]
-    [StringLength(10)]
-    public required string ContactPhone { get; set; }
-    
-    [StringLength(256)]
-    public string? Website { get; set; }
+    [Required] [Phone] [StringLength(10)] public required string ContactPhone { get; set; }
+
+    [StringLength(256)] public string? Website { get; set; }
 
     [Range(1900, 2100)] public required int FoundedYear { get; set; }
 
@@ -49,8 +45,7 @@ public class CompanyDetail : BaseEntity
     [ForeignKey("LocationId")]
     public Location Location { get; set; } = null!;
 
-    [Required] public Guid MajorId { get; set; }
-    [JsonIgnore] [ForeignKey("MajorId")] public Major Major { get; set; } = null!;
+    [JsonIgnore] public ICollection<Major> Majors { get; set; } = new List<Major>();
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
 

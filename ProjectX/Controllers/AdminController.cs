@@ -26,7 +26,9 @@ public class AdminController(
         if (page <= 0 || pageSize <= 0)
         {
             return BadRequest(new
-                { Message = "Page number and page size must be zero or greater." });
+            {
+                Message = "Page number and page size must be greater than zero."
+            });
         }
 
         var businessRole = await roleManager.Roles.SingleOrDefaultAsync(r => r.Name == "Business");
@@ -45,68 +47,81 @@ public class AdminController(
             .Join(context.CompanyDetails,
                 user => user.Id,
                 company => company.CompanyId,
-                (user, company) => new BusinessVerifyResponse
-                {
-                    CompanyId = user.Id,
-                    FullName = user.FullName,
-                    Email = user.Email!,
-                    PhoneNumber = user.PhoneNumber!,
-                    BusinessVerified = user.RecruiterVerified,
-                    Company = new CompanyDetailResponse
-                    {
-                        Id = company.Id,
-                        CompanyName = company.CompanyName,
-                        ShortName = company.ShortName,
-                        TaxCode = company.TaxCode,
-                        HeadQuarterAddress = company.HeadQuarterAddress,
-                        Logo = company.Logo,
-                        ContactEmail = company.ContactEmail,
-                        ContactPhone = company.ContactPhone,
-                        Website = company.Website,
-                        FoundedYear = company.FoundedYear,
-                        Size = company.Size,
-                        Introduction = company.Introduction,
-                        Location = new LocationResponse
-                        {
-                            Id = company.Location.Id,
-                            Name = company.Location.Name
-                        },
-                        Major = new MajorResponse
-                        {
-                            Id = company.Major.Id,
-                            Name = company.Major.Name
-                        },
-                        RegistrationFile = context.AttachedFiles
-                            .Where(f => f.Type == TargetType.BusinessRegistration && f.TargetId == company.Id)
-                            .Select(f => new FileResponse
-                            {
-                                Id = f.Id,
-                                Name = f.Name,
-                                Path = f.Path,
-                                Uploaded = f.Uploaded
-                            })
-                            .SingleOrDefault()
-                    }
-                });
+                (user, company) => new { user, company });
 
         if (!string.IsNullOrEmpty(search))
         {
-            query = query.Where(v => v.Company.CompanyName.Contains(search));
+            query = query.Where(v => v.company.CompanyName.Contains(search));
         }
 
         if (unverified)
         {
-            query = query.Where(v => !v.BusinessVerified);
+            query = query.Where(v => !v.user.RecruiterVerified);
         }
 
         var totalItems = await query.CountAsync();
-
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
-        var verifications = await query
+        var paginatedResults = await query
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+
+        var results = new List<BusinessVerifyResponse>();
+
+        foreach (var item in paginatedResults)
+        {
+            var majors = await context.Majors
+                .Where(m => m.Companies.Any(c => c.Id == item.company.Id))
+                .Select(m => new MajorResponse
+                {
+                    Id = m.Id,
+                    Name = m.Name
+                })
+                .ToListAsync();
+
+            var registrationFile = await context.AttachedFiles
+                .Where(f => f.Type == TargetType.BusinessRegistration && f.TargetId == item.company.Id)
+                .Select(f => new FileResponse
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
+                .SingleOrDefaultAsync();
+
+            results.Add(new BusinessVerifyResponse
+            {
+                CompanyId = item.user.Id,
+                FullName = item.user.FullName,
+                Email = item.user.Email!,
+                PhoneNumber = item.user.PhoneNumber!,
+                BusinessVerified = item.user.RecruiterVerified,
+                Company = new CompanyDetailResponse
+                {
+                    Id = item.company.Id,
+                    CompanyName = item.company.CompanyName,
+                    ShortName = item.company.ShortName,
+                    TaxCode = item.company.TaxCode,
+                    HeadQuarterAddress = item.company.HeadQuarterAddress,
+                    Logo = item.company.Logo,
+                    ContactEmail = item.company.ContactEmail,
+                    ContactPhone = item.company.ContactPhone,
+                    Website = item.company.Website,
+                    FoundedYear = item.company.FoundedYear,
+                    Size = item.company.Size,
+                    Introduction = item.company.Introduction,
+                    Location = new LocationResponse
+                    {
+                        Id = item.company.Location.Id,
+                        Name = item.company.Location.Name
+                    },
+                    Majors = majors,
+                    RegistrationFile = registrationFile
+                }
+            });
+        }
 
         return Ok(new
         {
@@ -114,7 +129,7 @@ public class AdminController(
             TotalPages = totalPages,
             PageNumber = page,
             PageSize = pageSize,
-            Items = verifications
+            Items = results
         });
     }
 
@@ -122,72 +137,87 @@ public class AdminController(
     [HttpGet("business-verifications/{userId:guid}")]
     public async Task<ActionResult<BusinessVerifyResponse>> GetBusinessVerification(Guid userId)
     {
-        var businessRole = await roleManager.Roles.SingleOrDefaultAsync(r => r.Name == "Business");
-        if (businessRole == null)
+        var userWithRole = await context.UserRoles
+            .Join(roleManager.Roles,
+                ur => ur.RoleId,
+                r => r.Id,
+                (ur, r) => new { UserRole = ur, Role = r })
+            .Where(x => x.Role.Name == "Business" && x.UserRole.UserId == userId)
+            .Select(x => x.UserRole.UserId)
+            .FirstOrDefaultAsync();
+
+        if (userWithRole == default)
         {
-            return BadRequest(new { Message = "Business role not found." });
+            return NotFound(new { Message = "User not found or is not a business user." });
         }
 
-        var businessUserIds = await context.UserRoles
-            .Where(ur => ur.RoleId == businessRole.Id)
-            .Select(ur => ur.UserId)
+        var user = await context.Users
+            .SingleOrDefaultAsync(u => u.Id == userId);
+
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        var company = await context.CompanyDetails
+            .Include(c => c.Location)
+            .FirstOrDefaultAsync(c => c.CompanyId == userId);
+
+        if (company == null)
+        {
+            return NotFound(new { Message = "Company details not found." });
+        }
+
+        var majors = await context.Majors
+            .Where(m => m.Companies.Any(c => c.Id == company.Id))
+            .Select(m => new MajorResponse
+            {
+                Id = m.Id,
+                Name = m.Name
+            })
             .ToListAsync();
 
-        var verification = await context.Users
-            .Where(u => businessUserIds.Contains(u.Id))
-            .Where(u => u.Id == userId)
-            .Join(context.CompanyDetails,
-                user => user.Id,
-                company => company.CompanyId,
-                (user, company) => new BusinessVerifyResponse
-                {
-                    CompanyId = user.Id,
-                    FullName = user.FullName,
-                    Email = user.Email!,
-                    PhoneNumber = user.PhoneNumber!,
-                    BusinessVerified = user.RecruiterVerified,
-                    Company = new CompanyDetailResponse
-                    {
-                        Id = company.Id,
-                        CompanyName = company.CompanyName,
-                        ShortName = company.ShortName,
-                        TaxCode = company.TaxCode,
-                        HeadQuarterAddress = company.HeadQuarterAddress,
-                        Logo = company.Logo,
-                        ContactEmail = company.ContactEmail,
-                        ContactPhone = company.ContactPhone,
-                        Website = company.Website,
-                        FoundedYear = company.FoundedYear,
-                        Size = company.Size,
-                        Introduction = company.Introduction,
-                        Location = new LocationResponse
-                        {
-                            Id = company.Location.Id,
-                            Name = company.Location.Name
-                        },
-                        Major = new MajorResponse
-                        {
-                            Id = company.Major.Id,
-                            Name = company.Major.Name
-                        },
-                        RegistrationFile = context.AttachedFiles
-                            .Where(f => f.Type == TargetType.BusinessRegistration && f.TargetId == company.Id)
-                            .Select(f => new FileResponse
-                            {
-                                Id = f.Id,
-                                Name = f.Name,
-                                Path = f.Path,
-                                Uploaded = f.Uploaded
-                            })
-                            .SingleOrDefault()
-                    }
-                })
-            .SingleOrDefaultAsync();
+        var registrationFile = await context.AttachedFiles
+            .Where(f => f.Type == TargetType.BusinessRegistration && f.TargetId == company.Id)
+            .Select(f => new FileResponse
+            {
+                Id = f.Id,
+                Name = f.Name,
+                Path = f.Path,
+                Uploaded = f.Uploaded
+            })
+            .FirstOrDefaultAsync();
 
-        if (verification == null)
+        var verification = new BusinessVerifyResponse
         {
-            return NotFound(new { Message = "Verification not found." });
-        }
+            CompanyId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email!,
+            PhoneNumber = user.PhoneNumber ?? string.Empty,
+            BusinessVerified = user.RecruiterVerified,
+            Company = new CompanyDetailResponse
+            {
+                Id = company.Id,
+                CompanyName = company.CompanyName,
+                ShortName = company.ShortName,
+                TaxCode = company.TaxCode,
+                HeadQuarterAddress = company.HeadQuarterAddress,
+                Logo = company.Logo,
+                ContactEmail = company.ContactEmail,
+                ContactPhone = company.ContactPhone,
+                Website = company.Website,
+                FoundedYear = company.FoundedYear,
+                Size = company.Size,
+                Introduction = company.Introduction,
+                Location = new LocationResponse
+                {
+                    Id = company.Location.Id,
+                    Name = company.Location.Name
+                },
+                Majors = majors,
+                RegistrationFile = registrationFile
+            }
+        };
 
         return Ok(verification);
     }

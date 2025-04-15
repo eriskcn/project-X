@@ -118,6 +118,20 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 return StatusCode(500, $"Error saving registration file: {ex.Message}");
             }
 
+            if (request.MajorIds.Count == 0)
+            {
+                return BadRequest("At least one Major is required.");
+            }
+
+            var majors = await context.Majors
+                .Where(m => request.MajorIds.Contains(m.Id))
+                .ToListAsync();
+
+            if (majors.Count != request.MajorIds.Count)
+            {
+                return BadRequest("One or more Major IDs are invalid.");
+            }
+
             var companyDetail = new CompanyDetail
             {
                 Id = Guid.NewGuid(),
@@ -134,7 +148,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 Introduction = request.Introduction,
                 CompanyId = Guid.Parse(userId),
                 LocationId = request.LocationId,
-                MajorId = request.MajorId
+                Majors = majors
             };
 
             var registrationAttachedFile = new AttachedFile
