@@ -39,7 +39,6 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
                 {
                     Id = skill.Id,
                     Name = skill.Name,
-                    Description = skill.Description
                 })
                 .ToListAsync();
 
@@ -64,7 +63,6 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
             {
                 Id = skill.Id,
                 Name = skill.Name,
-                Description = skill.Description
             })
             .ToListAsync();
 
@@ -95,7 +93,6 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
         {
             Id = skill.Id,
             Name = skill.Name,
-            Description = skill.Description
         });
     }
 
@@ -111,7 +108,6 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
         var skill = new Skill
         {
             Name = request.Name,
-            Description = request.Description
         };
 
         context.Skills.Add(skill);
@@ -122,7 +118,6 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
             {
                 Id = skill.Id,
                 Name = skill.Name,
-                Description = skill.Description
             });
     }
 
@@ -165,11 +160,6 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
             skill.Name = request.Name;
         }
 
-        if (!string.IsNullOrEmpty(request.Description))
-        {
-            skill.Description = request.Description;
-        }
-
         skill.Modified = DateTime.UtcNow;
         await context.SaveChangesAsync();
 
@@ -177,7 +167,6 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
         {
             Id = skill.Id,
             Name = skill.Name,
-            Description = skill.Description
         });
     }
 
@@ -241,7 +230,6 @@ public class SkillController(ApplicationDbContext context) : ControllerBase
         {
             Id = skill.Id,
             Name = skill.Name,
-            Description = skill.Description
         });
     }
 }

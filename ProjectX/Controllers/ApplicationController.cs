@@ -109,7 +109,10 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                         })
                         .SingleOrDefaultAsync(),
                     Skills = a.Job.Skills.Select(s => new SkillResponse
-                            { Id = s.Id, Name = s.Name, Description = s.Description })
+                        {
+                            Id = s.Id,
+                            Name = s.Name,
+                        })
                         .ToList(),
                     ContractTypes = a.Job.ContractTypes.Select(ct => new ContractTypeResponse
                             { Id = ct.Id, Name = ct.Name })
@@ -266,7 +269,7 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                 },
                 JobDescription = jobDescription,
                 Skills = application.Job.Skills
-                    .Select(s => new SkillResponse { Id = s.Id, Name = s.Name, Description = s.Description })
+                    .Select(s => new SkillResponse { Id = s.Id, Name = s.Name })
                     .ToList(),
                 ContractTypes = application.Job.ContractTypes
                     .Select(ct => new ContractTypeResponse { Id = ct.Id, Name = ct.Name })

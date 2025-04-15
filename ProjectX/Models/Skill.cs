@@ -12,7 +12,6 @@ public class Skill : BaseEntity
     public Guid Id { get; set; } = Guid.NewGuid();
 
     [StringLength(256)] public required string Name { get; set; }
-    [StringLength(256)] public string? Description { get; set; }
 
     // n-n relationship
     [InverseProperty(nameof(Job.Skills))]

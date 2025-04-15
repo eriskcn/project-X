@@ -139,7 +139,10 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     })
                     .SingleOrDefault(),
                 Skills = j.Skills.Select(s => new SkillResponse
-                        { Id = s.Id, Name = s.Name, Description = s.Description })
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                    })
                     .ToList(),
                 ContractTypes = j.ContractTypes.Select(ct => new ContractTypeResponse { Id = ct.Id, Name = ct.Name })
                     .ToList(),
@@ -260,7 +263,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             {
                 Id = s.Id,
                 Name = s.Name,
-                Description = s.Description
             }).ToList(),
 
             ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
@@ -584,7 +586,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 {
                     Id = s.Id,
                     Name = s.Name,
-                    Description = s.Description
                 }).ToList(),
                 ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
                 {
@@ -855,7 +856,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 {
                     Id = s.Id,
                     Name = s.Name,
-                    Description = s.Description
                 }).ToList(),
                 ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
                 {

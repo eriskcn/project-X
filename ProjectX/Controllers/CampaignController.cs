@@ -211,8 +211,8 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
     [HttpGet("{campaignId:guid}/jobs")]
     public async Task<ActionResult<IEnumerable<JobResponse>>> GetCampaignJobs([FromRoute] Guid campaignId,
-        [FromQuery] int page = 1, 
-        [FromQuery] int pageSize = 10, 
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
         [FromQuery] string? search = null,
         [FromQuery] List<Guid>? jobLevels = null,
         [FromQuery] List<Guid>? jobTypes = null,
@@ -318,7 +318,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             {
                 Id = s.Id,
                 Name = s.Name,
-                Description = s.Description
             }).ToList(),
             ContractTypes = j.ContractTypes.Select(ct => new ContractTypeResponse
             {
@@ -420,7 +419,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             {
                 Id = s.Id,
                 Name = s.Name,
-                Description = s.Description
             }).ToList(),
             ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
             {
