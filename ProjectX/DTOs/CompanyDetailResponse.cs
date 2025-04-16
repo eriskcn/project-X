@@ -16,6 +16,8 @@ public class CompanyDetailResponse
     public required int FoundedYear { get; set; }
     public CompanySize Size { get; set; }
     public required string Introduction { get; set; }
+    public required VerifyStatus Status { get; set; }
+    public string? RejectReason { get; set; }
     public LocationResponse Location { get; set; } = null!;
     public ICollection<MajorResponse> Majors { get; set; } = new List<MajorResponse>();
     public FileResponse? RegistrationFile { get; set; }

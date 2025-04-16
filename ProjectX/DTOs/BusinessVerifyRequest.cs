@@ -24,7 +24,7 @@ public class BusinessVerifyRequest
 
     [StringLength(256)] public string? Website { get; set; }
 
-    [Required] [Range(1900, 2100)] public required int FoundedYear { get; set; }
+    [Required] [Range(1900, 2100)] public int FoundedYear { get; set; }
 
     public CompanySize Size { get; set; }
 

@@ -35,7 +35,8 @@ public class CompanyDetail : BaseEntity
     [Column(TypeName = "nvarchar(50)")] public CompanySize Size { get; set; } = CompanySize.Tiny;
 
     [Required] [StringLength(10000)] public required string Introduction { get; set; }
-
+    [Required] public VerifyStatus Status { get; set; } = VerifyStatus.Pending;
+    [StringLength(500)] public string? RejectReason { get; set; }
     [Required] public Guid CompanyId { get; set; }
 
     [InverseProperty(nameof(User.CompanyDetail))]
@@ -54,6 +55,13 @@ public class CompanyDetail : BaseEntity
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     public DateTime Modified { get; set; } = DateTime.UtcNow;
+}
+
+public enum VerifyStatus
+{
+    Pending,
+    Verified,
+    Rejected
 }
 
 public enum CompanySize

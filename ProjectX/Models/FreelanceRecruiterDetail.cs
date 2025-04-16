@@ -11,6 +11,9 @@ public class FreelanceRecruiterDetail : BaseEntity
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; } = Guid.NewGuid();
 
+    public VerifyStatus Status { get; set; } = VerifyStatus.Pending;
+    [StringLength(500)] public string? RejectReason { get; set; }
+
     [Required] public Guid FreelanceRecruiterId { get; set; }
 
     [JsonIgnore]

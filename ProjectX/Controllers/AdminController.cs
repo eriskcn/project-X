@@ -19,7 +19,7 @@ public class AdminController(
     [HttpGet("business-verifications")]
     public async Task<ActionResult<IEnumerable<BusinessVerifyResponse>>> GetBusinessVerifications(
         [FromQuery] string? search,
-        [FromQuery] bool unverified = false,
+        [FromQuery] VerifyStatus? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -53,9 +53,9 @@ public class AdminController(
             query = query.Where(u => u.CompanyDetail!.CompanyName.Contains(search));
         }
 
-        if (unverified)
+        if (status.HasValue)
         {
-            query = query.Where(u => !u.RecruiterVerified);
+            query = query.Where(u => u.CompanyDetail!.Status == status.Value);
         }
 
         var totalItems = await query.CountAsync();
@@ -113,6 +113,8 @@ public class AdminController(
                     FoundedYear = company.FoundedYear,
                     Size = company.Size,
                     Introduction = company.Introduction,
+                    Status = company.Status,
+                    RejectReason = company.RejectReason,
                     Location = new LocationResponse
                     {
                         Id = company.Location.Id,
@@ -147,7 +149,7 @@ public class AdminController(
                 (ur, r) => new { UserRole = ur, Role = r })
             .Where(x => x.Role.Name == "Business" && x.UserRole.UserId == userId)
             .Select(x => x.UserRole.UserId)
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync();
 
         if (userWithRole == default)
         {
@@ -164,7 +166,7 @@ public class AdminController(
 
         var company = await context.CompanyDetails
             .Include(c => c.Location)
-            .FirstOrDefaultAsync(c => c.CompanyId == userId);
+            .SingleOrDefaultAsync(c => c.CompanyId == userId);
 
         if (company == null)
         {
@@ -189,7 +191,7 @@ public class AdminController(
                 Path = f.Path,
                 Uploaded = f.Uploaded
             })
-            .FirstOrDefaultAsync();
+            .SingleOrDefaultAsync();
 
         var verification = new BusinessVerifyResponse
         {
@@ -212,6 +214,8 @@ public class AdminController(
                 FoundedYear = company.FoundedYear,
                 Size = company.Size,
                 Introduction = company.Introduction,
+                Status = company.Status,
+                RejectReason = company.RejectReason,
                 Location = new LocationResponse
                 {
                     Id = company.Location.Id,
@@ -225,8 +229,7 @@ public class AdminController(
         return Ok(verification);
     }
 
-
-    [HttpPatch("business-verifications/{userId:guid}")]
+    [HttpPatch("business-verifications/{userId:guid}/accept")]
     public async Task<IActionResult> VerifyBusiness(Guid userId)
     {
         var user = await context.Users.FindAsync(userId);
@@ -235,16 +238,72 @@ public class AdminController(
             return NotFound(new { Message = "User not found." });
         }
 
+        var companyDetail = await context.CompanyDetails
+            .SingleOrDefaultAsync(c => c.CompanyId == userId && c.Status == VerifyStatus.Pending);
+
+        if (companyDetail == null)
+        {
+            return NotFound(new { Message = "Company detail not found or already verified/rejected." });
+        }
+
         user.RecruiterVerified = true;
+        companyDetail.Status = VerifyStatus.Verified;
+        companyDetail.RejectReason = null;
         await context.SaveChangesAsync();
 
         return Ok(new { Message = "Business verified." });
     }
 
+    [HttpPatch("business-verifications/{userId:guid}/reject")]
+    public async Task<ActionResult<BusinessVerifyResponse>> RejectBusiness([FromRoute] Guid userId,
+        [FromBody] RejectRequest request)
+    {
+        var user = await context.Users
+            .Include(u => u.CompanyDetail)
+            .Where(u => u.Id == userId && u.CompanyDetail != null && u.CompanyDetail.Status == VerifyStatus.Pending)
+            .SingleOrDefaultAsync();
+
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found or verified/rejected" });
+        }
+
+        user.RecruiterVerified = false;
+        user.CompanyDetail!.Status = VerifyStatus.Rejected;
+        user.CompanyDetail.RejectReason = request.RejectReason;
+        await context.SaveChangesAsync();
+
+        return Ok(new BusinessVerifyResponse
+        {
+            CompanyId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email!,
+            PhoneNumber = user.PhoneNumber ?? string.Empty,
+            BusinessVerified = user.RecruiterVerified,
+            Company = new CompanyDetailResponse
+            {
+                Id = user.CompanyDetail.Id,
+                CompanyName = user.CompanyDetail.CompanyName,
+                ShortName = user.CompanyDetail.ShortName,
+                TaxCode = user.CompanyDetail.TaxCode,
+                HeadQuarterAddress = user.CompanyDetail.HeadQuarterAddress,
+                Logo = user.CompanyDetail.Logo,
+                ContactEmail = user.CompanyDetail.ContactEmail,
+                ContactPhone = user.CompanyDetail.ContactPhone,
+                Website = user.CompanyDetail.Website ?? string.Empty,
+                FoundedYear = user.CompanyDetail.FoundedYear,
+                Size = user.CompanyDetail.Size,
+                Introduction = user.CompanyDetail.Introduction,
+                Status = user.CompanyDetail.Status,
+                RejectReason = user.CompanyDetail.RejectReason
+            }
+        });
+    }
+
     [HttpGet("freelance-recruiter-verifications")]
     public async Task<ActionResult<IEnumerable<FreelanceRecruiterVerifyResponse>>> GetFreelanceRecruiterVerifications(
         [FromQuery] string? search,
-        [FromQuery] bool unverified = false,
+        [FromQuery] VerifyStatus? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -311,9 +370,9 @@ public class AdminController(
             query = query.Where(q => q.FullName.Contains(search));
         }
 
-        if (unverified)
+        if (status.HasValue)
         {
-            query = query.Where(q => !q.FreelanceRecruiterVerified);
+            query = query.Where(q => q.FreelanceRecruiter.Status == status.Value);
         }
 
         var totalItems = await query.CountAsync();
@@ -366,6 +425,8 @@ public class AdminController(
                     FreelanceRecruiter = new FreelanceRecruiterDetailResponse
                     {
                         Id = freelanceRecruiter.Id,
+                        Status = freelanceRecruiter.Status,
+                        RejectReason = freelanceRecruiter.RejectReason,
                         FrontIdCard = context.AttachedFiles
                             .Where(f => f.Type == TargetType.FrontIdCard && f.TargetId == freelanceRecruiter.Id)
                             .Select(f => new FileResponse
@@ -392,7 +453,7 @@ public class AdminController(
         return Ok(verification);
     }
 
-    [HttpPatch("freelance-recruiter-verifications/{userId:guid}")]
+    [HttpPatch("freelance-recruiter-verifications/{userId:guid}/accept")]
     public async Task<IActionResult> VerifyFreelanceRecruiter(Guid userId)
     {
         var user = await context.Users.FindAsync(userId);
@@ -401,9 +462,76 @@ public class AdminController(
             return NotFound(new { Message = "User not found." });
         }
 
+        var freelanceRecruiterDetail = await context.FreelanceRecruiterDetails
+            .SingleOrDefaultAsync(f => f.FreelanceRecruiterId == userId && f.Status == VerifyStatus.Pending);
+
+        if (freelanceRecruiterDetail == null)
+        {
+            return NotFound(new { Message = "Freelance recruiter detail not found or already verified/rejected." });
+        }
+
         user.RecruiterVerified = true;
+        freelanceRecruiterDetail.RejectReason = null;
         await context.SaveChangesAsync();
 
         return Ok(new { Message = "Freelance recruiter verified." });
+    }
+
+    [HttpPatch("freelance-recruiter-verifications/{userId:guid}/reject")]
+    public async Task<IActionResult> RejectFreelanceRecruiter([FromRoute] Guid userId, [FromBody] RejectRequest request)
+    {
+        var user = await context.Users
+            .Include(u => u.FreelanceRecruiterDetail)
+            .Where(u => u.Id == userId && u.FreelanceRecruiterDetail != null &&
+                        u.FreelanceRecruiterDetail.Status == VerifyStatus.Pending)
+            .SingleOrDefaultAsync();
+
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found or verified/rejected" });
+        }
+
+        user.RecruiterVerified = false;
+        user.FreelanceRecruiterDetail!.Status = VerifyStatus.Rejected;
+        user.FreelanceRecruiterDetail!.RejectReason = request.RejectReason;
+        await context.SaveChangesAsync();
+
+        return Ok(new FreelanceRecruiterVerifyResponse
+        {
+            UserId = user.Id,
+            FullName = user.FullName,
+            Email = user.Email!,
+            PhoneNumber = user.PhoneNumber ?? string.Empty,
+            ProfilePicture = user.ProfilePicture,
+            GitHubProfile = user.GitHubProfile,
+            LinkedInProfile = user.LinkedInProfile,
+            FreelanceRecruiter = new FreelanceRecruiterDetailResponse
+            {
+                Id = user.FreelanceRecruiterDetail.Id,
+                Status = user.FreelanceRecruiterDetail.Status,
+                RejectReason = user.FreelanceRecruiterDetail.RejectReason,
+                FrontIdCard = context.AttachedFiles
+                    .Where(f => f.Type == TargetType.FrontIdCard && f.TargetId == user.FreelanceRecruiterDetail.Id)
+                    .Select(f => new FileResponse
+                    {
+                        Id = f.Id,
+                        Name = f.Name,
+                        Path = f.Path,
+                        Uploaded = f.Uploaded
+                    })
+                    .SingleOrDefault(),
+                BackIdCard = context.AttachedFiles
+                    .Where(f => f.Type == TargetType.BackIdCard && f.TargetId == user.FreelanceRecruiterDetail.Id)
+                    .Select(f => new FileResponse
+                    {
+                        Id = f.Id,
+                        Name = f.Name,
+                        Path = f.Path,
+                        Uploaded = f.Uploaded
+                    })
+                    .SingleOrDefault()
+            },
+            FreelanceRecruiterVerified = user.RecruiterVerified
+        });
     }
 }

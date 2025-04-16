@@ -406,6 +406,47 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         }
     }
 
+    [HttpPost("{jobId:guid}/highlight")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
+    public async Task<IActionResult> HighlightJob([FromRoute] Guid jobId, [FromBody] HighlightRequest request)
+    {
+        if (request.HighlightStart < DateTime.UtcNow)
+            return BadRequest(new { Message = "HighlightStart must be in the future." });
+        if (request.HighlightEnd <= request.HighlightStart)
+            return BadRequest(new { Message = "HighlightEnd must be after HighlightStart." });
+
+        var days = OrderHelper.CalculateHighlightDays(request.HighlightStart, request.HighlightEnd);
+        if (days is < 1 or > 30)
+            return BadRequest(new { Message = "Highlight duration must be between 1 and 30 days." });
+
+        var job = await context.Jobs.FindAsync(jobId);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        if (job.Status != JobStatus.Active)
+        {
+            return BadRequest(new { Message = "Job is not active." });
+        }
+
+        var amount = OrderHelper.CalculateHighlightCost(days);
+        var order = new Order
+        {
+            JobId = jobId,
+            Days = days,
+            Amount = amount,
+            StartDate = request.HighlightStart,
+            EndDate = request.HighlightEnd,
+            Status = OrderStatus.Pending
+        };
+
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+
+        return Ok(new { OrderId = order.Id, Message = "Highlight request created successfully." });
+    }
+
     [HttpPost]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<JobResponse>> CreateJob([FromForm] JobRequest request)

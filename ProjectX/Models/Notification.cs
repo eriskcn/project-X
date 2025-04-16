@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 using ProjectX.Data;
@@ -7,18 +6,12 @@ namespace ProjectX.Models;
 
 public class Notification : BaseEntity
 {
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public Guid Id { get; set; } = Guid.NewGuid();
-
     public required string Content { get; set; }
+    public NotificationType Type { get; set; }
 
-    [Column(TypeName = "nvarchar(50)")] public NotificationType Type { get; set; }
-
-    public Guid ActorId { get; set; }
-    [JsonIgnore] [ForeignKey("ActorId")] public User Actor { get; set; } = null!;
-
-    public Guid TargetId { get; set; }
+    public Guid? ActorId { get; set; }
+    [JsonIgnore] [ForeignKey("ActorId")] public User? Actor { get; set; } = null!;
 
     public Guid RecipientId { get; set; }
 
@@ -26,6 +19,7 @@ public class Notification : BaseEntity
     [ForeignKey("RecipientId")]
     public User Recipient { get; set; } = null!;
 
+    public Guid TargetId { get; set; }
     public bool IsRead { get; set; } = false;
     public DateTime? Read { get; set; }
 
@@ -35,9 +29,9 @@ public class Notification : BaseEntity
 
 public enum NotificationType
 {
-    Application,
-    Post,
-    Message,
-    Campaign,
-    Job
+    SuccessfulApply, 
+    NewReactToPost, 
+    NewApplication,
+    UpdateApplicationProcess, 
+    NewComment, 
 }
