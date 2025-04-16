@@ -6,7 +6,7 @@ namespace ProjectX.DTOs;
 public class UpdateJobRequest
 {
     [StringLength(100)] public string? Title { set; get; }
-    [StringLength(2500)] public string? Description { set; get; }
+    [StringLength(10000)] public string? Description { set; get; }
     [StringLength(256)] public string? OfficeAddress { set; get; }
     [Range(1, int.MaxValue)] public int? Quantity { set; get; }
     public EducationLevel? EducationLevelRequire { set; get; }

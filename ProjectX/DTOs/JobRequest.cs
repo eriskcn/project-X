@@ -8,7 +8,7 @@ public class JobRequest
 {
     [Required] [StringLength(100)] public required string Title { set; get; }
 
-    [Required] [StringLength(2500)] public required string Description { set; get; }
+    [Required] [StringLength(10000)] public required string Description { set; get; }
 
     [Required] [StringLength(256)] public required string OfficeAddress { set; get; }
 

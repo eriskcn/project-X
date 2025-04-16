@@ -19,7 +19,7 @@ public class ApplicationRequest
     [StringLength(15)]
     public required string PhoneNumber { get; set; }
 
-    [StringLength(2500)]
+    [StringLength(10000)]
     public string? Introduction { get; set; }
 
     [Required]

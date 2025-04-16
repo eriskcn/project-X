@@ -34,7 +34,7 @@ public class CompanyDetail : BaseEntity
 
     [Column(TypeName = "nvarchar(50)")] public CompanySize Size { get; set; } = CompanySize.Tiny;
 
-    [Required] [StringLength(2500)] public required string Introduction { get; set; }
+    [Required] [StringLength(10000)] public required string Introduction { get; set; }
 
     [Required] public Guid CompanyId { get; set; }
 

@@ -13,7 +13,7 @@ public class Campaign : BaseEntity
 
     [Required] [StringLength(256)] public required string Name { get; set; }
 
-    [Required] [StringLength(1000)] public required string Description { get; set; }
+    [Required] [StringLength(10000)] public required string Description { get; set; }
 
     [Required] public DateTime Open { get; set; } = DateTime.UtcNow;
 

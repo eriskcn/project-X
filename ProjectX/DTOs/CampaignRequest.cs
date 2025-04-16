@@ -10,7 +10,7 @@ public class CampaignRequest
     public required string Name { get; set; }
 
     [Required]
-    [StringLength(2500)]
+    [StringLength(10000)]
     public required string Description { get; set; }
 
     [Required]

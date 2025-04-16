@@ -12,7 +12,7 @@ public class Job : BaseEntity
     public Guid Id { get; set; } = Guid.NewGuid();
 
     [StringLength(150)] public required string Title { get; set; }
-    [StringLength(2000)] public required string Description { get; set; }
+    [StringLength(10000)] public required string Description { get; set; }
     [StringLength(256)] public required string OfficeAddress { get; set; }
     public int Quantity { get; set; } = 1;
     [Column(TypeName = "nvarchar(50)")] public JobStatus Status { get; set; } = JobStatus.Active;
@@ -69,6 +69,7 @@ public class Job : BaseEntity
     // 1-n relationship
     [JsonIgnore] public ICollection<Application> Applications { get; set; } = new List<Application>();
 
+    [JsonIgnore] public ICollection<Order> Orders { get; set; } = new List<Order>();
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
     public DateTime Modified { get; set; } = DateTime.UtcNow;

@@ -28,7 +28,7 @@ public class BusinessVerifyRequest
 
     public CompanySize Size { get; set; }
 
-    [Required] [StringLength(2500)] public required string Introduction { get; set; }
+    [Required] [StringLength(10000)] public required string Introduction { get; set; }
 
     [Required] public required Guid LocationId { get; set; }
 

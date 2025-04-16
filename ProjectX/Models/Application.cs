@@ -15,7 +15,7 @@ public class Application : BaseEntity
     [EmailAddress] [StringLength(70)] public required string Email { get; set; }
     [Required] [Phone] [StringLength(10)] public required string PhoneNumber { get; set; }
 
-    [StringLength(600)] public string? Introduction { get; set; }
+    [StringLength(10000)] public string? Introduction { get; set; }
 
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public DateTime Applied { get; set; } = DateTime.UtcNow;
