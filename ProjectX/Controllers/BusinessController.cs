@@ -87,7 +87,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 return BadRequest("Registration file is required.");
             }
 
-            var allowedDocExtensions = new[] { ".pdf", ".docx", ".doc" };
+            var allowedDocExtensions = new[] { ".pdf", ".docx", ".doc", ".png", ".jpeg", ".jpg" };
             var registrationFileExtension = Path.GetExtension(request.RegistrationFile.FileName).ToLowerInvariant();
             if (!allowedDocExtensions.Contains(registrationFileExtension))
             {
