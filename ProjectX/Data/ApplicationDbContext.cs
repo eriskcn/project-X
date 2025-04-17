@@ -20,6 +20,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Location> Locations { get; set; }
     public DbSet<Major> Majors { get; set; }
     public DbSet<Message> Messages { get; set; }
+    public DbSet<Conversation> Conversations { get; set; }
     public DbSet<Post> Posts { get; set; }
     public DbSet<Like> Likes { get; set; }
     public DbSet<Skill> Skills { get; set; }
@@ -79,13 +80,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(u => u.SentMessages)
             .HasForeignKey(m => m.SenderId)
             .OnDelete(DeleteBehavior.Restrict);
-
-        builder.Entity<Message>()
-            .HasOne(m => m.Receiver)
-            .WithMany(u => u.ReceivedMessages)
-            .HasForeignKey(m => m.ReceiverId)
-            .OnDelete(DeleteBehavior.Restrict);
-
 
         builder.Entity<Job>()
             .HasMany(j => j.Skills)
