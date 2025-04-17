@@ -42,9 +42,14 @@ public class User : IdentityUser<Guid>, ISoftDelete
     public ICollection<Major> FocusMajors { get; set; } = new List<Major>();
 
     [JsonIgnore] public ICollection<Post> Posts { get; set; } = new List<Post>();
+    [JsonIgnore] public ICollection<Conversation> Conversations { get; set; } = new List<Conversation>();
     [StringLength(64)] public string? RefreshToken { get; set; }
     public DateTime RefreshTokenExpiry { get; set; } = DateTime.UtcNow.AddDays(7);
 
+    [StringLength(6)] public string? OTP { get; set; }
+    public DateTime? OTPExpiry { get; set; } = DateTime.UtcNow.AddMinutes(5);
+
+    public bool VerificationSubmitted { get; set; }
     [Column(TypeName = "nvarchar(50)")] public UserStatus Status { get; set; } = UserStatus.Online;
     public DateTime? LastAccess { get; set; } = DateTime.UtcNow;
     public int LoginAttempts { get; set; }

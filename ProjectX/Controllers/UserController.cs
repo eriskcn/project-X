@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.Helpers;
 using ProjectX.Models;
 
 namespace ProjectX.Controllers;
@@ -41,6 +42,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
             LinkedInProfile = user.LinkedInProfile,
             Roles = userRoles,
             RecruiterVerified = user.RecruiterVerified,
+            VerificationSubmitted = user.VerificationSubmitted,
             BusinessPoints = user.BusinessPoints,
             IsExternalLogin = user.IsExternalLogin,
             Provider = user.Provider,
@@ -93,7 +95,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
             await using var stream = new FileStream(profilePicturePath, FileMode.Create);
             await request.ProfilePicture.CopyToAsync(stream);
 
-            user.ProfilePicture = profilePicturePath;
+            user.ProfilePicture = PathHelper.GetRelativePathFromAbsolute(profilePicturePath, env.WebRootPath);
         }
 
         await context.SaveChangesAsync();

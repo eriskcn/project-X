@@ -154,10 +154,12 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
             TargetId = freelanceRecruiterDetail.Id,
             UploadedById = user.Id
         };
+        user.VerificationSubmitted = true;
 
         context.FreelanceRecruiterDetails.Add(freelanceRecruiterDetail);
         context.AttachedFiles.Add(frontIdCard);
         context.AttachedFiles.Add(backIdCard);
+        context.Entry(user).Property(u => u.VerificationSubmitted).IsModified = true;
         await context.SaveChangesAsync();
 
         return Ok(new { Message = "Submit freelance recruiter registration successfully" });

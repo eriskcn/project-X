@@ -12,6 +12,7 @@ public class ProfileInfoResponse
     public string? GitHubProfile { get; set; }
     public string? LinkedInProfile { get; set; }
     public ICollection<string> Roles { get; set; } = new List<string>();
+    public bool VerificationSubmitted { get; set; }
     public bool RecruiterVerified { get; set; }
     public double BusinessPoints { get; set; }
     public bool IsExternalLogin { get; set; }

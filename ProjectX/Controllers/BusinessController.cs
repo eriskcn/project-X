@@ -238,11 +238,13 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 TargetId = companyDetail.Id,
                 UploadedById = Guid.Parse(userId)
             };
+            user.VerificationSubmitted = true;
 
             try
             {
                 context.CompanyDetails.Add(companyDetail);
                 context.AttachedFiles.Add(registrationAttachedFile);
+                context.Entry(user).Property(u => u.VerificationSubmitted).IsModified = true;
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
