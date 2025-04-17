@@ -341,6 +341,8 @@ public class AdminController(
                     FreelanceRecruiter = new FreelanceRecruiterDetailResponse
                     {
                         Id = freelanceRecruiter.Id,
+                        Status = freelanceRecruiter.Status,
+                        RejectReason = freelanceRecruiter.RejectReason,
                         FrontIdCard = context.AttachedFiles
                             .Where(f => f.Type == TargetType.FrontIdCard && f.TargetId == freelanceRecruiter.Id)
                             .Select(f => new FileResponse
