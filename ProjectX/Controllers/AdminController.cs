@@ -471,6 +471,7 @@ public class AdminController(
         }
 
         user.RecruiterVerified = true;
+        freelanceRecruiterDetail.Status = VerifyStatus.Verified;
         freelanceRecruiterDetail.RejectReason = null;
         await context.SaveChangesAsync();
 
