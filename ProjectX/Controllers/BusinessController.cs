@@ -75,6 +75,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 Size = companyDetail.Size,
                 Introduction = companyDetail.Introduction,
                 Status = companyDetail.Status,
+                RejectReason = companyDetail.RejectReason,
                 Location = new LocationResponse
                 {
                     Id = companyDetail.Location.Id,
