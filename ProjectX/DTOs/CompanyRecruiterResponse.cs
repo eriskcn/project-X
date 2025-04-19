@@ -12,10 +12,10 @@ public class CompanyRecruiterResponse
     public string Logo { get; set; } = string.Empty;
     public string ContactEmail { get; set; } = string.Empty;
     public string ContactPhone { get; set; } = string.Empty;
-    public string? Website { get; set; } 
+    public string? Website { get; set; }
     public int FoundedYear { get; set; }
     public CompanySize Size { get; set; }
     public string Introduction { get; set; } = string.Empty;
     public LocationResponse Location { get; set; } = new LocationResponse();
-    public MajorResponse Major { get; set; } = new MajorResponse();
+    public ICollection<MajorResponse> Majors { get; set; } = new List<MajorResponse>();
 }

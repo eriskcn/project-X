@@ -36,6 +36,12 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         var query = context.Jobs
             .Include(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Majors)
+            .Include(j => j.Campaign)
+            .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Location)
             .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
@@ -44,6 +50,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             .Include(j => j.JobTypes)
             .Where(j => j.Status == JobStatus.Active && j.Campaign.Status == CampaignStatus.Opened)
             .AsQueryable();
+
 
         if (!string.IsNullOrEmpty(search))
         {
@@ -175,7 +182,21 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                         Website = recruiter.CompanyDetail.Website,
                         FoundedYear = recruiter.CompanyDetail.FoundedYear,
                         Size = recruiter.CompanyDetail.Size,
-                        Introduction = recruiter.CompanyDetail.Introduction
+                        Introduction = recruiter.CompanyDetail.Introduction,
+                        Majors = recruiter.CompanyDetail.Majors
+                            .Select(m => new MajorResponse
+                            {
+                                Id = m.Id,
+                                Name = m.Name
+                            })
+                            .ToList(),
+
+                        Location = new LocationResponse
+                        {
+                            Id = recruiter.CompanyDetail.Location.Id,
+                            Name = recruiter.CompanyDetail.Location.Name,
+                            Region = recruiter.CompanyDetail.Location.Region
+                        }
                     }
                     : new CompanyRecruiterResponse(),
 
@@ -203,6 +224,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             .Include(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
             .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Majors)
+            .Include(j => j.Campaign)
+            .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Location)
             .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
@@ -309,7 +335,20 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     Website = recruiter.CompanyDetail.Website,
                     FoundedYear = recruiter.CompanyDetail.FoundedYear,
                     Size = recruiter.CompanyDetail.Size,
-                    Introduction = recruiter.CompanyDetail.Introduction
+                    Introduction = recruiter.CompanyDetail.Introduction,
+                    Majors = recruiter.CompanyDetail.Majors.Select(
+                        m => new MajorResponse
+                        {
+                            Id = m.Id,
+                            Name = m.Name
+                        }
+                    ).ToList(),
+                    Location = new LocationResponse
+                    {
+                        Id = recruiter.CompanyDetail.Location.Id,
+                        Name = recruiter.CompanyDetail.Location.Name,
+                        Region = recruiter.CompanyDetail.Location.Region
+                    }
                 }
                 : new CompanyRecruiterResponse(),
 

@@ -34,6 +34,12 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
             .ThenInclude(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
             .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Majors)
+            .Include(a => a.Job)
+            .ThenInclude(j => j.Campaign)
+            .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Location)
             .Where(a => a.CandidateId == Guid.Parse(userId))
             .AsNoTracking()
             .AsQueryable();
@@ -145,7 +151,20 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                             Website = recruiter.CompanyDetail.Website,
                             FoundedYear = recruiter.CompanyDetail.FoundedYear,
                             Size = recruiter.CompanyDetail.Size,
-                            Introduction = recruiter.CompanyDetail.Introduction
+                            Introduction = recruiter.CompanyDetail.Introduction,
+                            Majors = recruiter.CompanyDetail.Majors.Select(
+                                m => new MajorResponse
+                                {
+                                    Id = m.Id,
+                                    Name = m.Name
+                                }
+                            ).ToList(),
+                            Location = new LocationResponse
+                            {
+                                Id = recruiter.CompanyDetail.Location.Id,
+                                Name = recruiter.CompanyDetail.Location.Name,
+                                Region = recruiter.CompanyDetail.Location.Region
+                            }
                         }
                         : new CompanyRecruiterResponse(),
                     Created = a.Job.Created,
@@ -185,6 +204,12 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
             .ThenInclude(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
             .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Majors)
+            .Include(a => a.Job)
+            .ThenInclude(j => j.Campaign)
+            .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Location)
             .Include(application => application.Job).ThenInclude(job => job.Skills)
             .Include(application => application.Job).ThenInclude(job => job.ContractTypes)
             .Include(application => application.Job).ThenInclude(job => job.JobLevels)
@@ -305,7 +330,20 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                         Website = recruiter.CompanyDetail.Website,
                         FoundedYear = recruiter.CompanyDetail.FoundedYear,
                         Size = recruiter.CompanyDetail.Size,
-                        Introduction = recruiter.CompanyDetail.Introduction
+                        Introduction = recruiter.CompanyDetail.Introduction,
+                        Majors = recruiter.CompanyDetail.Majors.Select(
+                            m => new MajorResponse
+                            {
+                                Id = m.Id,
+                                Name = m.Name
+                            }
+                        ).ToList(),
+                        Location = new LocationResponse
+                        {
+                            Id = recruiter.CompanyDetail.Location.Id,
+                            Name = recruiter.CompanyDetail.Location.Name,
+                            Region = recruiter.CompanyDetail.Location.Region
+                        }
                     }
                     : new CompanyRecruiterResponse(),
                 Created = application.Job.Created,
