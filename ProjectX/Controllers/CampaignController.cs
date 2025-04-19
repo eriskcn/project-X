@@ -211,6 +211,9 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
     [HttpGet("{campaignId:guid}/jobs")]
     public async Task<ActionResult<IEnumerable<JobResponse>>> GetCampaignJobs([FromRoute] Guid campaignId,
+        [FromQuery] bool? highlighted,
+        [FromQuery] bool? highlightExpired,
+        [FromQuery] JobStatus? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? search = null,
@@ -246,6 +249,26 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         {
             query = query.Where(j => j.Title.Contains(search) || j.Description.Contains(search));
         }
+
+        if (status.HasValue)
+        {
+            query = query.Where(j => j.Status == status.Value);
+        }
+
+        if (highlighted.HasValue)
+        {
+            query = query.Where(j => j.IsHighlight == highlighted.Value);
+
+            if (highlightExpired.HasValue && highlighted.Value)
+            {
+                var now = DateTime.UtcNow;
+
+                query = highlightExpired.Value
+                    ? query.Where(j => j.HighlightStart <= now && j.HighlightEnd >= now)
+                    : query.Where(j => j.HighlightEnd < now || j.HighlightStart > now);
+            }
+        }
+
 
         if (jobLevels is { Count: > 0 })
         {
