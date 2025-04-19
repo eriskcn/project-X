@@ -14,7 +14,9 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ConversationResponse>>> GetOwnConversations(
-        [FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
         if (string.IsNullOrEmpty(userId))
@@ -62,7 +64,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
             .ThenInclude(u => u.CompanyDetail)
             .ToDictionaryAsync(m => m.ConversationId);
 
-        var responses = conversationsList
+        var orderedResponses = conversationsList
             .Select(c =>
             {
                 latestMessages.TryGetValue(c.Id, out var latestMessage);
@@ -91,10 +93,13 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                         }
                 };
             })
-            .OrderByDescending(r => r.LatestMessage)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+            .OrderByDescending(r => r.LatestMessageDetails?.Created);
+
+        var responses = pageSize == 0
+            ? orderedResponses.ToList()
+            : orderedResponses.Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
 
         return Ok(responses);
     }
