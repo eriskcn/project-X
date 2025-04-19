@@ -50,24 +50,24 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                 c.GroupName,
                 c.GroupPicture,
                 c.IsStored,
-                c.LatestMessage,
                 c.LatestMessageId
             })
             .ToListAsync();
 
-        var conversationIds = conversationsList.Select(c => c.Id).ToList();
+        var latestMessageIds = conversationsList
+            .Select(c => c.LatestMessageId)
+            .ToList();
 
         var latestMessages = await context.Messages
-            .Where(m => conversationIds.Contains(m.ConversationId) &&
-                        conversationsList.Any(c => c.LatestMessageId == m.Id))
+            .Where(m => latestMessageIds.Contains(m.Id))
             .Include(m => m.Sender)
             .ThenInclude(u => u.CompanyDetail)
-            .ToDictionaryAsync(m => m.ConversationId);
+            .ToDictionaryAsync(m => m.Id);
 
         var orderedResponses = conversationsList
             .Select(c =>
             {
-                latestMessages.TryGetValue(c.Id, out var latestMessage);
+                latestMessages.TryGetValue(c.LatestMessageId, out var latestMessage);
                 return new ConversationResponse
                 {
                     Id = c.Id,
@@ -100,9 +100,17 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
             : orderedResponses.Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
-
-        return Ok(responses);
+        var totalCount = responses.Count;
+        return Ok(new
+        {
+            Items = responses,
+            PageNumber = page,
+            PageSize = pageSize,
+            TotalItems = totalCount,
+            TotalPages = pageSize != 0 ? (int)Math.Ceiling((double)totalCount / pageSize) : 1
+        });
     }
+
 
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ConversationResponse>> GetConversation(Guid id)
