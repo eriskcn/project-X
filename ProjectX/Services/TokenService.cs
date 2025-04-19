@@ -19,7 +19,7 @@ public class TokenService(IConfiguration configuration, UserManager<User> userMa
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim("RecruiterVerified", user.RecruiterVerified.ToString())
+            // new Claim("RecruiterVerified", user.RecruiterVerified.ToString().ToLowerInvariant())
         };
 
         claims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));

@@ -1,34 +1,52 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using ProjectX.Data;
 
 namespace ProjectX.Authorization;
 
-public class RecruiterVerifiedHandler : AuthorizationHandler<RecruiterVerifiedRequirement>
+public class RecruiterVerifiedHandler(ApplicationDbContext dbContext)
+    : AuthorizationHandler<RecruiterVerifiedRequirement>
 {
-    protected override Task HandleRequirementAsync(AuthorizationHandlerContext context,
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext authContext,
         RecruiterVerifiedRequirement requirement)
     {
-        var roles = context.User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+        var userId = authContext.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (roles.Contains("Business") || roles.Contains("FreelanceRecruiter"))
+        if (!Guid.TryParse(userId, out var id))
         {
-            var recruiterVerifiedClaim = context.User.FindFirst("RecruiterVerified")?.Value;
-            var isRecruiterVerified = recruiterVerifiedClaim != null && bool.Parse(recruiterVerifiedClaim);
+            authContext.Fail();
+            return;
+        }
 
-            if (isRecruiterVerified)
-            {
-                context.Succeed(requirement);
-            }
-            else
-            {
-                context.Fail();
-            }
+        var user = await dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id);
+
+        if (user == null)
+        {
+            authContext.Fail();
+            return;
+        }
+
+        var roles = await dbContext.UserRoles
+            .Where(ur => ur.UserId == user.Id)
+            .Join(dbContext.Roles, ur => ur.RoleId, r => r.Id, (ur, r) => r.Name)
+            .ToListAsync();
+
+        if (!(roles.Contains("Business") || roles.Contains("FreelanceRecruiter")))
+        {
+            authContext.Fail();
+            return;
+        }
+
+        if (user.RecruiterVerified)
+        {
+            authContext.Succeed(requirement);
         }
         else
         {
-            context.Succeed(requirement);
+            authContext.Fail();
         }
-
-        return Task.CompletedTask;
     }
 }

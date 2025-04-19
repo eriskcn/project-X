@@ -117,9 +117,10 @@ builder.Services.AddAuthentication(options =>
 // Configure CORS for Next.js frontend
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost",
+    options.AddPolicy("AllowNextJs",
         corsPolicyBuilder => corsPolicyBuilder
             .WithOrigins("http://localhost:3000") // Next.js development server
+            // .AllowAnyOrigin() // for development
             .AllowCredentials() // Allow cookies to be sent
             .AllowAnyMethod()
             .AllowAnyHeader());
@@ -131,7 +132,7 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RecruiterVerifiedOnly", policy =>
         policy.Requirements.Add(new RecruiterVerifiedRequirement()));
 
-builder.Services.AddSingleton<IAuthorizationHandler, RecruiterVerifiedHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, RecruiterVerifiedHandler>();
 
 
 // Register token service for JWT generation
@@ -143,6 +144,7 @@ builder.Services.AddSignalR();
 // Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHostedService<OrderExpirationService>();
 
 var app = builder.Build();
 
@@ -154,7 +156,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // Enable CORS - must be before authentication/authorization
-app.UseCors("AllowLocalhost");
+app.UseCors("AllowNextJs");
 
 app.UseStaticFiles();
 
