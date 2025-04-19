@@ -18,11 +18,13 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     [HttpGet]
     public async Task<ActionResult<IEnumerable<JobResponseForCandidate>>> GetJobs(
         [FromQuery] string? search,
+        [FromQuery] bool? companyName,
         [FromQuery] List<Guid>? jobLevels,
         [FromQuery] List<Guid>? jobTypes,
         [FromQuery] List<Guid>? contractTypes,
         [FromQuery] List<Guid>? majors,
         [FromQuery] List<Guid>? locations,
+        [FromQuery] bool highlightOnly,
         [FromQuery] double? minSalary,
         [FromQuery] double? maxSalary,
         [FromQuery] int pageSize = 10,
@@ -54,12 +56,33 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
         if (!string.IsNullOrEmpty(search))
         {
+            if (!companyName.HasValue)
+            {
+                query = query.Where(j =>
+                    j.Title.Contains(search) ||
+                    j.Description.Contains(search) ||
+                    (j.Campaign.Recruiter.CompanyDetail != null &&
+                     j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search))
+                );
+            }
+            else if (companyName.Value)
+            {
+                query = query.Where(j =>
+                    j.Campaign.Recruiter.CompanyDetail != null &&
+                    j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search)
+                );
+            }
+            else
+            {
+                query = query.Where(j => j.Title.Contains(search));
+            }
+        }
+
+
+        if (highlightOnly)
+        {
             query = query.Where(j =>
-                j.Title.Contains(search) ||
-                j.Description.Contains(search) ||
-                (j.Campaign.Recruiter.CompanyDetail != null &&
-                 j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search))
-            );
+                j.IsHighlight && j.HighlightStart <= DateTime.UtcNow && j.HighlightEnd >= DateTime.UtcNow);
         }
 
         if (jobLevels is { Count: > 0 })
