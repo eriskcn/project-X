@@ -144,7 +144,7 @@ builder.Services.AddSignalR();
 // Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHostedService<OrderExpirationService>();
+// builder.Services.AddHostedService<OrderExpirationService>();
 
 var app = builder.Build();
 
