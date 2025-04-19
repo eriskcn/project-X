@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Helpers;
@@ -101,5 +102,45 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
         await context.SaveChangesAsync();
 
         return Ok(new { Message = "Profile updated successfully" });
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<UserResponse>>> GetUsers([FromQuery] string? search)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(userId, out var parsedUserId))
+        {
+            return Unauthorized(new { Message = "Invalid access token" });
+        }
+
+        var user = await context.Users.FindAsync(parsedUserId);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found" });
+        }
+
+        var baseQuery = context.Users
+            .Include(u => u.CompanyDetail)
+            .Where(u => u.Id != parsedUserId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            search = search.ToLower();
+
+            baseQuery = baseQuery.Where(u =>
+                (u.CompanyDetail != null && u.CompanyDetail.CompanyName.ToLower().Contains(search)) ||
+                (u.CompanyDetail == null && u.FullName.ToLower().Contains(search)));
+        }
+
+        var usersList = await baseQuery
+            .Select(u => new UserResponse
+            {
+                Id = u.Id,
+                Name = u.CompanyDetail != null ? u.CompanyDetail.CompanyName : u.FullName,
+                ProfilePicture = u.CompanyDetail != null ? u.CompanyDetail.Logo : u.ProfilePicture
+            })
+            .ToListAsync();
+
+        return Ok(usersList);
     }
 }
