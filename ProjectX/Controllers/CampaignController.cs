@@ -294,11 +294,15 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             .Take(pageSize)
             .ToListAsync();
 
+        var jobIds = jobs.Select(j => j.Id).ToList();
+
         var jobApplications = await context.Applications
-            .Where(a => jobs.Select(j => j.Id).Contains(a.JobId))
+            .Where(a => jobIds.Contains(a.JobId))
+            .Where(a => a.Status != ApplicationStatus.Draft)
             .GroupBy(a => a.JobId)
             .Select(g => new { JobId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(g => g.JobId, g => g.Count);
+
 
         var response = jobs.Select(j => new JobResponse
         {
