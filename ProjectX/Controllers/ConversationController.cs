@@ -24,7 +24,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
             return Unauthorized(new { Message = "Invalid access token" });
         }
 
-        var user = await context.Users.FindAsync(userId);
+        var user = await context.Users.FindAsync(Guid.Parse(userId));
         if (user == null)
         {
             return NotFound(new { Message = "User not found" });
