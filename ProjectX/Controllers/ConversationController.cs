@@ -142,7 +142,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
             GroupPicture = conversation.GroupPicture ?? string.Empty,
             IsStored = conversation.IsStored,
             LatestMessage = conversation.LatestMessage,
-            LatestMessageDetails = conversation.Messages
+            Messages = conversation.Messages
                 .OrderByDescending(m => m.Created)
                 .Select(m => new MessageResponse
                 {
@@ -156,7 +156,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                         ProfilePicture = m.Sender.CompanyDetail?.Logo ?? m.Sender.ProfilePicture
                     }
                 })
-                .FirstOrDefault()
+                .ToList(),
         };
 
         return Ok(response);
