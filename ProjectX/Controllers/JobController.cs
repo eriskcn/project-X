@@ -16,6 +16,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<JobResponseForCandidate>>> GetJobs(
         [FromQuery] string? search,
         [FromQuery] bool? companyName,

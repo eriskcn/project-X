@@ -13,6 +13,8 @@ namespace ProjectX.Controllers;
 public class JobTypeController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
+
     public async Task<ActionResult<IEnumerable<JobTypeResponse>>> GetJobTypes(
         [FromQuery] string? search,
         [FromQuery] int page = 1,

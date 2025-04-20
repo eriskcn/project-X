@@ -13,6 +13,7 @@ namespace ProjectX.Controllers;
 public class ContractTypeController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<ContractTypeResponse>>> GetContractTypes(
         [FromQuery] string? search,
         [FromQuery] int page = 1,

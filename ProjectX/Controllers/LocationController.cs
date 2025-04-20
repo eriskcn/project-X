@@ -13,6 +13,8 @@ namespace ProjectX.Controllers;
 public class LocationController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
+
     public async Task<ActionResult<IEnumerable<LocationResponse>>> GetLocations(
         [FromQuery] Region? region,
         [FromQuery] string? search,

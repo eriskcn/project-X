@@ -13,6 +13,7 @@ namespace ProjectX.Controllers;
 public class JobLevelController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<JobLevelResponse>>> GetJobLevels(
         [FromQuery] string? search,
         [FromQuery] int page = 1,

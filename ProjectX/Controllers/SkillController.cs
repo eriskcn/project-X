@@ -13,6 +13,7 @@ namespace ProjectX.Controllers;
 public class SkillController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<SkillResponse>>> GetSkills(
         [FromQuery] string? search,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
