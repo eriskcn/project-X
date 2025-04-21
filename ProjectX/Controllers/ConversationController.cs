@@ -76,6 +76,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                     .Select(m => new MessageResponse
                     {
                         Id = m.Id,
+                        ConversationId = m.Id,
                         Content = m.Content ?? string.Empty,
                         Created = m.Created,
                         Sender = new UserResponse
@@ -174,6 +175,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                 .Select(m => new MessageResponse
                 {
                     Id = m.Id,
+                    ConversationId = m.ConversationId,
                     Content = m.Content ?? string.Empty,
                     Created = m.Created,
                     Sender = new UserResponse

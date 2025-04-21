@@ -49,15 +49,42 @@ public class MessageHub(
         conversation.LatestMessage = message.Created;
         conversation.LatestMessageId = message.Id;
         context.Conversations.Update(conversation);
-
         await context.SaveChangesAsync();
 
-        await NotifyRecipient(
-            request.ReceiverId,
-            message.Id,
-            message.Content ?? string.Empty,
-            attachedFile?.Name);
+        var sender = await context.Users.FindAsync(senderId);
+        FileResponse? fileResponse = null;
+        if (attachedFile != null)
+        {
+            fileResponse = new FileResponse
+            {
+                Name = attachedFile.Name,
+                Path = attachedFile.Path,
+                Uploaded = attachedFile.Uploaded
+            };
+        }
+
+        var response = new MessageResponse
+        {
+            Id = message.Id,
+            ConversationId = message.ConversationId,
+            Content = message.Content,
+            Sender = new UserResponse
+            {
+                Id = sender!.Id,
+                Name = sender.FullName,
+                ProfilePicture = sender.ProfilePicture
+            },
+            IsRead = message.IsRead,
+            Created = message.Created,
+            AttachedFile = fileResponse,
+            Read = message.Read,
+            IsEdited = message.IsEdited,
+            Edited = message.Edited
+        };
+
+        await NotifyRecipient(request.ReceiverId, response);
     }
+
 
     public async Task MarkAsRead(Guid messageId)
     {
@@ -123,6 +150,7 @@ public class MessageHub(
         var messageResponses = unreadMessages.Select(m => new
         {
             m.Id,
+            m.ConversationId,
             m.Content,
             m.Created
         });
@@ -263,15 +291,15 @@ public class MessageHub(
         };
     }
 
-    private async Task NotifyRecipient(Guid recipientId, Guid messageId, string content, string? fileName)
+    private async Task NotifyRecipient(Guid recipientId, MessageResponse response)
     {
         if (connectionMapping.HasConnection(recipientId, Context.ConnectionId))
         {
-            await Clients.User(recipientId.ToString())
-                .SendAsync("ReceiveMessage", messageId, content, fileName);
+            await Clients.User(recipientId.ToString()).SendAsync("ReceiveMessage", response);
+
             if (env.IsDevelopment())
             {
-                logger.LogDebug("Notified recipient {RecipientId} for message {MessageId}", recipientId, messageId);
+                logger.LogDebug("Notified recipient {RecipientId} for message {MessageId}", recipientId, response.Id);
             }
         }
         else
@@ -279,7 +307,7 @@ public class MessageHub(
             if (env.IsDevelopment())
             {
                 logger.LogDebug("Recipient {RecipientId} has no active connections for message {MessageId}",
-                    recipientId, messageId);
+                    recipientId, response.Id);
             }
         }
     }
