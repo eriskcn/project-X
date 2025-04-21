@@ -389,7 +389,8 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = TargetType.PostAttachment,
                     TargetId = comment.Id,
-                    Uploaded = DateTime.UtcNow
+                    Uploaded = DateTime.UtcNow,
+                    UploadedById = Guid.Parse(userId),
                 };
 
                 context.AttachedFiles.Add(attachedFile);
@@ -879,7 +880,8 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = TargetType.PostAttachment,
                     TargetId = post.Id,
-                    Uploaded = DateTime.UtcNow
+                    Uploaded = DateTime.UtcNow,
+                    UploadedById = Guid.Parse(userId)
                 };
 
                 context.AttachedFiles.Add(attachedFile);
