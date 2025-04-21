@@ -509,8 +509,8 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             JobId = jobId,
             Days = days,
             Amount = amount,
-            StartDate = request.HighlightStart,
-            EndDate = request.HighlightEnd,
+            StartDate = request.HighlightStart.AddMinutes(15),
+            EndDate = request.HighlightEnd.AddMinutes(15),
             Status = OrderStatus.Pending
         };
 
