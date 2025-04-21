@@ -16,7 +16,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
 {
     [HttpGet]
     [AllowAnonymous]
-    public async Task<ActionResult<IEnumerable<PostResponse>>> GetPosts(
+    public async Task<ActionResult> GetPosts(
         [FromQuery] string? search,
         [FromQuery] DateTime? startDate,
         [FromQuery] DateTime? endDate,
@@ -28,6 +28,27 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             return BadRequest(new { Message = "Page number and page size must be greater than zero." });
         }
 
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        List<LikeResponse>? likes = null;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var user = await context.Users.FindAsync(Guid.Parse(userId));
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found." });
+            }
+
+            likes = await context.Likes
+                .Where(l => l.UserId == Guid.Parse(userId))
+                .Select(l => new LikeResponse
+                {
+                    Id = l.Id,
+                    PostId = l.PostId,
+                    IsLike = l.IsLike
+                })
+                .ToListAsync();
+        }
+
         var query = context.Posts
             .Include(p => p.User)
             .ThenInclude(u => u.CompanyDetail)
@@ -36,7 +57,8 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
 
         if (!string.IsNullOrEmpty(search))
         {
-            query = query.Where(p => p.Content.Contains(search));
+            var lowCaseSearch = search.ToLower();
+            query = query.Where(p => p.Content.ToLower().Contains(lowCaseSearch));
         }
 
         if (startDate.HasValue)
@@ -77,39 +99,43 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             .Where(f => f.Type == TargetType.PostAttachment && postIds.Contains(f.TargetId))
             .ToListAsync();
 
-        var items = posts.Select(p => new PostResponse
+        var items = posts.Select(p =>
         {
-            Id = p.Id,
-            Content = p.Content,
-            IsEdited = p.IsEdited,
-            Edited = p.Edited,
-            User = new UserResponse
+            var postLikes = likes?.FirstOrDefault(l => l.PostId == p.Id);
+            return new PostResponse
             {
-                Id = p.User.Id,
-                Name = p.User.CompanyDetail != null ? p.User.CompanyDetail.CompanyName : p.User.FullName,
-                ProfilePicture = p.User.CompanyDetail != null ? p.User.CompanyDetail.Logo : p.User.ProfilePicture
-            },
-            LikesCount = likeCounts.GetValueOrDefault(p.Id, 0),
-            CommentsCount = commentCounts.GetValueOrDefault(p.Id, 0),
-            AttachedFile = attachedFiles
-                .Where(f => f.TargetId == p.Id)
-                .Select(f => new FileResponse
+                Id = p.Id,
+                Content = p.Content,
+                Liked = postLikes?.IsLike,
+                IsEdited = p.IsEdited,
+                Edited = p.Edited,
+                User = new UserResponse
                 {
-                    Id = f.Id,
-                    Name = f.Name,
-                    Path = f.Path,
-                    Uploaded = f.Uploaded
-                })
-                .SingleOrDefault() ?? new FileResponse
-            {
-                Id = Guid.Empty,
-                Name = "No attached file",
-                Path = "",
-                Uploaded = DateTime.UtcNow
-            },
-            Created = p.Created
-        });
-
+                    Id = p.User.Id,
+                    Name = p.User.CompanyDetail != null ? p.User.CompanyDetail.CompanyName : p.User.FullName,
+                    ProfilePicture = p.User.CompanyDetail != null ? p.User.CompanyDetail.Logo : p.User.ProfilePicture
+                },
+                LikesCount = likeCounts.GetValueOrDefault(p.Id, 0),
+                CommentsCount = commentCounts.GetValueOrDefault(p.Id, 0),
+                AttachedFile = attachedFiles
+                    .Where(f => f.TargetId == p.Id)
+                    .Select(f => new FileResponse
+                    {
+                        Id = f.Id,
+                        Name = f.Name,
+                        Path = f.Path,
+                        Uploaded = f.Uploaded
+                    })
+                    .SingleOrDefault() ?? new FileResponse
+                {
+                    Id = Guid.Empty,
+                    Name = "No attached file",
+                    Path = string.Empty,
+                    Uploaded = DateTime.UtcNow
+                },
+                Created = p.Created
+            };
+        }).ToList();
 
         return Ok(new
         {
@@ -126,7 +152,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
 
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
-    public async Task<ActionResult<PostResponse>> GetPost(
+    public async Task<ActionResult> GetPost(
         [FromRoute] Guid id,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
@@ -134,6 +160,22 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
         if (page <= 0 || pageSize <= 0)
         {
             return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        bool? userLikedPost = null;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var user = await context.Users.FindAsync(Guid.Parse(userId));
+            if (user == null)
+            {
+                return NotFound(new { Message = "User not found." });
+            }
+
+            userLikedPost = await context.Likes
+                .Where(l => l.UserId == Guid.Parse(userId) && l.PostId == id)
+                .Select(l => l.IsLike)
+                .FirstOrDefaultAsync();
         }
 
         var post = await context.Posts
@@ -184,10 +226,30 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             .Select(g => new { PostId = g.Key, Count = g.Sum(l => l.IsLike ? 1 : -1) })
             .ToDictionaryAsync(g => g.PostId, g => g.Count);
 
+        var userCommentLikes = !string.IsNullOrEmpty(userId)
+            ? await context.Likes
+                .Where(l => l.UserId == Guid.Parse(userId) && commentIds.Contains(l.PostId))
+                .Select(l => new { l.PostId, l.IsLike })
+                .ToDictionaryAsync(l => l.PostId, l => l.IsLike)
+            : new Dictionary<Guid, bool>();
+
+        // Query attached files for comments
+        var commentAttachedFiles = await context.AttachedFiles
+            .Where(f => f.Type == TargetType.PostAttachment && commentIds.Contains(f.TargetId))
+            .Select(f => new FileResponse
+            {
+                Id = f.Id,
+                Name = f.Name,
+                Path = f.Path,
+                Uploaded = f.Uploaded
+            })
+            .ToListAsync();
+
         var commentResponses = comments.Select(c => new PostResponse
         {
             Id = c.Id,
             Content = c.Content,
+            Liked = userCommentLikes.GetValueOrDefault(c.Id, false),
             IsEdited = c.IsEdited,
             Edited = c.Edited,
             Created = c.Created,
@@ -199,7 +261,14 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             },
             LikesCount = commentLikes.GetValueOrDefault(c.Id, 0),
             CommentsCount = 0,
-            AttachedFile = null
+            AttachedFile = commentAttachedFiles
+                .SingleOrDefault(f => f.Id == c.Id) ?? new FileResponse
+            {
+                Id = Guid.Empty,
+                Name = "No attached file",
+                Path = string.Empty,
+                Uploaded = DateTime.UtcNow
+            }
         }).ToList();
 
         var response = new
@@ -208,6 +277,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             {
                 Id = post.Id,
                 Content = post.Content,
+                Liked = userLikedPost ?? false,
                 IsEdited = post.IsEdited,
                 Edited = post.Edited,
                 Created = post.Created,
@@ -223,7 +293,10 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 CommentsCount = totalComments,
                 AttachedFile = attachedFile ?? new FileResponse
                 {
-                    Id = Guid.Empty, Name = "No attached file", Path = "", Uploaded = DateTime.UtcNow
+                    Id = Guid.Empty,
+                    Name = "No attached file",
+                    Path = string.Empty,
+                    Uploaded = DateTime.UtcNow
                 }
             },
             Comments = commentResponses,
@@ -444,20 +517,24 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
+            // Check if the user has already liked/disliked the post
             var existingLike = await context.Likes
                 .IgnoreSoftDelete()
                 .SingleOrDefaultAsync(l => l.UserId == user.Id && l.PostId == id);
 
+            bool? isLiked; // Default to null (no interaction)
             if (existingLike != null)
             {
                 if (existingLike is { IsDeleted: false, IsLike: true })
                 {
                     existingLike.IsDeleted = true;
+                    isLiked = null; // Like removed, no interaction
                 }
                 else
                 {
                     existingLike.IsDeleted = false;
                     existingLike.IsLike = true;
+                    isLiked = true; // Like applied
                 }
             }
             else
@@ -471,10 +548,13 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     IsDeleted = false
                 };
                 context.Likes.Add(newLike);
+                isLiked = true; // New like
             }
 
+            // Save changes to database
             await context.SaveChangesAsync();
 
+            // Fetch data for response within transaction
             var postUser = await context.Users
                 .Include(u => u.CompanyDetail)
                 .Where(u => u.Id == post.UserId)
@@ -491,6 +571,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 throw new InvalidOperationException("Post user not found.");
             }
 
+            // Get attached file (if any)
             var attachedFile = await context.AttachedFiles
                 .Where(f => f.TargetId == post.Id && f.Type == TargetType.PostAttachment)
                 .Select(f => new FileResponse
@@ -502,11 +583,23 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 })
                 .SingleOrDefaultAsync();
 
+            // Check if user liked/disliked the parent post (if applicable)
+            bool? parentPostLiked = null;
+            if (post.ParentId != null)
+            {
+                var parentLike = await context.Likes
+                    .Where(l => l.UserId == user.Id && l.PostId == post.ParentId && !l.IsDeleted)
+                    .Select(l => new { l.IsLike })
+                    .SingleOrDefaultAsync();
+                parentPostLiked = parentLike?.IsLike;
+            }
+
             // Create response
             var response = new PostResponse
             {
                 Id = post.Id,
                 Content = post.Content,
+                Liked = isLiked, // Set Liked based on the like action
                 User = postUser,
                 ParentPost = post.ParentId != null
                     ? await context.Posts
@@ -517,6 +610,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                         {
                             Id = p.Id,
                             Content = p.Content,
+                            Liked = parentPostLiked, // Set Liked for parent post
                             User = new UserResponse
                             {
                                 Id = p.User.Id,
@@ -527,20 +621,21 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                                     ? p.User.CompanyDetail.Logo
                                     : p.User.ProfilePicture
                             },
-                            LikesCount = context.Likes.Where(l => l.PostId == p.Id).Sum(l => l.IsLike ? 1 : -1),
+                            LikesCount = context.Likes.Where(l => l.PostId == p.Id && !l.IsDeleted)
+                                .Sum(l => l.IsLike ? 1 : -1),
                             CommentsCount = context.Posts.Count(c => c.ParentId == p.Id),
                             Created = p.Created
                         })
                         .SingleOrDefaultAsync()
                     : null,
-                LikesCount = context.Likes.Where(l => l.PostId == post.Id).Sum(l => l.IsLike ? 1 : -1),
+                LikesCount = context.Likes.Where(l => l.PostId == post.Id && !l.IsDeleted).Sum(l => l.IsLike ? 1 : -1),
                 CommentsCount = context.Posts.Count(c => c.ParentId == post.Id),
                 Created = post.Created,
                 AttachedFile = attachedFile ?? new FileResponse
                 {
                     Id = Guid.Empty,
                     Name = "No attached file",
-                    Path = "",
+                    Path = string.Empty,
                     Uploaded = DateTime.UtcNow
                 }
             };
@@ -586,21 +681,24 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            // Check if the user has already disliked the post
+            // Check if the user has already liked/disliked the post
             var existingLike = await context.Likes
                 .IgnoreSoftDelete()
                 .SingleOrDefaultAsync(l => l.UserId == user.Id && l.PostId == id);
 
+            bool? isLiked; // Default to null (no interaction)
             if (existingLike != null)
             {
                 if (existingLike is { IsDeleted: false, IsLike: false })
                 {
                     existingLike.IsDeleted = true;
+                    isLiked = null; // Dislike removed, no interaction
                 }
                 else
                 {
                     existingLike.IsDeleted = false;
                     existingLike.IsLike = false;
+                    isLiked = false; // Dislike applied
                 }
             }
             else
@@ -614,6 +712,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     IsDeleted = false
                 };
                 context.Likes.Add(newLike);
+                isLiked = false; // New dislike
             }
 
             // Save changes to database
@@ -648,11 +747,23 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 })
                 .SingleOrDefaultAsync();
 
+            // Check if user liked/disliked the parent post (if applicable)
+            bool? parentPostLiked = null;
+            if (post.ParentId != null)
+            {
+                var parentLike = await context.Likes
+                    .Where(l => l.UserId == user.Id && l.PostId == post.ParentId && !l.IsDeleted)
+                    .Select(l => new { l.IsLike })
+                    .SingleOrDefaultAsync();
+                parentPostLiked = parentLike?.IsLike;
+            }
+
             // Create response
             var response = new PostResponse
             {
                 Id = post.Id,
                 Content = post.Content,
+                Liked = isLiked, // Set Liked based on the dislike action
                 User = postUser,
                 ParentPost = post.ParentId != null
                     ? await context.Posts
@@ -663,6 +774,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                         {
                             Id = p.Id,
                             Content = p.Content,
+                            Liked = parentPostLiked, // Set Liked for parent post
                             User = new UserResponse
                             {
                                 Id = p.User.Id,
@@ -673,20 +785,21 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                                     ? p.User.CompanyDetail.Logo
                                     : p.User.ProfilePicture
                             },
-                            LikesCount = context.Likes.Where(l => l.PostId == p.Id).Sum(l => l.IsLike ? 1 : -1),
+                            LikesCount = context.Likes.Where(l => l.PostId == p.Id && !l.IsDeleted)
+                                .Sum(l => l.IsLike ? 1 : -1),
                             CommentsCount = context.Posts.Count(c => c.ParentId == p.Id),
                             Created = p.Created
                         })
                         .SingleOrDefaultAsync()
                     : null,
-                LikesCount = context.Likes.Where(l => l.PostId == post.Id).Sum(l => l.IsLike ? 1 : -1),
+                LikesCount = context.Likes.Where(l => l.PostId == post.Id && !l.IsDeleted).Sum(l => l.IsLike ? 1 : -1),
                 CommentsCount = context.Posts.Count(c => c.ParentId == post.Id),
                 Created = post.Created,
                 AttachedFile = attachedFile ?? new FileResponse
                 {
                     Id = Guid.Empty,
                     Name = "No attached file",
-                    Path = "",
+                    Path = string.Empty,
                     Uploaded = DateTime.UtcNow
                 }
             };

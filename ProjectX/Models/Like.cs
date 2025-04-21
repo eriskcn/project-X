@@ -14,6 +14,6 @@ public class Like : BaseEntity
     [Required] public required Guid UserId { get; set; }
     [JsonIgnore] [ForeignKey("UserId")] public User User { get; set; } = null!;
     [Required] public required Guid PostId { get; set; }
-    [ForeignKey("PostId")] public Post Post { get; set; } = null!;
+    [JsonIgnore] [ForeignKey("PostId")] public Post Post { get; set; } = null!;
     public required bool IsLike { get; set; }
 }

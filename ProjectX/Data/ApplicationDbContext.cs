@@ -123,6 +123,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(cd => cd.LocationId)
             .IsRequired();
 
+        builder.Entity<Post>().HasIndex(p => p.Content);
+        builder.Entity<Post>().HasIndex(p => p.Created);
+        builder.Entity<Post>().HasIndex(p => p.ParentId);
+
+        builder.Entity<Like>().HasIndex(l => l.PostId);
+        builder.Entity<Like>().HasIndex(l => l.UserId);
+
         builder.Entity<Role>().HasData(
             new Role { Id = Guid.NewGuid(), Name = "Admin", NormalizedName = "ADMIN" },
             new Role { Id = Guid.NewGuid(), Name = "Candidate", NormalizedName = "CANDIDATE" },
