@@ -78,7 +78,8 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
         }
 
         var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
-        if (request.ProfilePicture != null)
+
+        if (request.ProfilePicture is { Length: > 0 })
         {
             var ext = Path.GetExtension(request.ProfilePicture.FileName).ToLower();
             if (!allowedExtensions.Contains(ext))
@@ -93,6 +94,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
 
             var avatarFileName = $"{Guid.NewGuid()}{ext}";
             var profilePicturePath = Path.Combine(avatarsFolder, avatarFileName);
+
             await using var stream = new FileStream(profilePicturePath, FileMode.Create);
             await request.ProfilePicture.CopyToAsync(stream);
 
@@ -103,6 +105,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
 
         return Ok(new { Message = "Profile updated successfully" });
     }
+
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<UserResponse>>> GetUsers([FromQuery] string? search)
