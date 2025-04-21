@@ -32,6 +32,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
 
         var baseQuery = context.Conversations
             .Include(c => c.Participants)
+            .ThenInclude(u => u.CompanyDetail)
             .Where(c => c.Participants.Any(p => p.Id.ToString() == userId));
 
         if (!string.IsNullOrEmpty(search))
@@ -42,68 +43,71 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                     : p.FullName.Contains(search)));
         }
 
-        var conversationsList = await baseQuery
-            .Select(c => new
+        var conversationEntities = await baseQuery.ToListAsync();
+
+        var responses = new List<ConversationResponse>();
+
+        foreach (var c in conversationEntities)
+        {
+            var participant = c.Participants.SingleOrDefault(p => p.Id.ToString() != userId);
+            if (participant == null)
             {
-                c.Id,
-                c.IsGroup,
-                c.GroupName,
-                c.GroupPicture,
-                c.IsStored,
-                c.LatestMessageId
-            })
-            .ToListAsync();
+                throw new InvalidOperationException(
+                    $"Conversation {c.Id} must contain at least one other participant.");
+            }
 
-        var latestMessageIds = conversationsList
-            .Select(c => c.LatestMessageId)
-            .ToList();
-
-        var latestMessages = await context.Messages
-            .Where(m => latestMessageIds.Contains(m.Id))
-            .Include(m => m.Sender)
-            .ThenInclude(u => u.CompanyDetail)
-            .ToDictionaryAsync(m => m.Id);
-
-        var orderedResponses = conversationsList
-            .Select(c =>
+            var response = new ConversationResponse
             {
-                latestMessages.TryGetValue(c.LatestMessageId, out var latestMessage);
-                return new ConversationResponse
+                Id = c.Id,
+                IsGroup = c.IsGroup,
+                GroupName = c.GroupName ?? string.Empty,
+                GroupPicture = c.GroupPicture ?? string.Empty,
+                IsStored = c.IsStored,
+                Participant = new UserResponse
                 {
-                    Id = c.Id,
-                    IsGroup = c.IsGroup,
-                    GroupName = c.GroupName ?? string.Empty,
-                    GroupPicture = c.GroupPicture ?? string.Empty,
-                    IsStored = c.IsStored,
-                    LatestMessageDetails = latestMessage == null
-                        ? null
-                        : new MessageResponse
+                    Id = participant.Id,
+                    Name = participant.CompanyDetail?.CompanyName ?? participant.FullName,
+                    ProfilePicture = participant.CompanyDetail?.Logo ?? participant.ProfilePicture
+                },
+                LatestMessageDetails = await context.Messages.Where(m => m.Id == c.LatestMessageId)
+                    .Include(m => m.Sender)
+                    .ThenInclude(u => u.CompanyDetail)
+                    .Select(m => new MessageResponse
+                    {
+                        Id = m.Id,
+                        Content = m.Content ?? string.Empty,
+                        Created = m.Created,
+                        Sender = new UserResponse
                         {
-                            Id = latestMessage.Id,
-                            Content = latestMessage.Content ?? string.Empty,
-                            Created = latestMessage.Created,
-                            Sender = new UserResponse
-                            {
-                                Id = latestMessage.Sender.Id,
-                                Name = latestMessage.Sender.CompanyDetail?.CompanyName ??
-                                       latestMessage.Sender.FullName,
-                                ProfilePicture = latestMessage.Sender.CompanyDetail?.Logo ??
-                                                 latestMessage.Sender.ProfilePicture
-                            }
+                            Id = m.Sender.Id,
+                            Name = m.Sender.CompanyDetail != null
+                                ? m.Sender.CompanyDetail.CompanyName
+                                : m.Sender.FullName,
+                            ProfilePicture = m.Sender.CompanyDetail != null
+                                ? m.Sender.CompanyDetail.Logo
+                                : m.Sender.ProfilePicture,
                         }
-                };
-            })
+                    })
+                    .SingleOrDefaultAsync(),
+            };
+
+            responses.Add(response);
+        }
+
+        var orderedResponses = responses
             .OrderByDescending(r => r.LatestMessageDetails?.Created);
 
-        var responses = pageSize == 0
+        var pagedResponses = pageSize == 0
             ? orderedResponses.ToList()
             : orderedResponses.Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToList();
+
         var totalCount = responses.Count;
+
         return Ok(new
         {
-            Items = responses,
+            Items = pagedResponses,
             PageNumber = page,
             PageSize = pageSize,
             TotalItems = totalCount,
@@ -134,6 +138,27 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
             return NotFound(new { Message = "Conversation not found" });
         }
 
+        var participant = conversation.Participants
+            .Where(p => p.Id.ToString() != userId)
+            .Select(p => new UserResponse
+            {
+                Id = p.Id,
+                Name = p.CompanyDetail != null
+                    ? p.CompanyDetail.CompanyName
+                    : p.FullName,
+                ProfilePicture = p.CompanyDetail != null
+                    ? p.CompanyDetail.Logo
+                    : p.ProfilePicture
+            })
+            .SingleOrDefault();
+
+        if (participant == null)
+        {
+            throw new InvalidOperationException(
+                "Conversation must contain at least one participant other than the current user.");
+        }
+
+
         var response = new ConversationResponse
         {
             Id = conversation.Id,
@@ -141,6 +166,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
             GroupName = conversation.GroupName ?? string.Empty,
             GroupPicture = conversation.GroupPicture ?? string.Empty,
             IsStored = conversation.IsStored,
+            Participant = participant,
             LatestMessage = conversation.LatestMessage,
             Messages = conversation.Messages
                 .OrderByDescending(m => m.Created)
@@ -152,8 +178,12 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                     Sender = new UserResponse
                     {
                         Id = m.Sender.Id,
-                        Name = m.Sender.CompanyDetail?.CompanyName ?? m.Sender.FullName,
-                        ProfilePicture = m.Sender.CompanyDetail?.Logo ?? m.Sender.ProfilePicture
+                        Name = m.Sender.CompanyDetail != null
+                            ? m.Sender.CompanyDetail.CompanyName
+                            : m.Sender.FullName,
+                        ProfilePicture = m.Sender.CompanyDetail != null
+                            ? m.Sender.CompanyDetail.Logo
+                            : m.Sender.ProfilePicture
                     }
                 })
                 .ToList(),
