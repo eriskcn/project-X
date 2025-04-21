@@ -30,6 +30,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
         var query = context.Posts
             .Include(p => p.User)
             .ThenInclude(u => u.CompanyDetail)
+            .Where(p => p.ParentId == null)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
