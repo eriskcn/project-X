@@ -329,7 +329,8 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Location = new LocationResponse
             {
                 Id = j.Location.Id,
-                Name = j.Location.Name
+                Name = j.Location.Name,
+                Region = j.Location.Region
             },
             JobDescription = context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)

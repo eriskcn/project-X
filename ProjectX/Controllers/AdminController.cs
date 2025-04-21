@@ -118,7 +118,8 @@ public class AdminController(
                     Location = new LocationResponse
                     {
                         Id = company.Location.Id,
-                        Name = company.Location.Name
+                        Name = company.Location.Name,
+                        Region = company.Location.Region
                     },
                     Majors = majors,
                     RegistrationFile = registrationFile
@@ -219,7 +220,8 @@ public class AdminController(
                 Location = new LocationResponse
                 {
                     Id = company.Location.Id,
-                    Name = company.Location.Name
+                    Name = company.Location.Name,
+                    Region = company.Location.Region
                 },
                 Majors = majors,
                 RegistrationFile = registrationFile

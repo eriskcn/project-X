@@ -157,8 +157,17 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 YearOfExperience = j.YearOfExperience,
                 MinSalary = j.MinSalary,
                 MaxSalary = j.MaxSalary,
-                Major = new MajorResponse { Id = j.Major.Id, Name = j.Major.Name },
-                Location = new LocationResponse { Id = j.Location.Id, Name = j.Location.Name },
+                Major = new MajorResponse
+                {
+                    Id = j.Major.Id,
+                    Name = j.Major.Name
+                },
+                Location = new LocationResponse
+                {
+                    Id = j.Location.Id,
+                    Name = j.Location.Name,
+                    Region = j.Location.Region
+                },
                 JobDescription = context.AttachedFiles
                     .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)
                     .Select(f => new FileResponse
@@ -296,7 +305,8 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             Location = new LocationResponse
             {
                 Id = job.Location.Id,
-                Name = job.Location.Name
+                Name = job.Location.Name,
+                Region = job.Location.Region
             },
             JobDescription = await context.AttachedFiles
                 .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)

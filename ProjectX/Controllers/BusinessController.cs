@@ -79,7 +79,8 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 Location = new LocationResponse
                 {
                     Id = companyDetail.Location.Id,
-                    Name = companyDetail.Location.Name
+                    Name = companyDetail.Location.Name,
+                    Region = companyDetail.Location.Region
                 },
                 Majors = companyDetail.Majors.Select(m => new MajorResponse
                 {

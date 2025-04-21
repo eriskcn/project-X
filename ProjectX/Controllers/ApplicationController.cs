@@ -102,8 +102,17 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                     IsHighlight = a.Job.IsHighlight,
                     HighlightStart = a.Job.HighlightStart,
                     HighlightEnd = a.Job.HighlightEnd,
-                    Major = new MajorResponse { Id = a.Job.Major.Id, Name = a.Job.Major.Name },
-                    Location = new LocationResponse { Id = a.Job.Location.Id, Name = a.Job.Location.Name },
+                    Major = new MajorResponse
+                    {
+                        Id = a.Job.Major.Id,
+                        Name = a.Job.Major.Name
+                    },
+                    Location = new LocationResponse
+                    {
+                        Id = a.Job.Location.Id,
+                        Name = a.Job.Location.Name,
+                        Region = a.Job.Location.Region
+                    },
                     JobDescription = await context.AttachedFiles
                         .Where(f => f.Type == TargetType.JobDescription && f.TargetId == a.Job.Id)
                         .Select(f => new FileResponse
@@ -290,7 +299,8 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                 Location = new LocationResponse
                 {
                     Id = application.Job.Location.Id,
-                    Name = application.Job.Location.Name
+                    Name = application.Job.Location.Name,
+                    Region = application.Job.Location.Region
                 },
                 JobDescription = jobDescription,
                 Skills = application.Job.Skills
