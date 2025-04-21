@@ -15,6 +15,7 @@ namespace ProjectX.Controllers;
 public class PostController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<PostResponse>>> GetPosts(
         [FromQuery] string? search,
         [FromQuery] DateTime? startDate,
@@ -124,6 +125,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
 
 
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     public async Task<ActionResult<PostResponse>> GetPost(
         [FromRoute] Guid id,
         [FromQuery] int page = 1,
