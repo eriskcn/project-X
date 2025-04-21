@@ -69,6 +69,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                     Name = participant.CompanyDetail?.CompanyName ?? participant.FullName,
                     ProfilePicture = participant.CompanyDetail?.Logo ?? participant.ProfilePicture
                 },
+                LatestMessage = c.LatestMessage,
                 LatestMessageDetails = await context.Messages.Where(m => m.Id == c.LatestMessageId)
                     .Include(m => m.Sender)
                     .ThenInclude(u => u.CompanyDetail)
