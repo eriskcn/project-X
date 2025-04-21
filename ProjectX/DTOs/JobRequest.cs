@@ -24,11 +24,11 @@ public class JobRequest
 
     [Required] public Guid MajorId { set; get; }
 
-    public bool IsHighlight { set; get; }
-
-    public DateTime? HighlightStart { set; get; }
-
-    public DateTime? HighlightEnd { set; get; }
+    // public bool IsHighlight { set; get; }
+    //
+    // public DateTime? HighlightStart { set; get; }
+    //
+    // public DateTime? HighlightEnd { set; get; }
 
     [Required] public Guid CampaignId { set; get; }
 
