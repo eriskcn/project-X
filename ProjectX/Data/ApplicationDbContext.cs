@@ -134,6 +134,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<Like>().HasIndex(l => l.PostId);
         builder.Entity<Like>().HasIndex(l => l.UserId);
+        
+        builder.Entity<Like>()
+            .HasIndex(l => new { l.UserId, l.PostId })
+            .IsUnique();
+
 
         builder.Entity<Role>().HasData(
             new Role { Id = Guid.NewGuid(), Name = "Admin", NormalizedName = "ADMIN" },
