@@ -101,7 +101,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
 
         var items = posts.Select(p =>
         {
-            var postLikes = likes?.FirstOrDefault(l => l.PostId == p.Id);
+            var postLikes = likes?.SingleOrDefault(l => l.PostId == p.Id);
             return new PostResponse
             {
                 Id = p.Id,
@@ -122,6 +122,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
+                        TargetId = f.TargetId,
                         Name = f.Name,
                         Path = f.Path,
                         Uploaded = f.Uploaded
@@ -175,7 +176,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             userLikedPost = await context.Likes
                 .Where(l => l.UserId == Guid.Parse(userId) && l.PostId == id)
                 .Select(l => l.IsLike)
-                .FirstOrDefaultAsync();
+                .SingleOrDefaultAsync();
         }
 
         var post = await context.Posts
@@ -197,6 +198,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             .Select(f => new FileResponse
             {
                 Id = f.Id,
+                TargetId = f.TargetId,
                 Name = f.Name,
                 Path = f.Path,
                 Uploaded = f.Uploaded
@@ -239,6 +241,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             .Select(f => new FileResponse
             {
                 Id = f.Id,
+                TargetId = f.TargetId,
                 Name = f.Name,
                 Path = f.Path,
                 Uploaded = f.Uploaded
@@ -262,7 +265,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             LikesCount = commentLikes.GetValueOrDefault(c.Id, 0),
             CommentsCount = 0,
             AttachedFile = commentAttachedFiles
-                .SingleOrDefault(f => f.Id == c.Id) ?? new FileResponse
+                .SingleOrDefault(f => f.TargetId == c.Id) ?? new FileResponse
             {
                 Id = Guid.Empty,
                 Name = "No attached file",
@@ -295,6 +298,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 AttachedFile = attachedFile ?? new FileResponse
                 {
                     Id = Guid.Empty,
+                    TargetId = Guid.Empty,
                     Name = "No attached file",
                     Path = string.Empty,
                     Uploaded = DateTime.UtcNow
@@ -385,7 +389,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
 
                 attachedFile = new AttachedFile
                 {
-                    Name = request.AttachedFile.FileName,
+                    Name = fileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = TargetType.PostAttachment,
                     TargetId = comment.Id,
@@ -464,6 +468,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     ? new FileResponse
                     {
                         Id = attachedFile.Id,
+                        TargetId = attachedFile.TargetId,
                         Name = attachedFile.Name,
                         Path = attachedFile.Path,
                         Uploaded = attachedFile.Uploaded
@@ -471,6 +476,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     : new FileResponse
                     {
                         Id = Guid.Empty,
+                        TargetId = Guid.Empty,
                         Name = "No attached file",
                         Path = "",
                         Uploaded = DateTime.UtcNow
@@ -578,6 +584,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
+                    TargetId = f.TargetId,
                     Name = f.Name,
                     Path = f.Path,
                     Uploaded = f.Uploaded
@@ -635,6 +642,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 AttachedFile = attachedFile ?? new FileResponse
                 {
                     Id = Guid.Empty,
+                    TargetId = Guid.Empty,
                     Name = "No attached file",
                     Path = string.Empty,
                     Uploaded = DateTime.UtcNow
@@ -742,6 +750,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
+                    TargetId = f.TargetId,
                     Name = f.Name,
                     Path = f.Path,
                     Uploaded = f.Uploaded
@@ -799,6 +808,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 AttachedFile = attachedFile ?? new FileResponse
                 {
                     Id = Guid.Empty,
+                    TargetId = Guid.Empty,
                     Name = "No attached file",
                     Path = string.Empty,
                     Uploaded = DateTime.UtcNow
