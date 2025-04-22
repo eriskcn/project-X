@@ -86,6 +86,7 @@ public class AdminController(
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
+                    TargetId = f.TargetId,
                     Name = f.Name,
                     Path = f.Path,
                     Uploaded = f.Uploaded
@@ -188,6 +189,7 @@ public class AdminController(
             .Select(f => new FileResponse
             {
                 Id = f.Id,
+                TargetId = f.TargetId,
                 Name = f.Name,
                 Path = f.Path,
                 Uploaded = f.Uploaded
@@ -350,6 +352,7 @@ public class AdminController(
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,
+                                TargetId = f.TargetId,
                                 Name = f.Name,
                                 Path = f.Path,
                                 Uploaded = f.Uploaded
@@ -360,6 +363,7 @@ public class AdminController(
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,
+                                TargetId = f.TargetId,
                                 Name = f.Name,
                                 Path = f.Path,
                                 Uploaded = f.Uploaded
@@ -436,6 +440,7 @@ public class AdminController(
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,
+                                TargetId = f.TargetId,
                                 Name = f.Name,
                                 Path = f.Path,
                                 Uploaded = f.Uploaded
@@ -446,6 +451,7 @@ public class AdminController(
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,
+                                TargetId = f.TargetId,
                                 Name = f.Name,
                                 Path = f.Path,
                                 Uploaded = f.Uploaded
@@ -520,6 +526,7 @@ public class AdminController(
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
+                        TargetId = f.TargetId,
                         Name = f.Name,
                         Path = f.Path,
                         Uploaded = f.Uploaded
@@ -530,6 +537,7 @@ public class AdminController(
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
+                        TargetId = f.TargetId,
                         Name = f.Name,
                         Path = f.Path,
                         Uploaded = f.Uploaded
