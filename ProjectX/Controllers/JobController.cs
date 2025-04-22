@@ -520,6 +520,121 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         return Ok(new { OrderId = order.Id, Message = "Highlight request created successfully." });
     }
 
+    [HttpPost("{jobId:guid}/save")]
+    [Authorize(Roles = "Candidate")]
+    public async Task<IActionResult> SaveJob(Guid jobId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+        {
+            return BadRequest(new { Message = "User ID not found in access token." });
+        }
+
+        var user = await context.Users
+            .Include(u => u.SavedJobs)
+            .SingleOrDefaultAsync(u => u.Id == Guid.Parse(userId));
+        if (user == null)
+        {
+            return BadRequest(new { Message = "User not found." });
+        }
+
+        var job = await context.Jobs.FindAsync(jobId);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        if (user.SavedJobs.Any(j => j.Id == jobId))
+        {
+            return Conflict(new { Message = "Job is already saved." });
+        }
+
+        user.SavedJobs.Add(job);
+        await context.SaveChangesAsync();
+
+        return Ok(new { Message = "Job saved successfully." });
+    }
+
+    [HttpGet("saved")]
+    [Authorize(Roles = "Candidate")]
+    public async Task<ActionResult<IEnumerable<SavedJobResponse>>> GetSavedJobs(
+        [FromQuery] string? search, int page = 1, int pageSize = 10)
+    {
+        if (page <= 0 || pageSize <= 0)
+        {
+            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+        {
+            return Unauthorized(new { Message = "User ID not found in access token." });
+        }
+
+        var savedJobs = context.Users
+            .Where(u => u.Id == Guid.Parse(userId))
+            .SelectMany(u => u.SavedJobs)
+            .Include(j => j.Major)
+            .Include(j => j.Location)
+            .Include(j => j.Campaign)
+            .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            savedJobs = savedJobs.Where(j =>
+                j.Title.Contains(search) ||
+                j.Description.Contains(search) ||
+                (j.Campaign.Recruiter.CompanyDetail != null &&
+                 j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search)));
+        }
+
+        var totalItems = await savedJobs.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+        var items = await savedJobs
+            .OrderByDescending(j => j.Created)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(j => new SavedJobResponse
+            {
+                Id = j.Id,
+                Title = j.Title,
+                MinSalary = j.MinSalary,
+                MaxSalary = j.MaxSalary,
+                YearOfExperience = j.YearOfExperience,
+                Location = new LocationResponse
+                {
+                    Id = j.Location.Id,
+                    Name = j.Location.Name,
+                    Region = j.Location.Region
+                },
+                Recruiter = new UserResponse
+                {
+                    Id = j.Campaign.Recruiter.Id,
+                    Name = j.Campaign.Recruiter.CompanyDetail != null
+                        ? j.Campaign.Recruiter.CompanyDetail.CompanyName
+                        : j.Campaign.Recruiter.FullName,
+                    ProfilePicture = j.Campaign.Recruiter.CompanyDetail != null
+                        ? j.Campaign.Recruiter.CompanyDetail.Logo
+                        : j.Campaign.Recruiter.ProfilePicture
+                },
+                Created = j.Created
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            Items = items,
+            TotalItems = totalItems,
+            TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
+            PageNumber = page,
+            PageSize = pageSize
+        });
+    }
+
     [HttpPost]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<JobResponse>> CreateJob([FromForm] JobRequest request)

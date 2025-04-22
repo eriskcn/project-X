@@ -117,6 +117,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey<CompanyDetail>(cd => cd.CompanyId)
             .IsRequired();
 
+        builder.Entity<User>()
+            .HasMany(u => u.SavedJobs)
+            .WithMany(j => j.SavedByUsers)
+            .UsingEntity(u => u.ToTable("UserSavedJobs"));
+
         builder.Entity<Location>()
             .HasMany(l => l.Companies)
             .WithOne(cd => cd.Location)

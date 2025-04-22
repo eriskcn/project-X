@@ -47,6 +47,10 @@ public class Job : BaseEntity
     [JsonIgnore]
     public ICollection<Skill> Skills { get; set; } = new List<Skill>();
 
+    [InverseProperty(nameof(User.SavedJobs))]
+    [JsonIgnore]
+    public ICollection<User> SavedByUsers { get; set; } = new List<User>();
+
     // n-n relationship
     [InverseProperty(nameof(ContractType.Jobs))]
     [JsonIgnore]
