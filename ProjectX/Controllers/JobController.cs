@@ -28,6 +28,9 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         [FromQuery] bool highlightOnly,
         [FromQuery] double? minSalary,
         [FromQuery] double? maxSalary,
+        [FromQuery] bool? negotiateSalaryOnly,
+        [FromQuery] double? minExp,
+        [FromQuery] double? maxExp,
         [FromQuery] int pageSize = 10,
         [FromQuery] int page = 1)
     {
@@ -79,6 +82,15 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             }
         }
 
+        if (minExp.HasValue)
+        {
+            query = query.Where(j => j.YearOfExperience > minExp.Value);
+        }
+
+        if (maxExp.HasValue)
+        {
+            query = query.Where(j => j.YearOfExperience <= maxExp.Value);
+        }
 
         if (highlightOnly)
         {
@@ -119,6 +131,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         if (maxSalary.HasValue)
         {
             query = query.Where(j => j.MaxSalary <= maxSalary);
+        }
+
+        if (negotiateSalaryOnly == true)
+        {
+            query = query.Where(j => j.MinSalary == null && j.MaxSalary == null);
         }
 
         var totalItems = await query.CountAsync();
