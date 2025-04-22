@@ -278,8 +278,8 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             ? await context.Likes
                 .Where(l => l.UserId == Guid.Parse(userId) && commentIds.Contains(l.PostId))
                 .Select(l => new { l.PostId, l.IsLike })
-                .ToDictionaryAsync(l => l.PostId, l => l.IsLike)
-            : new Dictionary<Guid, bool>();
+                .ToDictionaryAsync(l => l.PostId, l => (bool?)l.IsLike)
+            : new Dictionary<Guid, bool?>();
 
         // Query attached files for comments
         var commentAttachedFiles = await context.AttachedFiles
@@ -298,7 +298,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
         {
             Id = c.Id,
             Content = c.Content,
-            Liked = userCommentLikes.GetValueOrDefault(c.Id, false),
+            Liked = userCommentLikes.GetValueOrDefault(c.Id),
             IsEdited = c.IsEdited,
             Edited = c.Edited,
             Created = c.Created,
