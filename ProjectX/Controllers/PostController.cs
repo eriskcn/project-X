@@ -205,6 +205,52 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             })
             .SingleOrDefaultAsync();
 
+        var userLikeParentPost = await context.Likes
+            .Where(l => userId != null && l.UserId == Guid.Parse(userId) && l.PostId == post.ParentId)
+            .Select(l => (bool?)l.IsLike)
+            .SingleOrDefaultAsync();
+
+        var parentPostResponse = await context.Posts
+            .Include(p => p.User)
+            .ThenInclude(u => u.CompanyDetail)
+            .Where(p => p.Id == post.ParentId)
+            .Select(p => new PostResponse
+            {
+                Id = p.Id,
+                Content = p.Content,
+                Liked = userLikeParentPost,
+                IsEdited = p.IsEdited,
+                Edited = p.Edited,
+                Created = p.Created,
+                User = new UserResponse
+                {
+                    Id = p.User.Id,
+                    Name = p.User.CompanyDetail != null ? p.User.CompanyDetail.CompanyName : p.User.FullName,
+                    ProfilePicture = p.User.CompanyDetail != null ? p.User.CompanyDetail.Logo : p.User.ProfilePicture
+                },
+                LikesCount = context.Likes.Where(l => l.PostId == p.Id).Sum(l => l.IsLike ? 1 : -1),
+                CommentsCount = context.Posts.Count(c => c.ParentId == p.Id),
+                AttachedFile = context.AttachedFiles
+                                   .Where(f => f.Type == TargetType.PostAttachment && f.TargetId == post.ParentId)
+                                   .Select(f => new FileResponse
+                                   {
+                                       Id = f.Id,
+                                       TargetId = f.TargetId,
+                                       Name = f.Name,
+                                       Path = f.Path,
+                                       Uploaded = f.Uploaded
+                                   })
+                                   .SingleOrDefault()
+                               ?? new FileResponse
+                               {
+                                   Id = Guid.Empty,
+                                   Name = "No attached file",
+                                   Path = string.Empty,
+                                   Uploaded = DateTime.UtcNow
+                               }
+            })
+            .SingleOrDefaultAsync();
+
         var totalComments = await context.Posts
             .Where(c => c.ParentId == post.Id)
             .CountAsync();
@@ -281,6 +327,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 Id = post.Id,
                 Content = post.Content,
                 Liked = userLikeRootPost,
+                ParentPost = parentPostResponse,
                 IsEdited = post.IsEdited,
                 Edited = post.Edited,
                 Created = post.Created,

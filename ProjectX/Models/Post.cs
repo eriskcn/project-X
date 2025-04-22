@@ -24,7 +24,7 @@ public class Post : BaseEntity
     public User User { get; set; } = null!;
 
     public Guid? ParentId { get; set; }
-    [JsonIgnore] [ForeignKey("ParentId")] public Post ParentPost { get; set; } = null!;
+    [JsonIgnore] [ForeignKey("ParentId")] public Post? ParentPost { get; set; }
 
     [JsonIgnore] public ICollection<Post> ChildrenPosts { get; set; } = new List<Post>();
     [JsonIgnore] public ICollection<Like> Likes { get; set; } = new List<Like>();
