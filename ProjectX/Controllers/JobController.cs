@@ -173,6 +173,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
+                        TargetId = f.TargetId,
                         Name = f.Name,
                         Path = f.Path,
                         Uploaded = f.Uploaded
@@ -313,6 +314,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
+                    TargetId = f.TargetId,
                     Name = f.Name,
                     Path = f.Path,
                     Uploaded = f.Uploaded
@@ -805,6 +807,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
+                        TargetId = f.TargetId,
                         Name = f.Name,
                         Path = f.Path,
                         Uploaded = f.Uploaded
@@ -1067,6 +1070,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     ? new FileResponse
                     {
                         Id = jobDescription.Id,
+                        TargetId = jobDescription.TargetId,
                         Name = jobDescription.Name,
                         Path = jobDescription.Path,
                         Uploaded = jobDescription.Uploaded
@@ -1076,6 +1080,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                         .Select(f => new FileResponse
                         {
                             Id = f.Id,
+                            TargetId = f.TargetId,
                             Name = f.Name,
                             Path = f.Path,
                             Uploaded = f.Uploaded
@@ -1191,6 +1196,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
+                    TargetId = f.TargetId,
                     Name = f.Name,
                     Path = f.Path,
                     Uploaded = f.Uploaded
@@ -1241,6 +1247,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
+                    TargetId = f.TargetId,
                     Name = f.Name,
                     Path = f.Path,
                     Uploaded = f.Uploaded
