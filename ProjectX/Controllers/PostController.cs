@@ -164,7 +164,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        bool? userLikedPost = null;
+        bool? userLikeRootPost = null;
         if (!string.IsNullOrEmpty(userId))
         {
             var user = await context.Users.FindAsync(Guid.Parse(userId));
@@ -173,9 +173,9 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 return NotFound(new { Message = "User not found." });
             }
 
-            userLikedPost = await context.Likes
+            userLikeRootPost = await context.Likes
                 .Where(l => l.UserId == Guid.Parse(userId) && l.PostId == id)
-                .Select(l => l.IsLike)
+                .Select(l => (bool?)l.IsLike)
                 .SingleOrDefaultAsync();
         }
 
@@ -280,7 +280,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             {
                 Id = post.Id,
                 Content = post.Content,
-                Liked = userLikedPost,
+                Liked = userLikeRootPost,
                 IsEdited = post.IsEdited,
                 Edited = post.Edited,
                 Created = post.Created,
