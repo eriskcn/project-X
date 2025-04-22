@@ -1,5 +1,3 @@
-using ProjectX.Models;
-
 namespace ProjectX.DTOs;
 
 public class FileResponse
