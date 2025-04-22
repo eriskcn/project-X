@@ -277,7 +277,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
             {
                 Id = post.Id,
                 Content = post.Content,
-                Liked = userLikedPost ?? false,
+                Liked = userLikedPost,
                 IsEdited = post.IsEdited,
                 Edited = post.Edited,
                 Created = post.Created,
@@ -291,6 +291,7 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                 },
                 LikesCount = likeCount,
                 CommentsCount = totalComments,
+                Comments = commentResponses,
                 AttachedFile = attachedFile ?? new FileResponse
                 {
                     Id = Guid.Empty,
@@ -299,7 +300,6 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     Uploaded = DateTime.UtcNow
                 }
             },
-            Comments = commentResponses,
             CommentPagination = new
             {
                 TotalItems = totalComments,
