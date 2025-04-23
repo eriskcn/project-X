@@ -39,6 +39,17 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             return BadRequest(new { Message = "Page number and page size must be greater than zero." });
         }
 
+        var savedJobIds = new List<Guid>();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId != null)
+        {
+            savedJobIds = await context.Users
+                .Where(u => u.Id == Guid.Parse(userId))
+                .SelectMany(u => u.SavedJobs)
+                .Select(j => j.Id)
+                .ToListAsync();
+        }
+
         var query = context.Jobs
             .Include(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
@@ -165,6 +176,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             return new JobResponseForCandidate
             {
                 Id = j.Id,
+                IsSaved = savedJobIds.Contains(j.Id),
                 Title = j.Title,
                 Description = j.Description,
                 OfficeAddress = j.OfficeAddress,
@@ -271,6 +283,18 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<JobResponseForCandidate>> GetJob(Guid id)
     {
+        var isSaved = false;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (userId != null)
+        {
+            isSaved = await context.Users
+                .Where(u => u.Id == Guid.Parse(userId))
+                .SelectMany(u => u.SavedJobs)
+                .AnyAsync(j => j.Id == id);
+        }
+
+
         var job = await context.Jobs
             .Include(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
@@ -306,6 +330,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         var response = new JobResponseForCandidate
         {
             Id = job.Id,
+            IsSaved = isSaved,
             Title = job.Title,
             Description = job.Description,
             OfficeAddress = job.OfficeAddress,
@@ -572,6 +597,42 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         await context.SaveChangesAsync();
 
         return Ok(new { Message = "Job saved successfully." });
+    }
+
+    [HttpDelete("{jobId:guid}/un-save")]
+    [Authorize(Roles = "Candidate")]
+    public async Task<IActionResult> UnSaveJob(Guid jobId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+        {
+            return BadRequest(new { Message = "User ID not found in access token." });
+        }
+
+        var user = await context.Users
+            .Include(u => u.SavedJobs)
+            .SingleOrDefaultAsync(u => u.Id == Guid.Parse(userId));
+        if (user == null)
+        {
+            return BadRequest(new { Message = "User not found." });
+        }
+
+        var job = await context.Jobs.FindAsync(jobId);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        var savedJob = user.SavedJobs.SingleOrDefault(j => j.Id == jobId);
+        if (savedJob == null)
+        {
+            return Conflict(new { Message = "Job is not saved." });
+        }
+
+        user.SavedJobs.Remove(savedJob);
+        await context.SaveChangesAsync();
+
+        return Ok(new { Message = "Job unsaved successfully." });
     }
 
     [HttpGet("saved")]

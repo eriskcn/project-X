@@ -6,6 +6,7 @@ public class JobResponseForCandidate
 {
     public Guid Id { set; get; }
     public required string Title { set; get; }
+    public bool IsSaved { set; get; }
     public required string Description { set; get; }
     public int Quantity { set; get; }
     public required string OfficeAddress { set; get; }
