@@ -33,7 +33,7 @@ public class AppointmentController(ApplicationDbContext context) : ControllerBas
             .ThenInclude(j => j.Campaign)
             .ThenInclude(c => c.Recruiter)
             .ThenInclude(r => r.CompanyDetail)
-            .SingleOrDefaultAsync(a => a.Id == request.ApplicationId);
+            .SingleOrDefaultAsync(a => a.Id == request.ApplicationId && a.Status != ApplicationStatus.Draft);
 
         if (application == null)
         {
@@ -43,6 +43,12 @@ public class AppointmentController(ApplicationDbContext context) : ControllerBas
         if (application.Job.Campaign.RecruiterId != Guid.Parse(userId))
         {
             return Forbid("You are not authorized to create an appointment for this application.");
+        }
+
+        if (application.Process != ApplicationProcess.Interviewing)
+        {
+            return BadRequest(new
+                { Message = "You can only create an appointment for applications in the Interviewing process." });
         }
 
         var appointment = new Appointment
@@ -295,7 +301,8 @@ public class AppointmentController(ApplicationDbContext context) : ControllerBas
                             ? a.Application.Job.Campaign.Recruiter.CompanyDetail!.Logo
                             : a.Application.Job.Campaign.Recruiter.ProfilePicture
                 },
-                Note = a.Note
+                Note = a.Note,
+                Created = a.Created
             })
             .ToListAsync();
 
