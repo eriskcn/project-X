@@ -32,6 +32,10 @@ public class Application : BaseEntity
     [Required] public Guid JobId { get; set; }
     [JsonIgnore] [ForeignKey("JobId")] public Job Job { get; set; } = null!;
 
+    [JsonIgnore]
+    [InverseProperty(nameof(Appointment.Application))]
+    public Appointment? Appointment { get; set; }
+
     public DateTime? Submitted { get; set; }
 
     public DateTime Created { get; set; } = DateTime.UtcNow;

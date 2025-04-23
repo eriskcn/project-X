@@ -8,6 +8,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     : IdentityDbContext<User, Role, Guid>(options)
 {
     public DbSet<Application> Applications { get; set; }
+    public DbSet<Appointment> Appointments { get; set; }
     public DbSet<AttachedFile> AttachedFiles { get; set; }
     public DbSet<Campaign> Campaigns { get; set; }
     public DbSet<CompanyDetail> CompanyDetails { get; set; }
@@ -134,11 +135,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<Like>().HasIndex(l => l.PostId);
         builder.Entity<Like>().HasIndex(l => l.UserId);
-        
+
         builder.Entity<Like>()
             .HasIndex(l => new { l.UserId, l.PostId })
             .IsUnique();
 
+        builder.Entity<Appointment>()
+            .HasOne(a => a.Application)
+            .WithOne(a => a.Appointment);
 
         builder.Entity<Role>().HasData(
             new Role { Id = Guid.NewGuid(), Name = "Admin", NormalizedName = "ADMIN" },
