@@ -1204,6 +1204,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         var items = applications.Select(async a => new ApplicationResponse
         {
             Id = a.Id,
+            JobId = a.JobId,
             FullName = a.FullName,
             Email = a.Email,
             PhoneNumber = a.PhoneNumber,
@@ -1255,6 +1256,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         var response = new ApplicationResponse
         {
             Id = application.Id,
+            JobId = application.JobId,
             FullName = application.FullName,
             Email = application.Email,
             PhoneNumber = application.PhoneNumber,

@@ -527,6 +527,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         var items = applications.Select(a => new ApplicationResponse
         {
             Id = a.Id,
+            JobId = a.JobId,
             FullName = a.FullName,
             Email = a.Email,
             PhoneNumber = a.PhoneNumber,

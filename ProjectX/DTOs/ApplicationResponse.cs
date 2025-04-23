@@ -9,6 +9,7 @@ public class ApplicationResponse
     public required string Email { get; set; }
     public required string PhoneNumber { get; set; }
     public string? Introduction { get; set; }
+    public Guid JobId { get; set; }
     public required FileResponse? Resume { get; set; }
     public ApplicationStatus Status { get; set; }
     public ApplicationProcess Process { get; set; }
