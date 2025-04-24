@@ -18,7 +18,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Register configuration for dependency injection
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
-builder.Services.AddSingleton<ConnectionMapping<Guid>>();
 // builder.Services.AddHttpClient();
 // builder.Services.AddSingleton<NgrokService>();
 
