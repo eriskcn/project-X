@@ -1,4 +1,4 @@
-namespace ProjectX.Services;
+namespace ProjectX.Services.Email;
 
 public interface IEmailService
 {

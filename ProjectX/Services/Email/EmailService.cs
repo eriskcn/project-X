@@ -26,13 +26,27 @@ public class EmailService(IOptions<GoogleSettings> emailSettings, ApplicationDbC
         await context.SaveChangesAsync();
 
         var subject = "Xác thực đăng ký tài khoản mới tại ProjectX";
+
         var textBody =
-            $"Mã OTP để xác thực tài khoản của bạn là: {otp}. Mã có hiệu lực trong vòng 5 phút, vui lòng không chia sẻ mã này với bất kỳ ai.";
-        var htmlBody =
-            $"<p>Mã OTP để xác thực tài khoản của bạn là: <strong>{otp}</strong>.</p><p>Mã có hiệu lực trong vòng 5 phút, vui lòng không chia sẻ mã này với bất kỳ ai.</p>";
+            $"Xin chào {receiver.FullName},\n\n" +
+            $"Mã OTP để xác thực tài khoản của bạn là: {otp}. Mã có hiệu lực trong vòng 5 phút, vui lòng không chia sẻ mã này với bất kỳ ai.\n\n" +
+            "Trân trọng,\nProjectX Team";
+
+        var htmlBody = $@"
+        <div style='font-family: Arial, sans-serif; color: #333; padding: 20px;'>
+            <h2 style='color: #2c3e50;'>Xin chào {receiver.FullName},</h2>
+            <p>Mã OTP để xác thực tài khoản của bạn là:</p>
+            <p style='font-size: 20px; font-weight: bold; color: #e74c3c;'>{otp}</p>
+            <p>Mã có hiệu lực trong vòng <strong>5 phút</strong>.</p>
+            <p style='color: #888;'>Vui lòng không chia sẻ mã này với bất kỳ ai.</p>
+            <br/>
+            <p>Trân trọng,</p>
+            <p><strong>ProjectX Team</strong></p>
+        </div>";
 
         await SendEmailAsync(email, subject, textBody, htmlBody);
     }
+
 
     private async Task SendEmailAsync(string to, string subject, string text, string html)
     {

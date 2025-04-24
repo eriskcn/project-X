@@ -7,6 +7,7 @@ using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Models;
 using ProjectX.Services;
+using ProjectX.Services.Email;
 
 namespace ProjectX.Controllers;
 
