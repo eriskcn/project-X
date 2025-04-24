@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.Models;
 
 namespace ProjectX.Controllers;
 
@@ -101,7 +102,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
         }
 
         var orderedResponses = responses
-            .OrderByDescending(r => r.LatestMessageDetails?.Created);
+            .OrderByDescending(r => r.LatestMessage);
 
         var pagedResponses = pageSize == 0
             ? orderedResponses.ToList()
@@ -191,7 +192,22 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                         ProfilePicture = m.Sender.CompanyDetail != null
                             ? m.Sender.CompanyDetail.Logo
                             : m.Sender.ProfilePicture
-                    }
+                    },
+                    IsRead = m.IsRead,
+                    Read = m.Read,
+                    IsEdited = m.IsEdited,
+                    Edited = m.Edited,
+                    AttachedFile = context.AttachedFiles
+                        .Where(f => f.Type == TargetType.MessageAttachment && f.TargetId == m.Id)
+                        .Select(f => new FileResponse
+                        {
+                            Id = f.Id,
+                            TargetId = f.TargetId,
+                            Name = f.Name,
+                            Path = f.Path,
+                            Uploaded = f.Uploaded
+                        })
+                        .SingleOrDefault()
                 })
                 .ToList(),
         };
