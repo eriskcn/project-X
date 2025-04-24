@@ -40,6 +40,8 @@
 
     <ItemGroup>
       <Compile Remove="Middlewares\**" />
+      <Compile Remove="Services\IMessageService.cs" />
+      <Compile Remove="Services\MessageService.cs" />
     </ItemGroup>
 
     <ItemGroup>

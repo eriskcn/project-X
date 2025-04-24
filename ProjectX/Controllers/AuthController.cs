@@ -122,7 +122,7 @@ public class AuthController(
 
     [HttpPost("confirm-email")]
     [Authorize]
-    public async Task<IActionResult> ConfirmEmail([FromBody] string otp)
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest request)
     {
         var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userIdString))
@@ -141,7 +141,7 @@ public class AuthController(
             return BadRequest(new { Message = "Email already confirmed" });
         }
 
-        if (user.OTP != otp)
+        if (user.OTP != request.Otp)
         {
             return BadRequest(new { Message = "Invalid OTP" });
         }

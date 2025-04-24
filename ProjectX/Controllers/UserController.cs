@@ -37,6 +37,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
             Id = userId,
             FullName = user.FullName,
             Email = user.Email ?? string.Empty,
+            EmailConfirmed = user.EmailConfirmed,
             PhoneNumber = user.PhoneNumber ?? string.Empty,
             ProfilePicture = user.ProfilePicture,
             GitHubProfile = user.GitHubProfile,

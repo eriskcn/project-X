@@ -12,12 +12,15 @@ using ProjectX.Models;
 using ProjectX.Services;
 using DotNetEnv;
 using ProjectX.Hubs;
+using ProjectX.Services.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Register configuration for dependency injection
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 builder.Services.AddSingleton<ConnectionMapping<Guid>>();
+// builder.Services.AddHttpClient();
+// builder.Services.AddSingleton<NgrokService>();
 
 // Configure Identity options
 builder.Services.Configure<IdentityOptions>(options =>
@@ -34,6 +37,7 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.User.RequireUniqueEmail = true;
 });
 
+builder.Services.Configure<GoogleSettings>(builder.Configuration.GetSection("Google"));
 // Configure database context
 
 Env.Load();
@@ -120,7 +124,6 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowNextJs",
         corsPolicyBuilder => corsPolicyBuilder
             .WithOrigins("http://localhost:3000") // Next.js development server
-            // .AllowAnyOrigin() // for development
             .AllowCredentials() // Allow cookies to be sent
             .AllowAnyMethod()
             .AllowAnyHeader());
@@ -132,12 +135,17 @@ builder.Services.AddAuthorizationBuilder()
     .AddPolicy("RecruiterVerifiedOnly", policy =>
         policy.Requirements.Add(new RecruiterVerifiedRequirement()));
 
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("EmailConfirmed", policy =>
+        policy.Requirements.Add(new EmailConfirmedRequirement()));
+
 builder.Services.AddScoped<IAuthorizationHandler, RecruiterVerifiedHandler>();
 
 
 // Register token service for JWT generation
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 
@@ -145,6 +153,7 @@ builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 // builder.Services.AddHostedService<OrderExpirationService>();
+builder.Services.AddHostedService<DatabaseBackupService>();
 
 var app = builder.Build();
 

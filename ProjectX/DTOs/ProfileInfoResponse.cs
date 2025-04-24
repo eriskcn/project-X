@@ -7,6 +7,7 @@ public class ProfileInfoResponse
     public Guid Id { get; set; }
     public required string FullName { get; set; }
     public required string Email { get; set; }
+    public bool EmailConfirmed { get; set; }
     public string? PhoneNumber { get; set; }
     public string? ProfilePicture { get; set; }
     public string? GitHubProfile { get; set; }
