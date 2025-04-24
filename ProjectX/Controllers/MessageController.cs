@@ -16,10 +16,11 @@ namespace ProjectX.Controllers;
 public class MessageController(
     ApplicationDbContext context,
     IHubContext<MessageHub> hubContext,
-    IWebHostEnvironment env) : ControllerBase
+    IWebHostEnvironment env,
+    ILogger<MessageController> logger) : ControllerBase
 {
     [HttpPost]
-    public async Task<IActionResult> SendMessage([FromForm] MessageRequest request)
+    public async Task<ActionResult<MessageResponse>> SendMessage([FromForm] MessageRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
@@ -117,6 +118,10 @@ public class MessageController(
                     await context.SaveChangesAsync();
                 }
 
+                conversation.LatestMessage = DateTime.UtcNow;
+                conversation.LatestMessageId = message.Id;
+                context.Conversations.Update(conversation);
+                await context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
             catch
@@ -154,5 +159,184 @@ public class MessageController(
         await hubContext.Clients.User(request.ReceiverId.ToString()).SendAsync("ReceiveMessage", messageResponse);
 
         return Ok(messageResponse);
+    }
+
+    [HttpPatch("{messageId:guid}/mark-as-read")]
+    public async Task<ActionResult<MessageResponse>> MarkAsRead(Guid messageId,
+        [FromQuery] bool markOlderAsRead = true)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+            return Unauthorized("Invalid user ID.");
+
+        var message = await context.Messages
+            .Include(m => m.Conversation)
+            .ThenInclude(c => c.Participants)
+            .Include(m => m.Sender)
+            .ThenInclude(u => u.CompanyDetail)
+            .SingleOrDefaultAsync(m => m.Id == messageId
+                                       && m.Conversation.Participants.Any(p => p.Id == userGuid));
+
+        if (message == null)
+        {
+            return NotFound("Message not found.");
+        }
+
+        if (message.SenderId == userGuid)
+        {
+            return Unauthorized(new { Message = "Sender cannot mark their own message as read." });
+        }
+
+        if (message.IsRead && !markOlderAsRead)
+        {
+            return Ok(new { Message = "Message was already read." });
+        }
+
+        await using (var transaction = await context.Database.BeginTransactionAsync())
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+
+                if (markOlderAsRead)
+                {
+                    var unreadMessages = await context.Messages
+                        .Where(m => m.ConversationId == message.ConversationId
+                                    && m.Id <= message.Id
+                                    && !m.IsRead
+                                    && m.SenderId != userGuid)
+                        .ToListAsync();
+
+                    foreach (var msg in unreadMessages)
+                    {
+                        msg.IsRead = true;
+                        msg.Read = now;
+                    }
+                }
+                else
+                {
+                    message.IsRead = true;
+                    message.Read = now;
+                }
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                logger.LogError(ex, "Error marking messages as read");
+                throw;
+            }
+        }
+
+        var response = new MessageResponse
+        {
+            Id = message.Id,
+            ConversationId = message.ConversationId,
+            Content = message.Content,
+            Created = message.Created,
+            Sender = new UserResponse
+            {
+                Id = message.SenderId,
+                Name = message.Sender.CompanyDetail?.CompanyName ?? message.Sender.FullName,
+                ProfilePicture = message.Sender.CompanyDetail?.Logo
+                                 ?? message.Sender.ProfilePicture
+            },
+            AttachedFile = await context.AttachedFiles
+                .Where(f => f.Type == TargetType.MessageAttachment
+                            && f.TargetId == message.Id)
+                .Select(f => new FileResponse
+                {
+                    Id = f.Id,
+                    TargetId = f.TargetId,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
+                .SingleOrDefaultAsync(),
+            IsRead = true,
+            Read = DateTime.UtcNow,
+            Edited = message.Edited,
+            IsEdited = message.IsEdited
+        };
+
+        await hubContext.Clients.User(message.SenderId.ToString())
+            .SendAsync("MessageRead", response);
+
+        return Ok(response);
+    }
+
+    [HttpPatch("{messageId:guid}")]
+    public async Task<ActionResult<MessageResponse>> EditMessage([FromRoute] Guid messageId,
+        [FromBody] UpdateMessageRequest request)
+    {
+        var senderId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(senderId, out var senderGuid))
+        {
+            return Unauthorized(new { Message = "Invalid sender ID." });
+        }
+
+        var message = await context.Messages
+            .Include(m => m.Conversation)
+            .ThenInclude(c => c.Participants)
+            .Include(m => m.Sender)
+            .ThenInclude(u => u.CompanyDetail)
+            .SingleOrDefaultAsync(m => m.Id == messageId
+                                       && m.Conversation.Participants.Any(p => p.Id == senderGuid));
+
+        if (message == null)
+        {
+            return NotFound(new { Message = "Message not found." });
+        }
+
+        if (message.SenderId != senderGuid)
+        {
+            return Unauthorized(new { Message = "You are not authorized to edit this message." });
+        }
+
+        message.Content = request.Content;
+        message.IsEdited = true;
+        message.Edited = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+
+        var receiver = message.Conversation.Participants
+            .SingleOrDefault(p => p.Id != senderGuid);
+
+        var response = new MessageResponse
+        {
+            Id = message.Id,
+            ConversationId = message.ConversationId,
+            Content = message.Content,
+            Created = message.Created,
+            Sender = new UserResponse
+            {
+                Id = message.Sender.Id,
+                Name = message.Sender.CompanyDetail?.CompanyName ?? message.Sender.FullName,
+                ProfilePicture = message.Sender.CompanyDetail?.Logo ?? message.Sender.ProfilePicture
+            },
+            AttachedFile = context.AttachedFiles
+                .Where(f => f.Type == TargetType.MessageAttachment && f.TargetId == message.Id)
+                .Select(f => new FileResponse
+                {
+                    Id = f.Id,
+                    TargetId = f.TargetId,
+                    Name = f.Name,
+                    Path = f.Path,
+                    Uploaded = f.Uploaded
+                })
+                .SingleOrDefault(),
+            IsRead = message.IsRead,
+            Read = message.Read,
+            Edited = message.Edited,
+            IsEdited = message.IsEdited
+        };
+
+        if (receiver != null)
+        {
+            await hubContext.Clients.User(receiver.Id.ToString()).SendAsync("MessageEdited", response);
+        }
+
+        return Ok(response);
     }
 }
