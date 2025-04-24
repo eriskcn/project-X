@@ -73,10 +73,29 @@ public class AuthController(
 
             await emailService.SendOtpViaEmailAsync(user.Email);
 
+            var accessToken = await tokenService.GenerateAccessTokenAsync(user);
+            var refreshToken = tokenService.GenerateRefreshToken();
+
+            user.RefreshToken = refreshToken;
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+            await userManager.UpdateAsync(user);
+
+            Response.Cookies.Append("AccessToken", accessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
+            Response.Cookies.Append("RefreshToken", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
+
             return Ok(new
             {
                 Message = "User created successfully. Please check your email for verification.",
-                UserId = user.Id
             });
         }
         catch (Exception ex)
