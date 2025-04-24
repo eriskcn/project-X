@@ -20,6 +20,7 @@ public class HealthCheckController : ControllerBase
 
     [HttpGet("secret")]
     [Authorize]
+    [Authorize(Policy = "EmailConfirmed")]
     public IActionResult GetSecret()
     {
         return Ok(new

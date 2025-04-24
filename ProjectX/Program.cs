@@ -139,7 +139,7 @@ builder.Services.AddAuthorizationBuilder()
         policy.Requirements.Add(new EmailConfirmedRequirement()));
 
 builder.Services.AddScoped<IAuthorizationHandler, RecruiterVerifiedHandler>();
-
+builder.Services.AddScoped<IAuthorizationHandler, EmailConfirmedHandler>();
 
 // Register token service for JWT generation
 builder.Services.AddScoped<ITokenService, TokenService>();
