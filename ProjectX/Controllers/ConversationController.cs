@@ -88,7 +88,11 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                             ProfilePicture = m.Sender.CompanyDetail != null
                                 ? m.Sender.CompanyDetail.Logo
                                 : m.Sender.ProfilePicture,
-                        }
+                        },
+                        IsRead = m.IsRead,
+                        Read = m.Read,
+                        IsEdited = m.IsEdited,
+                        Edited = m.Edited
                     })
                     .SingleOrDefaultAsync(),
             };
@@ -171,7 +175,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
             Participant = participant,
             LatestMessage = conversation.LatestMessage,
             Messages = conversation.Messages
-                .OrderByDescending(m => m.Created)
+                .OrderBy(m => m.Created)
                 .Select(m => new MessageResponse
                 {
                     Id = m.Id,

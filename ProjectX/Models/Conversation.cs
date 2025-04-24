@@ -15,11 +15,11 @@ public class Conversation
     public string? GroupPicture { get; set; } = "/images/default-avatar.jpeg";
     public bool IsStored { get; set; }
 
-    public ICollection<User> Participants { get; set; } = new List<User>();
+    [JsonIgnore] public ICollection<User> Participants { get; set; } = new List<User>();
     [JsonIgnore] public ICollection<Message> Messages { get; set; } = new List<Message>();
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
     public DateTime Modified { get; set; } = DateTime.UtcNow;
     public DateTime LatestMessage { get; set; } = DateTime.UtcNow;
-    public Guid LatestMessageId { get; set; }
+    public Guid? LatestMessageId { get; set; }
 }
