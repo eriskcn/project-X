@@ -17,41 +17,141 @@ public class AuthController(
     RoleManager<Role> roleManager,
     ApplicationDbContext context,
     IGoogleAuthService googleAuthService,
-    ITokenService tokenService)
+    ITokenService tokenService,
+    IEmailService emailService)
     : ControllerBase
 {
     [HttpPost("sign-up")]
     public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        if (await userManager.Users.AnyAsync(u => u.Email == request.Email))
+        try
         {
-            return BadRequest(new { Message = "Email is already in use" });
+            if (!ModelState.IsValid)
+                return BadRequest(new
+                    { Message = "Invalid request data", Errors = ModelState.Values.SelectMany(v => v.Errors) });
+
+            var existingUser = await userManager.FindByEmailAsync(request.Email);
+            if (existingUser != null)
+            {
+                return Conflict(new { Message = "Email is already in use" });
+            }
+
+            var roleExists = await roleManager.RoleExistsAsync(request.RoleName);
+            if (!roleExists)
+            {
+                return BadRequest(new { Message = $"Role '{request.RoleName}' does not exist" });
+            }
+
+            var user = new User
+            {
+                UserName = request.Email,
+                Email = request.Email,
+                FullName = request.FullName,
+                EmailConfirmed = false
+            };
+
+            var createResult = await userManager.CreateAsync(user, request.Password);
+            if (!createResult.Succeeded)
+            {
+                return BadRequest(new
+                {
+                    Message = "User creation failed",
+                    Errors = createResult.Errors.Select(e => e.Description)
+                });
+            }
+
+            var addToRoleResult = await userManager.AddToRoleAsync(user, request.RoleName);
+            if (!addToRoleResult.Succeeded)
+            {
+                await userManager.DeleteAsync(user);
+                return BadRequest(new
+                {
+                    Message = $"Failed to add user to role '{request.RoleName}'",
+                    Errors = addToRoleResult.Errors.Select(e => e.Description)
+                });
+            }
+
+            await emailService.SendOtpViaEmailAsync(user.Email);
+
+            return Ok(new
+            {
+                Message = "User created successfully. Please check your email for verification.",
+                UserId = user.Id
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new
+            {
+                Message = "An error occurred while processing your request",
+                Error = ex.Message
+            });
+        }
+    }
+
+    [HttpPost("resend-otp")]
+    [Authorize]
+    public async Task<IActionResult> ResendOtp()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdString))
+        {
+            return Unauthorized(new { Message = "User not authenticated" });
         }
 
-        // if (string.Equals(request.RoleName, "Admin", StringComparison.OrdinalIgnoreCase))
-        // {
-        //     return BadRequest(new { Message = "Admin role cannot be assigned via this endpoint" });
-        // }
-
-        if (!await roleManager.RoleExistsAsync(request.RoleName))
+        var user = await context.Users.AsNoTracking().SingleOrDefaultAsync(u => u.Id == Guid.Parse(userIdString));
+        if (user == null)
         {
-            return BadRequest(new { Message = "Role not found" });
+            return NotFound(new { Message = "User not found" });
         }
 
-        var user = new User
+        if (user.EmailConfirmed)
         {
-            UserName = request.Email,
-            Email = request.Email,
-            FullName = request.FullName
-        };
+            return BadRequest(new { Message = "Email already confirmed" });
+        }
 
-        var result = await userManager.CreateAsync(user, request.Password);
-        if (!result.Succeeded) return BadRequest(result.Errors);
+        var email = user.Email;
+        if (string.IsNullOrEmpty(email))
+        {
+            return BadRequest(new { Message = "Email not found" });
+        }
 
-        await userManager.AddToRoleAsync(user, request.RoleName);
-        return Ok(new { Message = "User created successfully" });
+        await emailService.SendOtpViaEmailAsync(email);
+        return Ok(new { Message = "OTP resent successfully" });
+    }
+
+    [HttpPost("confirm-email")]
+    [Authorize]
+    public async Task<IActionResult> ConfirmEmail([FromBody] string otp)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdString))
+        {
+            return Unauthorized(new { Message = "User not authenticated" });
+        }
+
+        var user = await context.Users.AsNoTracking().SingleOrDefaultAsync(u => u.Id == Guid.Parse(userIdString));
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found" });
+        }
+
+        if (user.EmailConfirmed)
+        {
+            return BadRequest(new { Message = "Email already confirmed" });
+        }
+
+        if (user.OTP != otp)
+        {
+            return BadRequest(new { Message = "Invalid OTP" });
+        }
+
+        user.EmailConfirmed = true;
+        user.OTP = null;
+        user.Modified = DateTime.UtcNow;
+        context.Update(user);
+        await context.SaveChangesAsync();
+        return Ok(new { Message = "Email confirmed successfully" });
     }
 
     [HttpPost("sign-in")]
@@ -209,6 +309,7 @@ public class AuthController(
                     ProfilePicture = payload.Picture,
                     Provider = "Google",
                     OAuthId = payload.Subject,
+                    EmailConfirmed = true,
                     Modified = DateTime.UtcNow
                 };
 
