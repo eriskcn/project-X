@@ -1221,6 +1221,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         [FromQuery] string? search,
         [FromQuery] bool? seen,
         [FromQuery] ApplicationProcess? process,
+        [FromQuery] bool? appointment,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -1268,6 +1269,13 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         if (process.HasValue)
         {
             query = query.Where(a => a.Process == process);
+        }
+
+        if (appointment.HasValue)
+        {
+            query = appointment.Value
+                ? query.Where(a => a.Appointment != null)
+                : query.Where(a => a.Appointment == null);
         }
 
         var totalItems = await query.CountAsync();

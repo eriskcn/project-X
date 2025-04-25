@@ -479,7 +479,9 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetCampaignApplications(
         [FromRoute] Guid campaignId,
         [FromQuery] string? search,
+        [FromQuery] bool? seen,
         [FromQuery] ApplicationProcess? process,
+        [FromQuery] bool? appointment,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -517,6 +519,20 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         if (process.HasValue)
         {
             query = query.Where(a => a.Process == process.Value);
+        }
+
+        if (appointment.HasValue)
+        {
+            query = appointment.Value
+                ? query.Where(a => a.Appointment != null)
+                : query.Where(a => a.Appointment == null);
+        }
+
+        if (seen.HasValue)
+        {
+            query = seen.Value
+                ? query.Where(a => a.Status == ApplicationStatus.Seen)
+                : query.Where(a => a.Status != ApplicationStatus.Seen);
         }
 
         var totalItems = await query.CountAsync();
