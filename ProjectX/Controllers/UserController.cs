@@ -45,7 +45,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
             Roles = userRoles,
             RecruiterVerified = user.RecruiterVerified,
             VerificationSubmitted = user.VerificationSubmitted,
-            BusinessPoints = user.BusinessPoints,
+            XTokenBalance = user.XTokenBalance,
             IsExternalLogin = user.IsExternalLogin,
             Provider = user.Provider,
             Status = user.Status

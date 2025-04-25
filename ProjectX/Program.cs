@@ -13,6 +13,7 @@ using ProjectX.Services;
 using DotNetEnv;
 using ProjectX.Hubs;
 using ProjectX.Services.Email;
+using ProjectX.Services.Notifications;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -140,11 +141,12 @@ builder.Services.AddAuthorizationBuilder()
 
 builder.Services.AddScoped<IAuthorizationHandler, RecruiterVerifiedHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, EmailConfirmedHandler>();
-
 // Register token service for JWT generation
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 
@@ -217,6 +219,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapHub<MessageHub>("/hubs/message");
+app.MapHub<NotificationHub>("/hubs/notification");
 app.MapControllers();
 
 app.Run();

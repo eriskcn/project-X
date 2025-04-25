@@ -6,13 +6,17 @@ using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Helpers;
 using ProjectX.Models;
+using ProjectX.Services.Notifications;
 
 namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/posts")]
 [Authorize]
-public class PostController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
+public class PostController(
+    ApplicationDbContext context,
+    IWebHostEnvironment env,
+    INotificationService notificationService) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
@@ -695,10 +699,15 @@ public class PostController(ApplicationDbContext context, IWebHostEnvironment en
                     Uploaded = DateTime.UtcNow
                 }
             };
-
+            var notification = new NotificationRequest
+            {
+                Type = NotificationType.NewReactToPost,
+                RecipientId = postUser.Id,
+                TargetId = post.Id
+            };
             // Commit transaction
             await transaction.CommitAsync();
-
+            await notificationService.SendNotificationAsync(notification);
             // Return success response
             return Ok(response);
         }

@@ -7,11 +7,7 @@ namespace ProjectX.Models;
 public class Notification : BaseEntity
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public required string Content { get; set; }
     public NotificationType Type { get; set; }
-
-    public Guid? ActorId { get; set; }
-    [JsonIgnore] [ForeignKey("ActorId")] public User? Actor { get; set; } = null!;
 
     public Guid RecipientId { get; set; }
 
@@ -29,9 +25,10 @@ public class Notification : BaseEntity
 
 public enum NotificationType
 {
-    SuccessfulApply, 
-    NewReactToPost, 
+    SuccessfulApply,
+    NewReactToPost,
     NewApplication,
-    UpdateApplicationProcess, 
-    NewComment, 
+    UpdateApplicationProcess,
+    NewComment,
+    NewAppointment,
 }

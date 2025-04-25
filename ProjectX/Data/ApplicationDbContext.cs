@@ -27,6 +27,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Skill> Skills { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<Payment> Payments { get; set; }
+    public DbSet<Notification> Notifications { get; set; }
 
     public override int SaveChanges()
     {

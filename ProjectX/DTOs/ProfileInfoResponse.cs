@@ -15,7 +15,7 @@ public class ProfileInfoResponse
     public ICollection<string> Roles { get; set; } = new List<string>();
     public bool VerificationSubmitted { get; set; }
     public bool RecruiterVerified { get; set; }
-    public double BusinessPoints { get; set; }
+    public double XTokenBalance { get; set; }
     public bool IsExternalLogin { get; set; }
     public string? Provider { get; set; }
     public UserStatus Status { get; set; }

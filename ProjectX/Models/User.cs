@@ -19,7 +19,7 @@ public class User : IdentityUser<Guid>, ISoftDelete
     public bool IsExternalLogin => !string.IsNullOrEmpty(Provider);
 
     public bool RecruiterVerified { get; set; }
-    public double BusinessPoints { get; set; }
+    public double XTokenBalance { get; set; }
 
     public bool IsDeleted { get; set; }
     public DateTime? Deleted { get; set; }
@@ -40,6 +40,7 @@ public class User : IdentityUser<Guid>, ISoftDelete
 
     [JsonIgnore] public ICollection<Message> SentMessages { get; set; } = new List<Message>();
     [JsonIgnore] public ICollection<Message> ReceivedMessages { get; set; } = new List<Message>();
+    [JsonIgnore] public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
 
     [JsonIgnore]
     [InverseProperty(nameof(Major.Users))]
