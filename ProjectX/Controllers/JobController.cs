@@ -1217,7 +1217,8 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
     [HttpGet("{jobId:Guid}/applications")]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
-    public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetJobApplications([FromRoute] Guid jobId,
+    public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetJobApplications(
+        [FromRoute] Guid jobId,
         [FromQuery] string? search,
         [FromQuery] bool? seen,
         [FromQuery] ApplicationProcess? process,
@@ -1255,8 +1256,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         if (!string.IsNullOrEmpty(search))
         {
             query = query.Where(a =>
-                a.Introduction != null && (a.FullName.Contains(search) || a.Introduction.Contains(search) ||
-                                           a.PhoneNumber.Contains(search) || a.Email.Contains(search)));
+                a.Introduction != null &&
+                (a.FullName.Contains(search) ||
+                 a.Introduction.Contains(search) ||
+                 a.PhoneNumber.Contains(search) ||
+                 a.Email.Contains(search)));
         }
 
         if (seen.HasValue)
@@ -1287,7 +1291,20 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             .Take(pageSize)
             .ToListAsync();
 
-        var items = applications.Select(async a => new ApplicationResponse
+        var applicationIds = applications.Select(a => a.Id).ToList();
+        var resumes = await context.AttachedFiles
+            .Where(f => f.Type == TargetType.Application && applicationIds.Contains(f.TargetId))
+            .Select(f => new FileResponse
+            {
+                Id = f.Id,
+                TargetId = f.TargetId,
+                Name = f.Name,
+                Path = f.Path,
+                Uploaded = f.Uploaded
+            })
+            .ToListAsync();
+
+        var items = applications.Select(a => new ApplicationResponse
         {
             Id = a.Id,
             JobId = a.JobId,
@@ -1295,17 +1312,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             Email = a.Email,
             PhoneNumber = a.PhoneNumber,
             Introduction = a.Introduction,
-            Resume = await context.AttachedFiles
-                .Where(f => f.Type == TargetType.Application && f.TargetId == a.Id)
-                .Select(f => new FileResponse
-                {
-                    Id = f.Id,
-                    TargetId = f.TargetId,
-                    Name = f.Name,
-                    Path = f.Path,
-                    Uploaded = f.Uploaded
-                })
-                .SingleOrDefaultAsync(),
+            Resume = resumes.SingleOrDefault(r => r.TargetId == a.Id),
             Status = a.Status,
             Process = a.Process,
             Appointment = a.Appointment != null
@@ -1315,7 +1322,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     StartTime = a.Appointment.StartTime,
                     EndTime = a.Appointment.EndTime,
                     Note = a.Appointment.Note,
-                    Participant = null,
+                    Participant = null, 
                     Created = a.Appointment.Created
                 }
                 : null,
@@ -1323,7 +1330,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             Submitted = a.Submitted,
             Created = a.Created,
             Modified = a.Modified
-        });
+        }).ToList();
 
         return Ok(new
         {
