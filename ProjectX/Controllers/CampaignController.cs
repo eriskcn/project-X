@@ -87,8 +87,11 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
     [HttpGet]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
-        [FromQuery] string? search, [FromQuery] string? status, [FromQuery] bool? newApplications,
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [FromQuery] string? search,
+        [FromQuery] CampaignStatus? status,
+        [FromQuery] bool? newApplications,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         if (page <= 0 || pageSize <= 0)
         {
@@ -115,9 +118,9 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             query = query.Where(c => c.Name.Contains(search) || c.Description.Contains(search));
         }
 
-        if (!string.IsNullOrEmpty(status) && Enum.TryParse(status, out CampaignStatus parsedStatus))
+        if (status.HasValue)
         {
-            query = query.Where(c => c.Status == parsedStatus);
+            query = query.Where(c => c.Status == status);
         }
 
         var totalItems = await query.CountAsync();
