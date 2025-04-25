@@ -45,6 +45,7 @@
       <Compile Remove="Services\IMessageService.cs" />
       <Compile Remove="Services\MessageService.cs" />
       <Compile Remove="Validation\**" />
+      <Compile Remove="Services\NgrokService.cs" />
     </ItemGroup>
 
     <ItemGroup>
