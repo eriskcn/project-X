@@ -24,7 +24,8 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
             return Unauthorized(new { Message = "Unauthorized" });
         }
 
-        var user = await context.Users.FindAsync(userId);
+        var user = await context.Users.Include(u => u.CompanyDetail)
+            .SingleOrDefaultAsync(u => u.Id == userId);
         if (user == null)
         {
             return NotFound(new { Message = "User not found" });
@@ -35,11 +36,11 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
         return Ok(new ProfileInfoResponse
         {
             Id = userId,
-            FullName = user.FullName,
+            FullName = user.CompanyDetail != null ? user.CompanyDetail.CompanyName : user.FullName,
             Email = user.Email ?? string.Empty,
             EmailConfirmed = user.EmailConfirmed,
             PhoneNumber = user.PhoneNumber ?? string.Empty,
-            ProfilePicture = user.ProfilePicture,
+            ProfilePicture = user.CompanyDetail != null ? user.CompanyDetail.Logo : user.ProfilePicture,
             GitHubProfile = user.GitHubProfile,
             LinkedInProfile = user.LinkedInProfile,
             Roles = userRoles,
