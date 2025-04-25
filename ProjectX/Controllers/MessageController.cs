@@ -83,11 +83,16 @@ public class MessageController(
             if (request.AttachedFile.Length > 10 * 1024 * 1024)
                 return BadRequest("File size exceeds 10MB.");
 
-            // Lưu file
             var uploadsFolder = Path.Combine(env.WebRootPath, "messageAttachments");
             Directory.CreateDirectory(uploadsFolder);
-            var fileName = $"{Guid.NewGuid()}{fileExtension}";
-            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var cleanFileName = string.Join("_",
+                request.AttachedFile.FileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+            var displayName = Path.GetFileName(cleanFileName);
+
+            var uniqueFileName = $"{Path.GetFileNameWithoutExtension(cleanFileName)}_{Guid.NewGuid()}{fileExtension}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
             await using (var stream = new FileStream(filePath, FileMode.Create))
             {
@@ -96,8 +101,8 @@ public class MessageController(
 
             attachedFile = new AttachedFile
             {
-                Name = fileName,
-                Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
+                Name = displayName, 
+                Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath), 
                 Uploaded = DateTime.UtcNow,
                 UploadedById = senderGuid,
                 Type = TargetType.MessageAttachment
@@ -131,7 +136,6 @@ public class MessageController(
             }
         }
 
-        // Tạo response
         var messageResponse = new MessageResponse
         {
             Id = message.Id,
