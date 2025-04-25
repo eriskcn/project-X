@@ -1218,7 +1218,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
     [HttpGet("{jobId:Guid}/applications")]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<IEnumerable<ApplicationResponse>>> GetJobApplications([FromRoute] Guid jobId,
-        [FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        [FromQuery] string? search,
+        [FromQuery] bool? seen,
+        [FromQuery] ApplicationProcess? process,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
@@ -1243,7 +1247,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         var query = context.Applications
             .Include(a => a.Job)
             .ThenInclude(j => j.Campaign)
-            .Where(a => a.JobId == jobId)
+            .Where(a => a.JobId == jobId && a.Status != ApplicationStatus.Draft)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(search))
@@ -1251,6 +1255,18 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             query = query.Where(a =>
                 a.Introduction != null && (a.FullName.Contains(search) || a.Introduction.Contains(search) ||
                                            a.PhoneNumber.Contains(search) || a.Email.Contains(search)));
+        }
+
+        if (seen.HasValue)
+        {
+            query = seen.Value
+                ? query.Where(a => a.Status == ApplicationStatus.Seen)
+                : query.Where(a => a.Status != ApplicationStatus.Seen);
+        }
+
+        if (process.HasValue)
+        {
+            query = query.Where(a => a.Process == process);
         }
 
         var totalItems = await query.CountAsync();
@@ -1307,7 +1323,8 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         [FromRoute] Guid applicationId)
     {
         var application = await context.Applications
-            .SingleOrDefaultAsync(a => a.Id == applicationId && a.JobId == jobId);
+            .SingleOrDefaultAsync(a =>
+                a.Id == applicationId && a.JobId == jobId && a.Status != ApplicationStatus.Draft);
 
         if (application == null)
         {
