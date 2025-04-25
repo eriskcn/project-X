@@ -5,7 +5,7 @@ public class AppointmentShortResponse
     public Guid Id { get; set; }
     public DateTime StartTime { get; set; }
     public DateTime? EndTime { get; set; }
-    public UserResponse Participant { get; set; } = null!;
+    public UserResponse? Participant { get; set; } 
     public string? Note { get; set; }
     public DateTime Created { get; set; }
 }

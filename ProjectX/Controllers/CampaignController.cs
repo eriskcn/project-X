@@ -501,6 +501,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         var query = context.Applications
             .Include(a => a.Job)
             .Include(a => a.Candidate)
+            .Include(a => a.Appointment)
             .Where(a => a.Job.CampaignId == campaignId && a.Status != ApplicationStatus.Draft)
             .AsQueryable();
 
@@ -548,6 +549,17 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
                 .SingleOrDefault(),
             Status = a.Status,
             Process = a.Process,
+            Appointment = a.Appointment != null
+                ? new AppointmentShortResponse
+                {
+                    Id = a.Appointment.Id,
+                    StartTime = a.Appointment.StartTime,
+                    EndTime = a.Appointment.EndTime,
+                    Participant = null,
+                    Note = a.Appointment.Note,
+                    Created = a.Appointment.Created
+                }
+                : null,
             Applied = a.Applied,
             Submitted = a.Submitted,
             Created = a.Created,

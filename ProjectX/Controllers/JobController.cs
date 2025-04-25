@@ -1245,6 +1245,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         }
 
         var query = context.Applications
+            .Include(a => a.Appointment)
             .Include(a => a.Job)
             .ThenInclude(j => j.Campaign)
             .Where(a => a.JobId == jobId && a.Status != ApplicationStatus.Draft)
@@ -1299,6 +1300,17 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 .SingleOrDefaultAsync(),
             Status = a.Status,
             Process = a.Process,
+            Appointment = a.Appointment != null
+                ? new AppointmentShortResponse
+                {
+                    Id = a.Appointment.Id,
+                    StartTime = a.Appointment.StartTime,
+                    EndTime = a.Appointment.EndTime,
+                    Note = a.Appointment.Note,
+                    Participant = null,
+                    Created = a.Appointment.Created
+                }
+                : null,
             Applied = a.Created,
             Submitted = a.Submitted,
             Created = a.Created,
@@ -1323,6 +1335,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         [FromRoute] Guid applicationId)
     {
         var application = await context.Applications
+            .Include(a => a.Appointment)
             .SingleOrDefaultAsync(a =>
                 a.Id == applicationId && a.JobId == jobId && a.Status != ApplicationStatus.Draft);
 
@@ -1352,6 +1365,17 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 .SingleOrDefaultAsync(),
             Status = application.Status,
             Process = application.Process,
+            Appointment = application.Appointment != null
+                ? new AppointmentShortResponse
+                {
+                    Id = application.Appointment.Id,
+                    StartTime = application.Appointment.StartTime,
+                    EndTime = application.Appointment.EndTime,
+                    Note = application.Appointment.Note,
+                    Participant = null,
+                    Created = application.Appointment.Created
+                }
+                : null,
             Applied = application.Created,
             Submitted = application.Submitted,
             Created = application.Created,
