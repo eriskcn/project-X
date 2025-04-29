@@ -267,7 +267,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
     [HttpPatch("verifications")]
     public async Task<IActionResult> UpdateBusinessVerify(
-        [FromBody] UpdateBusinessVerifyRequest request)
+        [FromForm] UpdateBusinessVerifyRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
