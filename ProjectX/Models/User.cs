@@ -41,6 +41,9 @@ public class User : IdentityUser<Guid>, ISoftDelete
     [JsonIgnore] public ICollection<Message> SentMessages { get; set; } = new List<Message>();
     [JsonIgnore] public ICollection<Message> ReceivedMessages { get; set; } = new List<Message>();
     [JsonIgnore] public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
+    [JsonIgnore] public ICollection<TokenTransaction> TokenTransactions { get; set; } = new List<TokenTransaction>();
+    [JsonIgnore] public ICollection<Order> Orders { get; set; } = new List<Order>();
+    [JsonIgnore] public ICollection<Rating>? Ratings { get; set; } = new List<Rating>();
 
     [JsonIgnore]
     [InverseProperty(nameof(Major.Users))]

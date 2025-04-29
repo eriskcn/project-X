@@ -27,7 +27,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Skill> Skills { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<Payment> Payments { get; set; }
+
     public DbSet<Notification> Notifications { get; set; }
+
+    public DbSet<TokenTransaction> TokenTransactions { get; set; }
+    public DbSet<Rating> Ratings { get; set; }
 
     public override int SaveChanges()
     {
@@ -77,6 +81,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(u => u.Email)
             .IsUnique();
 
+        builder.Entity<Role>()
+            .HasIndex(r => r.Name)
+            .IsUnique();
+
         builder.Entity<Message>()
             .HasOne(m => m.Sender)
             .WithMany(u => u.SentMessages)
@@ -112,6 +120,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(cd => cd.Majors)
             .WithMany(m => m.Companies)
             .UsingEntity(cd => cd.ToTable("CompanyDetailMajors"));
+
+        builder.Entity<CompanyDetail>()
+            .HasMany(cd => cd.Ratings)
+            .WithOne(r => r.Company);
+
+        builder.Entity<User>()
+            .HasMany(cd => cd.Ratings)
+            .WithOne(r => r.Candidate);
 
         builder.Entity<User>()
             .HasOne(u => u.CompanyDetail)

@@ -20,6 +20,7 @@ public class CompanyDetail : BaseEntity
     [Required] [StringLength(256)] public required string HeadQuarterAddress { get; set; }
 
     [Required] [StringLength(256)] public required string Logo { get; set; }
+    [StringLength(256)] public string? Cover { get; set; } = "images/default_cover.png";
 
     [Required]
     [EmailAddress]
@@ -51,6 +52,9 @@ public class CompanyDetail : BaseEntity
     public Location Location { get; set; } = null!;
 
     [JsonIgnore] public ICollection<Major> Majors { get; set; } = new List<Major>();
+    public bool IsPro { get; set; }
+    [JsonIgnore] public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
+    public double AvgRatings { get; set; } = 0;
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
