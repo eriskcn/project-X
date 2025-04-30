@@ -1014,12 +1014,12 @@ public class PostController(
                 if (request.AttachedFile.Length > 5 * 1024 * 1024)
                     return BadRequest("File size exceeds the 5MB limit.");
 
-                var uploadsFolder = Path.Combine(env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
+                var postAttachmentsFolder = Path.Combine(env.WebRootPath, "postAttachments");
+                if (!Directory.Exists(postAttachmentsFolder))
+                    Directory.CreateDirectory(postAttachmentsFolder);
 
                 var fileName = $"{Guid.NewGuid()}{fileExtension}";
-                var filePath = Path.Combine(uploadsFolder, fileName);
+                var filePath = Path.Combine(postAttachmentsFolder, fileName);
 
                 var existingFile = await context.AttachedFiles
                     .SingleOrDefaultAsync(f => f.Type == TargetType.PostAttachment && f.TargetId == post.Id);
