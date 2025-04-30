@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.Helpers;
 using ProjectX.Models;
 
 namespace ProjectX.Controllers;
@@ -11,7 +12,7 @@ namespace ProjectX.Controllers;
 [ApiController]
 [Route("capablanca/api/v0/applications")]
 [Authorize]
-public class ApplicationController(ApplicationDbContext context) : ControllerBase
+public class ApplicationController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = "Candidate")]
@@ -133,9 +134,9 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                     YearOfExperience = app.Job.YearOfExperience,
                     MinSalary = app.Job.MinSalary,
                     MaxSalary = app.Job.MaxSalary,
-                    IsHighlight = app.Job.IsHighlight,
-                    HighlightStart = app.Job.HighlightStart,
-                    HighlightEnd = app.Job.HighlightEnd,
+                    // IsHighlight = app.Job.IsHighlight,
+                    // HighlightStart = app.Job.HighlightStart,
+                    // HighlightEnd = app.Job.HighlightEnd,
                     Major = new MajorResponse
                     {
                         Id = app.Job.Major.Id,
@@ -323,9 +324,9 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
                 YearOfExperience = application.Job.YearOfExperience,
                 MinSalary = application.Job.MinSalary,
                 MaxSalary = application.Job.MaxSalary,
-                IsHighlight = application.Job.IsHighlight,
-                HighlightStart = application.Job.HighlightStart,
-                HighlightEnd = application.Job.HighlightEnd,
+                // IsHighlight = application.Job.IsHighlight,
+                // HighlightStart = application.Job.HighlightStart,
+                // HighlightEnd = application.Job.HighlightEnd,
                 Major = new MajorResponse
                 {
                     Id = application.Job.Major.Id,
@@ -397,6 +398,119 @@ public class ApplicationController(ApplicationDbContext context) : ControllerBas
         };
 
         return Ok(response);
+    }
+
+    [HttpPatch("{id:guid}")]
+    [Authorize(Roles = "Candidate")]
+    public async Task<IActionResult> UpdateApplication([FromRoute] Guid id, [FromForm] UpdateApplicationRequest request)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null || !Guid.TryParse(userId, out var userIdGuid))
+        {
+            return Unauthorized(new { Message = "Invalid user identifier." });
+        }
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            var application = await context.Applications.FindAsync(id);
+            if (application == null)
+            {
+                return NotFound(new { Message = "Application not found." });
+            }
+
+            if (userIdGuid != application.CandidateId)
+            {
+                return Unauthorized(new { Message = "You are not authorized to update this application." });
+            }
+
+            if (application.Status != ApplicationStatus.Draft)
+            {
+                return BadRequest(new { Message = "You cannot update a submitted or seen application." });
+            }
+
+            // Update application fields
+            application.FullName = request.FullName ?? application.FullName;
+            application.Email = request.Email ?? application.Email;
+            application.PhoneNumber = request.PhoneNumber ?? application.PhoneNumber;
+            application.Introduction = request.Introduction ?? application.Introduction;
+            application.Status = request.Status ?? application.Status;
+            application.Modified = DateTime.UtcNow;
+            application.Submitted =
+                request.Status == ApplicationStatus.Submitted ? DateTime.UtcNow : application.Submitted;
+
+            // Handle resume file replacement
+            if (request.Resume != null)
+            {
+                // Validate file
+                var allowedExtensions = new[] { ".pdf", ".doc", ".docx" };
+                var fileExtension = Path.GetExtension(request.Resume.FileName).ToLowerInvariant();
+
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    return BadRequest(new { Message = "Only PDF and Word documents are allowed." });
+                }
+
+                if (request.Resume.Length > 10 * 1024 * 1024) // 10MB
+                {
+                    return BadRequest(new { Message = "File size cannot exceed 10MB." });
+                }
+
+                var existingResume = await context.AttachedFiles
+                    .Where(f => f.Type == TargetType.Application && f.TargetId == id)
+                    .SingleOrDefaultAsync();
+
+                if (existingResume != null)
+                {
+                    var existingFilePath = Path.Combine(env.WebRootPath, existingResume.Path);
+                    if (System.IO.File.Exists(existingFilePath))
+                    {
+                        System.IO.File.Delete(existingFilePath);
+                    }
+
+                    context.AttachedFiles.Remove(existingResume);
+                }
+
+                var resumeFolder = Path.Combine(env.WebRootPath, "resumes");
+                if (!Directory.Exists(resumeFolder))
+                {
+                    Directory.CreateDirectory(resumeFolder);
+                }
+
+                var resumeFileName = $"{Guid.NewGuid()}{fileExtension}";
+                var resumeFilePath = Path.Combine(resumeFolder, resumeFileName);
+
+                await using (var stream = new FileStream(resumeFilePath, FileMode.Create))
+                {
+                    await request.Resume.CopyToAsync(stream);
+                }
+
+                context.AttachedFiles.Add(new AttachedFile
+                {
+                    Name = resumeFileName,
+                    Path = PathHelper.GetRelativePathFromAbsolute(resumeFilePath, env.WebRootPath),
+                    Type = TargetType.Application,
+                    TargetId = id,
+                    UploadedById = userIdGuid,
+                    Uploaded = DateTime.UtcNow
+                });
+            }
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Ok(new { Message = "Application updated successfully." });
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return StatusCode(500, new { Message = "An error occurred while updating the application." });
+        }
     }
 
     [HttpPatch("{id:guid}/seen")]
