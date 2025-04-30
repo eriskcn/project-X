@@ -209,7 +209,7 @@ public class AppointmentController(ApplicationDbContext context) : ControllerBas
                     : null,
                 Status = app.Application.Status,
                 Process = app.Application.Process,
-                Applied = app.Application.Applied,
+                Submitted = app.Application.Submitted,
                 Created = app.Application.Created,
                 Modified = app.Application.Modified
             },

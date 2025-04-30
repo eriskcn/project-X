@@ -14,7 +14,6 @@ public class ApplicationResponse
     public ApplicationStatus Status { get; set; }
     public ApplicationProcess Process { get; set; }
     public AppointmentShortResponse? Appointment { get; set; }
-    public DateTime Applied { get; set; }
     public DateTime? Submitted { get; set; }
     public DateTime Created { get; set; }
     public DateTime Modified { get; set; }

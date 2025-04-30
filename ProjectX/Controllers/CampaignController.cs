@@ -576,7 +576,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
                     Created = a.Appointment.Created
                 }
                 : null,
-            Applied = a.Applied,
             Submitted = a.Submitted,
             Created = a.Created,
             Modified = a.Modified

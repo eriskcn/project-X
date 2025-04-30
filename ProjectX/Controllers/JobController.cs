@@ -28,7 +28,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         [FromQuery] bool highlightOnly,
         [FromQuery] double? minSalary,
         [FromQuery] double? maxSalary,
-        [FromQuery] bool? negotiateSalaryOnly,
         [FromQuery] double? minExp,
         [FromQuery] double? maxExp,
         [FromQuery] int pageSize = 10,
@@ -38,6 +37,9 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         {
             return BadRequest(new { Message = "Page number and page size must be greater than zero." });
         }
+
+        if (minSalary > maxSalary)
+            return BadRequest(new { Message = "minSalary must be <= maxSalary." });
 
         var savedJobIds = new List<Guid>();
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -93,6 +95,9 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             }
         }
 
+        if (minExp > maxExp)
+            return BadRequest("minExp must be less than or equal to maxExp.");
+
         if (minExp.HasValue)
         {
             query = query.Where(j => j.YearOfExperience > minExp.Value);
@@ -103,11 +108,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             query = query.Where(j => j.YearOfExperience <= maxExp.Value);
         }
 
-        if (highlightOnly)
-        {
-            query = query.Where(j =>
-                j.IsHighlight && j.HighlightStart <= DateTime.UtcNow && j.HighlightEnd >= DateTime.UtcNow);
-        }
+        // if (highlightOnly)
+        // {
+        //     query = query.Where(j =>
+        //         j.IsHighlight && j.HighlightStart <= DateTime.UtcNow && j.HighlightEnd >= DateTime.UtcNow);
+        // }
 
         if (jobLevels is { Count: > 0 })
         {
@@ -142,11 +147,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         if (maxSalary.HasValue)
         {
             query = query.Where(j => j.MaxSalary <= maxSalary);
-        }
-
-        if (negotiateSalaryOnly == true)
-        {
-            query = query.Where(j => j.MinSalary == null && j.MaxSalary == null);
         }
 
         var totalItems = await query.CountAsync();
@@ -471,6 +471,9 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 PhoneNumber = request.PhoneNumber,
                 Introduction = request.Introduction,
                 Status = request.Status,
+                Submitted = request.Status == ApplicationStatus.Submitted
+                    ? DateTime.UtcNow
+                    : null,
                 Process = ApplicationProcess.Pending
             };
 
@@ -525,45 +528,46 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
     [HttpPost("{jobId:guid}/highlight")]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
-    public async Task<IActionResult> HighlightJob([FromRoute] Guid jobId, [FromBody] HighlightRequest request)
-    {
-        if (request.HighlightStart < DateTime.UtcNow)
-            return BadRequest(new { Message = "HighlightStart must be in the future." });
-        if (request.HighlightEnd <= request.HighlightStart)
-            return BadRequest(new { Message = "HighlightEnd must be after HighlightStart." });
-
-        var days = OrderHelper.CalculateHighlightDays(request.HighlightStart, request.HighlightEnd);
-        if (days is < 1 or > 30)
-            return BadRequest(new { Message = "Highlight duration must be between 1 and 30 days." });
-
-        var job = await context.Jobs.FindAsync(jobId);
-        if (job == null)
-        {
-            return NotFound(new { Message = "Job not found." });
-        }
-
-        if (job.Status != JobStatus.Active)
-        {
-            return BadRequest(new { Message = "Job is not active." });
-        }
-
-        var amount = OrderHelper.CalculateHighlightCost(days);
-        var order = new Order
-        {
-            JobId = jobId,
-            Days = days,
-            Amount = amount,
-            StartDate = request.HighlightStart.AddMinutes(15),
-            EndDate = request.HighlightEnd.AddMinutes(15),
-            Status = OrderStatus.Pending
-        };
-
-        context.Orders.Add(order);
-        await context.SaveChangesAsync();
-
-        return Ok(new { OrderId = order.Id, Message = "Highlight request created successfully." });
-    }
-
+    // public async Task<IActionResult> HighlightJob(
+    //     [FromRoute] Guid jobId,
+    //     [FromBody] HighlightRequest request)
+    // {
+    //     if (request.HighlightStart < DateTime.UtcNow)
+    //         return BadRequest(new { Message = "HighlightStart must be in the future." });
+    //     if (request.HighlightEnd <= request.HighlightStart)
+    //         return BadRequest(new { Message = "HighlightEnd must be after HighlightStart." });
+    //
+    //     var days = OrderHelper.CalculateHighlightDays(request.HighlightStart, request.HighlightEnd);
+    //     if (days is < 1 or > 30)
+    //         return BadRequest(new { Message = "Highlight duration must be between 1 and 30 days." });
+    //
+    //     var job = await context.Jobs.FindAsync(jobId);
+    //     if (job == null)
+    //     {
+    //         return NotFound(new { Message = "Job not found." });
+    //     }
+    //
+    //     if (job.Status != JobStatus.Active)
+    //     {
+    //         return BadRequest(new { Message = "Job is not active." });
+    //     }
+    //
+    //     var amount = OrderHelper.CalculateHighlightCost(days);
+    //     var order = new Order
+    //     {
+    //         JobId = jobId,
+    //         Days = days,
+    //         Amount = amount,
+    //         StartDate = request.HighlightStart.AddMinutes(15),
+    //         EndDate = request.HighlightEnd.AddMinutes(15),
+    //         Status = OrderStatus.Pending
+    //     };
+    //
+    //     context.Orders.Add(order);
+    //     await context.SaveChangesAsync();
+    //
+    //     return Ok(new { OrderId = order.Id, Message = "Highlight request created successfully." });
+    // }
     [HttpPost("{jobId:guid}/save")]
     [Authorize(Roles = "Candidate")]
     public async Task<IActionResult> SaveJob(Guid jobId)
@@ -1322,11 +1326,10 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     StartTime = a.Appointment.StartTime,
                     EndTime = a.Appointment.EndTime,
                     Note = a.Appointment.Note,
-                    Participant = null, 
+                    Participant = null,
                     Created = a.Appointment.Created
                 }
                 : null,
-            Applied = a.Created,
             Submitted = a.Submitted,
             Created = a.Created,
             Modified = a.Modified
@@ -1391,7 +1394,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     Created = application.Appointment.Created
                 }
                 : null,
-            Applied = application.Created,
             Submitted = application.Submitted,
             Created = application.Created,
             Modified = application.Modified

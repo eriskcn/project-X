@@ -16,10 +16,6 @@ public class Application : BaseEntity
     [Required] [Phone] [StringLength(10)] public required string PhoneNumber { get; set; }
 
     [StringLength(10000)] public string? Introduction { get; set; }
-
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    public DateTime Applied { get; set; } = DateTime.UtcNow;
-
     [Column(TypeName = "nvarchar(50)")] public ApplicationStatus Status { get; set; } = ApplicationStatus.Draft;
     [Column(TypeName = "nvarchar(50)")] public ApplicationProcess Process { get; set; } = ApplicationProcess.Pending;
 

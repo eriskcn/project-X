@@ -13,7 +13,6 @@ public class ApplicationResponseForCandidate
     public required FileResponse? Resume { get; set; }
     public ApplicationStatus Status { get; set; }
     public ApplicationProcess Process { get; set; }
-    public DateTime Applied { get; set; }
     public DateTime? Submitted { get; set; }
     public DateTime Created { get; set; }
     public DateTime Modified { get; set; }
