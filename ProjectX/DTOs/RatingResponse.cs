@@ -6,5 +6,6 @@ public class RatingResponse
     public UserResponse Candidate { get; set; } = null!;
     public string? Comment { get; set; }
     public double Point { get; set; }
+    public bool IsAnonymous { get; set; }
     public DateTime Created { get; set; } = DateTime.UtcNow;
 }
