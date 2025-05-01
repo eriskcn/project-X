@@ -20,7 +20,7 @@ public class CompanyDetail : BaseEntity
     [Required] [StringLength(256)] public required string HeadQuarterAddress { get; set; }
 
     [Required] [StringLength(256)] public required string Logo { get; set; }
-    [StringLength(256)] public string? Cover { get; set; } = "images/default_cover.png";
+    [StringLength(256)] public string? Cover { get; set; } = "images/default-cover.png";
 
     [Required]
     [EmailAddress]
