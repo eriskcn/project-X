@@ -16,6 +16,7 @@ public class ProfileInfoResponse
     public bool VerificationSubmitted { get; set; }
     public bool RecruiterVerified { get; set; }
     public double XTokenBalance { get; set; }
+    public bool IsElite { get; set; }
     public bool IsExternalLogin { get; set; }
     public string? Provider { get; set; }
     public UserStatus Status { get; set; }
