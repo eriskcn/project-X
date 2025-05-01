@@ -199,7 +199,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
         if (company == null)
             return NotFound();
 
-        const long maxFileSize = 10 * 1024 * 1024; 
+        const long maxFileSize = 10 * 1024 * 1024;
         var allowedImageExtensions = new[] { ".png", ".jpg", ".jpeg" };
 
         if (request.Logo is { Length: > 0 })
@@ -355,13 +355,14 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
             Id = rating.Id,
             Point = rating.Point,
             Comment = rating.Comment,
-            Created = rating.Created,
+            IsAnonymous = rating.IsAnonymous,
             Candidate = new UserResponse
             {
                 Id = user.Id,
                 Name = user.FullName,
                 ProfilePicture = user.ProfilePicture
-            }
+            },
+            Created = rating.Created
         };
 
         return Ok(response);
@@ -375,6 +376,18 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
+        if (page <= 0 || pageSize <= 0)
+            return BadRequest("Page and pageSize must be greater than 0.");
+
+        pageSize = Math.Min(pageSize, 100);
+
+        var company = await context.CompanyDetails
+            .AsNoTracking()
+            .SingleOrDefaultAsync(c => c.Id == companyId);
+
+        if (company == null)
+            return NotFound(new { Message = "Company not found." });
+
         var query = context.Ratings
             .AsNoTracking()
             .Include(r => r.Candidate)
@@ -397,9 +410,10 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
                 Id = r.Id,
                 Point = r.Point,
                 Comment = r.Comment,
+                IsAnonymous = r.IsAnonymous,
                 Candidate = new UserResponse
                 {
-                    Id = r.Candidate.Id,
+                    Id = r.IsAnonymous ? Guid.Empty : r.Candidate.Id,
                     Name = r.IsAnonymous ? "Một ứng viên nào đó" : r.Candidate.FullName,
                     ProfilePicture = r.IsAnonymous ? "/images/default-avatar.jpeg" : r.Candidate.ProfilePicture
                 },
