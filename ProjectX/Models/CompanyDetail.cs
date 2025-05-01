@@ -36,7 +36,11 @@ public class CompanyDetail : BaseEntity
     [Column(TypeName = "nvarchar(50)")] public CompanySize Size { get; set; } = CompanySize.Tiny;
 
     [Required] [StringLength(10000)] public required string Introduction { get; set; }
-    [Required] public VerifyStatus Status { get; set; } = VerifyStatus.Pending;
+
+    [Required]
+    [Column(TypeName = "nvarchar(50)")]
+    public VerifyStatus Status { get; set; } = VerifyStatus.Pending;
+
     [StringLength(500)] public string? RejectReason { get; set; }
     [Required] public Guid CompanyId { get; set; }
 
