@@ -525,9 +525,9 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 new { Message = "An error occurred while submitting the application.", Error = ex.Message });
         }
     }
-
-    [HttpPost("{jobId:guid}/highlight")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
+    //
+    // [HttpPost("{jobId:guid}/highlight")]
+    // [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     // public async Task<IActionResult> HighlightJob(
     //     [FromRoute] Guid jobId,
     //     [FromBody] HighlightRequest request)
