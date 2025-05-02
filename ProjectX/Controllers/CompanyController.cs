@@ -177,7 +177,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
     [Authorize(Roles = "Business", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<CompanyProfileResponse>> UpdateCompanyProfile(
         [FromRoute] Guid companyId,
-        [FromBody] CompanyProfileRequest request)
+        [FromForm] CompanyProfileRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
