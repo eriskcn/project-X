@@ -52,7 +52,8 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
                 Location = new LocationResponse
                 {
                     Id = c.Location.Id,
-                    Name = c.Location.Name
+                    Name = c.Location.Name,
+                    Region = c.Location.Region
                 },
                 Majors = c.Majors.Select(m => new MajorResponse
                 {
@@ -105,7 +106,8 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
             Location = new LocationResponse
             {
                 Id = company.Location.Id,
-                Name = company.Location.Name
+                Name = company.Location.Name,
+                Region = company.Location.Region
             },
             Majors = company.Majors.Select(m => new MajorResponse
             {
@@ -159,7 +161,8 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
             Location = new LocationResponse
             {
                 Id = company.Location.Id,
-                Name = company.Location.Name
+                Name = company.Location.Name,
+                Region = company.Location.Region
             },
             Majors = company.Majors.Select(m => new MajorResponse
             {
@@ -288,7 +291,8 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
             Location = new LocationResponse
             {
                 Id = company.Location.Id,
-                Name = company.Location.Name
+                Name = company.Location.Name,
+                Region = company.Location.Region
             },
             Majors = company.Majors.Select(m => new MajorResponse
             {
