@@ -337,6 +337,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
             CompanyId = companyId,
             CandidateId = user.Id,
             Point = request.Point,
+            IsAnonymous = request.IsAnonymous,
             Comment = request.Comment,
             Created = DateTime.UtcNow
         };
