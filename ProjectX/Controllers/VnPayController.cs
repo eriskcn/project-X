@@ -223,7 +223,7 @@ public class VnPayController : ControllerBase
             _dbContext.Payments.Add(payment);
             await _dbContext.SaveChangesAsync();
 
-            var ipAddress = NetworkHelper.GetIpAddress(HttpContext);
+            var ipAddress = SafeNetworkHelper.GetClientIp(HttpContext);
             var paymentRequest = new PaymentRequest
             {
                 PaymentId = DateTime.Now.Ticks,
@@ -251,7 +251,7 @@ public class VnPayController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { ex.Message });
+            return BadRequest(new { Hehe = ex.Message });
         }
     }
 }
