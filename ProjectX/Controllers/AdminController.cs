@@ -780,11 +780,11 @@ public class AdminController(
             return Conflict(new { Message = "Invalid job to reject." });
         }
 
-        job.Status = JobStatus.Active;
+        job.Status = JobStatus.Rejected;
         job.RejectReason = request.RejectReason;
         context.Jobs.Update(job);
         await context.SaveChangesAsync();
 
-        return Ok(new { Message = $"Accept job {id} successfully." });
+        return Ok(new { Message = $"Reject job {id} successfully." });
     }
 }
