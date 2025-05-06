@@ -30,6 +30,9 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         [FromQuery] double? maxSalary,
         [FromQuery] double? minExp,
         [FromQuery] double? maxExp,
+        [FromQuery] bool isHighlight = false,
+        [FromQuery] bool isUrgent = false,
+        [FromQuery] bool isHot = false,
         [FromQuery] int pageSize = 10,
         [FromQuery] int page = 1)
     {
@@ -73,33 +76,23 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                         && j.EndDate >= DateTime.UtcNow)
             .AsQueryable();
 
-
-        if (!string.IsNullOrEmpty(search))
-        {
-            if (!companyName.HasValue)
-            {
-                query = query.Where(j =>
-                    j.Title.Contains(search) ||
-                    j.Description.Contains(search) ||
-                    (j.Campaign.Recruiter.CompanyDetail != null &&
-                     j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search))
-                );
-            }
-            else if (companyName.Value)
-            {
-                query = query.Where(j =>
-                    j.Campaign.Recruiter.CompanyDetail != null &&
-                    j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search)
-                );
-            }
-            else
-            {
-                query = query.Where(j => j.Title.Contains(search));
-            }
-        }
-
         if (minExp > maxExp)
             return BadRequest("minExp must be less than or equal to maxExp.");
+
+        if (isHighlight)
+        {
+            query = query.Where(j => j.IsHighlight);
+        }
+
+        if (isUrgent)
+        {
+            query = query.Where(j => j.IsUrgent);
+        }
+
+        if (isHot)
+        {
+            query = query.Where(j => j.IsHot);
+        }
 
         if (minExp.HasValue)
         {
@@ -146,11 +139,39 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             query = query.Where(j => j.MaxSalary <= maxSalary);
         }
 
+        if (!string.IsNullOrEmpty(search))
+        {
+            if (!companyName.HasValue)
+            {
+                query = query.Where(j =>
+                    j.Title.Contains(search) ||
+                    j.Description.Contains(search) ||
+                    (j.Campaign.Recruiter.CompanyDetail != null &&
+                     j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search))
+                );
+            }
+            else if (companyName.Value)
+            {
+                query = query.Where(j =>
+                    j.Campaign.Recruiter.CompanyDetail != null &&
+                    j.Campaign.Recruiter.CompanyDetail.CompanyName.Contains(search)
+                );
+            }
+            else
+            {
+                query = query.Where(j => j.Title.Contains(search));
+            }
+        }
+
+        query = query
+            .OrderByDescending(j => j.IsUrgent)
+            .ThenByDescending(j => j.IsHot)
+            .ThenByDescending(j => j.Created);
+
         var totalItems = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var jobs = await query
-            .OrderByDescending(j => j.Created)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
