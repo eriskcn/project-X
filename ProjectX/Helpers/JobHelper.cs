@@ -6,6 +6,12 @@ namespace ProjectX.Helpers;
 
 public class JobHelper
 {
+    public static bool IsValidJobDuration(Job job)
+    {
+        var jobDuration = (job.EndDate - job.StartDate).TotalDays;
+        return !(jobDuration <= 0);
+    }
+
     public static bool IsValidProJob(Job job, bool isHighlight, bool isHot, bool isUrgent)
     {
         ArgumentNullException.ThrowIfNull(job);
@@ -20,12 +26,5 @@ public class JobHelper
             default:
                 return true;
         }
-    }
-
-
-    public static int CalcXToken4Highlight(DateTime startDate, DateTime endDate, int xTokenPrice)
-    {
-        var duration = (int)(endDate - startDate).TotalDays;
-        return duration * xTokenPrice;
     }
 }

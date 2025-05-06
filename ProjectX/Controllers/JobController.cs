@@ -848,13 +848,17 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 ContractTypes = contractTypes,
                 Skills = skills
             };
+            if (!JobHelper.IsValidJobDuration(job))
+            {
+                return BadRequest(new { Message = "Invalid StartDate and EndDate" });
+            }
 
             // Process job services if any
             var jobServices = new List<JobService>();
             var totalToken = 0;
             var totalCash = 0.0;
 
-            if (request.ServiceIds is { Count: > 0 })
+            if (request.ServiceIds is { Count: > 0 and <= 3 })
             {
                 var serviceIds = request.ServiceIds;
                 var services = await context.Services
@@ -971,6 +975,14 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 // Update recruiter token balance
                 recruiter.XTokenBalance -= totalToken;
                 context.Users.Update(recruiter);
+                job.IsHighlight = true;
+                job.IsUrgent = true;
+                job.IsHot = true;
+
+                foreach (var jobService in job.JobServices)
+                {
+                    jobService.IsActive = true;
+                }
 
                 // Save changes and commit transaction
                 await context.SaveChangesAsync();

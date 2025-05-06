@@ -25,8 +25,8 @@ public class JobRequest
     [Required] public Guid MajorId { set; get; }
     public ICollection<Guid>? ServiceIds { set; get; } = new List<Guid>();
     public bool IsDraft { set; get; } = false;
-    public DateTime StartDate { set; get; } = DateTime.UtcNow;
-    public DateTime EndDate { set; get; } = DateTime.UtcNow.AddDays(7);
+    public DateTime StartDate { set; get; }
+    public DateTime EndDate { set; get; }
 
     [Required] public Guid CampaignId { set; get; }
 
