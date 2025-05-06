@@ -10,6 +10,7 @@ public class JobResponse
     public int Quantity { set; get; }
     public required string OfficeAddress { set; get; }
     public JobStatus Status { set; get; }
+    public string? RejectReason { set; get; }
     public EducationLevel? EducationLevelRequire { set; get; }
     public double? YearOfExperience { set; get; }
     public double? MinSalary { set; get; }
