@@ -332,6 +332,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 CashPrice = 4_990_000,
                 DurationInDays = 360,
                 MonthlyXTokenRewards = 500
+            },
+            new BusinessPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Test package",
+                Description = "hehe",
+                Level = BusinessLevel.Elite,
+                CashPrice = 2_000,
+                DurationInDays = 360,
+                MonthlyXTokenRewards = 500
             }
         );
     }
