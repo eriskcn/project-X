@@ -149,6 +149,7 @@ public class OrderController(ApplicationDbContext context) : ControllerBase
         {
             Id = order.Id,
             Amount = order.Amount,
+            Gateway = order.Gateway,
             PurchasedPackage = new PurchasedPackageResponse
             {
                 Id = purchasedPackage.Id,
@@ -201,6 +202,7 @@ public class OrderBusinessResponse
 {
     public Guid Id { set; get; }
     public double Amount { set; get; }
+    public PaymentGateway Gateway { set; get; }
     public PurchasedPackageResponse PurchasedPackage { set; get; } = null!;
     public DateTime Created { set; get; }
     public DateTime Modified { set; get; }
