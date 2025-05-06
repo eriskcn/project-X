@@ -483,6 +483,8 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
             var competitiveRate = await statsService.GetCompetitiveRateAsync(job);
 
+            var applicationCount = await context.Applications
+                .CountAsync(a => a.JobId == id && a.Status != ApplicationStatus.Draft);
             var tokenTransaction = new TokenTransaction
             {
                 Id = Guid.NewGuid(),
@@ -504,6 +506,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             return Ok(new
             {
                 job.ViewCount,
+                ApplicationCount = applicationCount,
                 CompetitiveRate = competitiveRate
             });
         }
