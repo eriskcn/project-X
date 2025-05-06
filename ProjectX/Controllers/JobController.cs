@@ -6,13 +6,14 @@ using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Helpers;
 using ProjectX.Models;
+using ProjectX.Services.Stats;
 
 namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/jobs")]
 [Authorize]
-public class JobController(ApplicationDbContext context, IWebHostEnvironment env)
+public class JobController(ApplicationDbContext context, IWebHostEnvironment env, IStatsService statsService)
     : ControllerBase
 {
     [HttpGet]
@@ -444,7 +445,73 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             Modified = job.Modified
         };
 
+        job.ViewCount++;
+        context.Jobs.Update(job);
+        await context.SaveChangesAsync();
+
         return Ok(response);
+    }
+
+    [HttpGet("{id:guid}/hidden-stats")]
+    public async Task<IActionResult> GetHiddenStats(Guid id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+        {
+            return Unauthorized(new { Message = "Invalid user ID." });
+        }
+
+        var user = await context.Users.FindAsync(userGuid);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        if (user.XTokenBalance < 2)
+        {
+            return BadRequest(new { Message = "Not enough token do view this hidden stats." });
+        }
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            var job = await context.Jobs.FindAsync(id);
+            if (job == null)
+            {
+                return NotFound(new { Message = "Job not found." });
+            }
+
+            var competitiveRate = await statsService.GetCompetitiveRateAsync(job);
+
+            var tokenTransaction = new TokenTransaction
+            {
+                Id = Guid.NewGuid(),
+                UserId = userGuid,
+                AmountToken = 2,
+                JobId = job.Id,
+                Type = TokenTransactionType.ViewHiddenJobDetails,
+                Created = DateTime.UtcNow,
+                Modified = DateTime.UtcNow
+            };
+
+            user.XTokenBalance -= 2;
+            context.Users.Update(user);
+            context.TokenTransactions.Add(tokenTransaction);
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Ok(new
+            {
+                job.ViewCount,
+                CompetitiveRate = competitiveRate
+            });
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 
     [HttpPost("{jobId:guid}/apply")]
@@ -1076,16 +1143,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 job.JobTypes = jobTypesToUpdate;
             }
 
-            if (request.Status.HasValue)
-            {
-                if (request.Status.Value is JobStatus.Active or JobStatus.Pending or JobStatus.Rejected)
-                {
-                    return Unauthorized(new { Message = "You are not authorized to do this action." });
-                }
-
-                job.Status = request.Status.Value;
-            }
-
             // Handle Job Description File Upload
             if (request.JobDescriptionFile != null)
             {
@@ -1131,6 +1188,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 await context.SaveChangesAsync();
             }
 
+            job.Status = JobStatus.Pending;
             job.Modified = DateTime.UtcNow;
             context.Jobs.Update(job);
             await context.SaveChangesAsync();
@@ -1143,6 +1201,38 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             return StatusCode(500,
                 new { Message = "An error occurred while updating the job.", Errors = ex.Message });
         }
+    }
+
+    [HttpPatch("{id:guid}/close")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
+    public async Task<IActionResult> CloseJob(Guid id)
+    {
+        var job = await context.Jobs.SingleOrDefaultAsync(j => j.Id == id && j.Status == JobStatus.Active);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        job.Status = JobStatus.Closed;
+        context.Jobs.Update(job);
+        await context.SaveChangesAsync();
+        return Ok(new { Message = "Close job successfully." });
+    }
+
+    [HttpPatch("{id:guid}/publish")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
+    public async Task<IActionResult> Publish(Guid id)
+    {
+        var job = await context.Jobs.SingleOrDefaultAsync(j => j.Id == id && j.Status == JobStatus.Draft);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        job.Status = JobStatus.Pending;
+        context.Jobs.Update(job);
+        await context.SaveChangesAsync();
+        return Ok(new { Message = "Publish job successfully. Need accept from Admin to active job." });
     }
 
     [HttpDelete("{id:guid}")]
