@@ -759,6 +759,7 @@ public class AdminController(
             return Conflict(new { Message = "Invalid job to accept." });
         }
 
+        job.RejectReason = null;
         job.Status = JobStatus.Active;
         context.Jobs.Update(job);
         await context.SaveChangesAsync();
