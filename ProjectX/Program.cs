@@ -164,10 +164,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<DatabaseBackupService>();
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(8443, listenOptions =>
-    {
-        listenOptions.UseHttps(); 
-    });
+    // options.ListenAnyIP(8443, listenOptions =>
+    // {
+    //     listenOptions.UseHttps(); 
+    // });
 
     options.ListenAnyIP(8080);
 });
