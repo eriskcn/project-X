@@ -56,7 +56,7 @@ public class CompanyDetail : BaseEntity
     public Location Location { get; set; } = null!;
 
     [JsonIgnore] public ICollection<Major> Majors { get; set; } = new List<Major>();
-    public bool IsPro { get; set; }
+    public bool IsElite { get; set; }
     [JsonIgnore] public ICollection<Rating> Ratings { get; set; } = new List<Rating>();
     public double AvgRatings { get; set; } = 0;
 

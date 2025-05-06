@@ -17,6 +17,7 @@ public class PurchasedPackage : BaseEntity
     [JsonIgnore] [ForeignKey("UserId")] public User User { get; set; } = null!;
     public DateTime StartDate { get; set; }
     public DateTime NextResetDate { get; set; }
+    public DateTime EndDate { set; get; }
     public int XTokenBalance { get; set; }
     public bool IsActive { get; set; }
     public DateTime Created { get; set; } = DateTime.UtcNow;

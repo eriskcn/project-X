@@ -18,6 +18,7 @@ public class Order : BaseEntity
     [Column(TypeName = "nvarchar(50)")] public OrderType Type { get; set; }
     public double Amount { get; set; }
     public PaymentGateway Gateway { get; set; }
+    public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
@@ -30,4 +31,10 @@ public enum OrderType
     Business, // TargetId is PurchasedPackage.Id ??
     Job, // TargetId is Job.Id 
     TopUp // TargetId is TokenTransaction.Id
+}
+
+public enum OrderStatus
+{
+    Pending,
+    Completed
 }

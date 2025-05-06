@@ -19,6 +19,6 @@ public class CompanyProfileResponse
     public required string Introduction { get; set; }
     public required LocationResponse Location { get; set; }
     public required ICollection<MajorResponse> Majors { get; set; } = new List<MajorResponse>();
-    public bool IsPro { get; set; } = false;
+    public bool IsElite { get; set; } = false;
     public double AvgRatings { get; set; } = 0;
 }

@@ -162,10 +162,10 @@ builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<DatabaseBackupService>();
-// builder.WebHost.ConfigureKestrel(options =>
-// {
-//     options.ListenAnyIP(8443, listenOptions => { listenOptions.UseHttps(); });
-// });
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8443, listenOptions => { listenOptions.UseHttps(); });
+});
 
 var app = builder.Build();
 

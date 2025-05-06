@@ -174,7 +174,26 @@ public class WebHookController(
                     await context.SaveChangesAsync();
                     break;
                 case OrderType.Business:
+                    var purchased = await context.PurchasedPackages
+                        .Include(pp => pp.User)
+                        .Include(pp => pp.BusinessPackage)
+                        .SingleOrDefaultAsync(pp => pp.Id == order.TargetId);
+                    if (purchased == null)
+                    {
+                        return NotFound(new { Message = "Purchased package not found." });
+                    }
+
+                    purchased.IsActive = true;
+                    purchased.StartDate = DateTime.UtcNow;
+                    purchased.NextResetDate = purchased.StartDate.AddDays(30);
+                    purchased.EndDate = purchased.StartDate.AddDays(purchased.BusinessPackage.DurationInDays);
+                    purchased.User.XTokenBalance += purchased.BusinessPackage.MonthlyXTokenRewards;
+                    purchased.User.Level = purchased.BusinessPackage.Level == BusinessLevel.Elite
+                        ? AccountLevel.Elite
+                        : AccountLevel.Premium;
                     break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
 
             _logger.LogInformation(

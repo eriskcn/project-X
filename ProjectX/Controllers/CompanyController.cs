@@ -60,7 +60,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
                     Id = m.Id,
                     Name = m.Name
                 }).ToList(),
-                IsPro = c.IsPro,
+                IsElite = c.IsElite,
                 AvgRatings = c.AvgRatings
             })
             .ToListAsync();
@@ -114,7 +114,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
                 Id = m.Id,
                 Name = m.Name
             }).ToList(),
-            IsPro = company.IsPro,
+            IsElite = company.IsElite,
             AvgRatings = company.AvgRatings
         };
 
@@ -169,7 +169,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
                 Id = m.Id,
                 Name = m.Name
             }).ToList(),
-            IsPro = company.IsPro,
+            IsElite = company.IsElite,
             AvgRatings = company.AvgRatings
         };
 
@@ -299,7 +299,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
                 Id = m.Id,
                 Name = m.Name
             }).ToList(),
-            IsPro = company.IsPro,
+            IsElite = company.IsElite,
             AvgRatings = company.AvgRatings
         };
 

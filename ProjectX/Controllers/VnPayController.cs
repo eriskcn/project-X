@@ -78,6 +78,7 @@ public class VnPayController : ControllerBase
                     return NotFound(new { Message = "Order not found." });
                 }
 
+                order.Status = OrderStatus.Completed;
                 switch (order.Type)
                 {
                     case OrderType.TopUp:
@@ -95,7 +96,6 @@ public class VnPayController : ControllerBase
 
                         user.XTokenBalance += topUpTransaction.AmountToken;
                         _dbContext.Users.Update(user);
-                        await _dbContext.SaveChangesAsync();
                         break;
                     case OrderType.Job:
                         var job = await _dbContext.Jobs
@@ -121,19 +121,43 @@ public class VnPayController : ControllerBase
                                 case ServiceType.Urgent:
                                     job.IsUrgent = true;
                                     break;
+                                default:
+                                    throw new ArgumentOutOfRangeException();
                             }
 
                             jobService.IsActive = true;
                         }
 
                         _dbContext.Jobs.Update(job);
-                        await _dbContext.SaveChangesAsync();
                         break;
 
                     case OrderType.Business:
+                        var purchased = await _dbContext.PurchasedPackages
+                            .Include(pp => pp.User)
+                            .Include(pp => pp.BusinessPackage)
+                            .SingleOrDefaultAsync(pp => pp.Id == order.TargetId);
+                        if (purchased == null)
+                        {
+                            return NotFound(new { Message = "Purchased package not found." });
+                        }
+
+                        purchased.IsActive = true;
+                        purchased.StartDate = DateTime.UtcNow;
+                        purchased.NextResetDate = purchased.StartDate.AddDays(30);
+                        purchased.EndDate = purchased.StartDate.AddDays(purchased.BusinessPackage.DurationInDays);
+                        purchased.User.XTokenBalance += purchased.BusinessPackage.MonthlyXTokenRewards;
+                        purchased.User.Level = purchased.BusinessPackage.Level == BusinessLevel.Elite
+                            ? AccountLevel.Elite
+                            : AccountLevel.Premium;
                         break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
 
+                await _dbContext.SaveChangesAsync();
+
+                _dbContext.Orders.Update(order);
+                await _dbContext.SaveChangesAsync();
                 return Ok(paymentResult);
             }
 
@@ -227,7 +251,7 @@ public class VnPayController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(new { Message = ex.Message });
+            return BadRequest(new { ex.Message });
         }
     }
 }

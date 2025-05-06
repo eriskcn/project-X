@@ -258,6 +258,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Id = Guid.NewGuid(),
                 Name = "Project X Premium - 1 month",
                 Description = "Basic package for businesses",
+                Level = BusinessLevel.Premium,
                 CashPrice = 249_000,
                 DurationInDays = 30,
                 MonthlyXTokenRewards = 100
@@ -267,6 +268,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Id = Guid.NewGuid(),
                 Name = "Project X Premium - 3 months",
                 Description = "Basic package for businesses",
+                Level = BusinessLevel.Premium,
                 CashPrice = 690_000,
                 DurationInDays = 90,
                 MonthlyXTokenRewards = 100
@@ -276,6 +278,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Id = Guid.NewGuid(),
                 Name = "Project X Premium - 6 months",
                 Description = "Basic package for businesses",
+                Level = BusinessLevel.Premium,
                 CashPrice = 1_290_000,
                 DurationInDays = 180,
                 MonthlyXTokenRewards = 100
@@ -285,6 +288,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Id = Guid.NewGuid(),
                 Name = "Project X Premium - 12 months",
                 Description = "Basic package for businesses",
+                Level = BusinessLevel.Premium,
                 CashPrice = 2_490_000,
                 DurationInDays = 360,
                 MonthlyXTokenRewards = 100
@@ -294,6 +298,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Id = Guid.NewGuid(),
                 Name = "Project X Elite - 1 month",
                 Description = "Elite package for businesses",
+                Level = BusinessLevel.Elite,
                 CashPrice = 499_000,
                 DurationInDays = 30,
                 MonthlyXTokenRewards = 500
@@ -303,6 +308,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Id = Guid.NewGuid(),
                 Name = "Project X Elite - 3 months",
                 Description = "Elite package for businesses",
+                Level = BusinessLevel.Elite,
                 CashPrice = 1_390_000,
                 DurationInDays = 90,
                 MonthlyXTokenRewards = 500
@@ -312,6 +318,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Id = Guid.NewGuid(),
                 Name = "Project X Elite - 6 months",
                 Description = "Elite package for businesses",
+                Level = BusinessLevel.Elite,
                 CashPrice = 2_490_000,
                 DurationInDays = 180,
                 MonthlyXTokenRewards = 500
@@ -321,6 +328,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 Id = Guid.NewGuid(),
                 Name = "Project X Elite - 12 months",
                 Description = "Elite package for businesses",
+                Level = BusinessLevel.Elite,
                 CashPrice = 4_990_000,
                 DurationInDays = 360,
                 MonthlyXTokenRewards = 500

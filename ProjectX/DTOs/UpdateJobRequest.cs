@@ -25,6 +25,4 @@ public class UpdateJobRequest
     public ICollection<Guid> JobLevels { set; get; } = new List<Guid>();
 
     public ICollection<Guid> JobTypes { set; get; } = new List<Guid>();
-
-    public JobStatus? Status { set; get; }
 }

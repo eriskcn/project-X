@@ -462,4 +462,80 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
         return Ok(new { Message = "Business registration updated successfully." });
     }
+
+    [HttpGet("packages")]
+    [Authorize(Policy = "RecruiterVerifiedOnly")]
+    public async Task<ActionResult<IEnumerable<BusinessPackageResponse>>> GetBusinessPackages()
+    {
+        var packages = await context.BusinessPackages
+            .Select(p => new BusinessPackageResponse
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Description = p.Description,
+                Level = p.Level,
+                CashPrice = p.CashPrice,
+                DurationInDays = p.DurationInDays,
+                MonthlyXTokenRewards = p.MonthlyXTokenRewards,
+                Created = p.Created,
+                Modified = p.Modified
+            })
+            .OrderBy(p => p.Level)
+            .ToListAsync();
+        return Ok(packages);
+    }
+
+    [HttpPost("upgrade")]
+    [Authorize(Policy = "RecruiterVerifiedOnly")]
+    public async Task<IActionResult> UpgradeBusiness([FromBody] UpgradeBusinessRequest request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+        {
+            return Unauthorized(new { Message = "Invalid sender ID." });
+        }
+
+        var user = await context.Users.FindAsync(userGuid);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found" });
+        }
+
+        var package = await context.BusinessPackages.FindAsync(request.PackageId);
+        if (package == null)
+        {
+            return NotFound(new { Message = "Package not found." });
+        }
+
+        var purchasedPackage = new PurchasedPackage
+        {
+            Id = Guid.NewGuid(),
+            UserId = userGuid,
+            BusinessPackageId = package.Id,
+            IsActive = false,
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow
+        };
+        context.PurchasedPackages.Add(purchasedPackage);
+
+        var order = new Order
+        {
+            Id = Guid.NewGuid(),
+            UserId = userGuid,
+            Amount = package.CashPrice,
+            Gateway = request.Gateway,
+            Type = OrderType.Business,
+            TargetId = purchasedPackage.Id,
+            Created = DateTime.UtcNow,
+            Modified = DateTime.UtcNow
+        };
+
+        context.Orders.Add(order);
+        await context.SaveChangesAsync();
+        return Ok(new
+        {
+            OrderId = order.Id,
+            Message = "You must pay to active business package."
+        });
+    }
 }
