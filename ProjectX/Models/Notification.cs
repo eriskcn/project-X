@@ -25,10 +25,9 @@ public class Notification : BaseEntity
 
 public enum NotificationType
 {
-    SuccessfulApply,
     NewReactToPost,
-    NewApplication,
-    UpdateApplicationProcess,
-    NewComment,
-    NewAppointment,
+    NewApplication, // campaign Id
+    UpdateApplicationProcess, // campaign Id
+    NewComment, // post id
+    NewAppointment, // appointment
 }

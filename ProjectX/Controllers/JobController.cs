@@ -25,7 +25,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         [FromQuery] List<Guid>? contractTypes,
         [FromQuery] List<Guid>? majors,
         [FromQuery] List<Guid>? locations,
-        [FromQuery] bool highlightOnly,
         [FromQuery] double? minSalary,
         [FromQuery] double? maxSalary,
         [FromQuery] double? minExp,
@@ -67,7 +66,10 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             .Include(j => j.ContractTypes)
             .Include(j => j.JobLevels)
             .Include(j => j.JobTypes)
-            .Where(j => j.Status == JobStatus.Active && j.Campaign.Status == CampaignStatus.Opened)
+            .Where(j => j.Status == JobStatus.Active
+                        && j.Campaign.Status == CampaignStatus.Opened
+                        && j.StartDate <= DateTime.UtcNow
+                        && j.EndDate >= DateTime.UtcNow)
             .AsQueryable();
 
 
@@ -107,12 +109,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
         {
             query = query.Where(j => j.YearOfExperience <= maxExp.Value);
         }
-
-        // if (highlightOnly)
-        // {
-        //     query = query.Where(j =>
-        //         j.IsHighlight && j.HighlightStart <= DateTime.UtcNow && j.HighlightEnd >= DateTime.UtcNow);
-        // }
 
         if (jobLevels is { Count: > 0 })
         {
@@ -186,6 +182,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 YearOfExperience = j.YearOfExperience,
                 MinSalary = j.MinSalary,
                 MaxSalary = j.MaxSalary,
+                IsHighlight = j.IsHighlight,
+                IsHot = j.IsHot,
+                IsUrgent = j.IsUrgent,
+                StartDate = j.StartDate,
+                EndDate = j.EndDate,
                 Major = new MajorResponse
                 {
                     Id = j.Major.Id,
@@ -198,7 +199,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     Region = j.Location.Region
                 },
                 JobDescription = context.AttachedFiles
-                    .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)
+                    .Where(f => f.Type == FileType.JobDescription && f.TargetId == j.Id)
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
@@ -310,7 +311,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             .Include(j => j.ContractTypes)
             .Include(j => j.JobLevels)
             .Include(j => j.JobTypes)
-            .SingleOrDefaultAsync(j => j.Id == id);
+            .SingleOrDefaultAsync(j => j.Status == JobStatus.Active
+                                       && j.Campaign.Status == CampaignStatus.Opened
+                                       && j.StartDate <= DateTime.UtcNow
+                                       && j.EndDate >= DateTime.UtcNow
+                                       && j.Id == id);
 
         if (job == null)
         {
@@ -340,6 +345,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             YearOfExperience = job.YearOfExperience,
             MinSalary = job.MinSalary,
             MaxSalary = job.MaxSalary,
+            IsHighlight = job.IsHighlight,
+            IsHot = job.IsHot,
+            IsUrgent = job.IsUrgent,
+            StartDate = job.StartDate,
+            EndDate = job.EndDate,
             Major = new MajorResponse
             {
                 Id = job.Major.Id,
@@ -352,7 +362,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 Region = job.Location.Region
             },
             JobDescription = await context.AttachedFiles
-                .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
+                .Where(f => f.Type == FileType.JobDescription && f.TargetId == job.Id)
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
@@ -508,7 +518,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 Id = Guid.NewGuid(),
                 Name = resumeFileName,
                 Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
-                Type = TargetType.Application,
+                Type = FileType.Application,
                 TargetId = application.Id,
                 UploadedById = Guid.Parse(userId)
             };
@@ -525,49 +535,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 new { Message = "An error occurred while submitting the application.", Error = ex.Message });
         }
     }
-    //
-    // [HttpPost("{jobId:guid}/highlight")]
-    // [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
-    // public async Task<IActionResult> HighlightJob(
-    //     [FromRoute] Guid jobId,
-    //     [FromBody] HighlightRequest request)
-    // {
-    //     if (request.HighlightStart < DateTime.UtcNow)
-    //         return BadRequest(new { Message = "HighlightStart must be in the future." });
-    //     if (request.HighlightEnd <= request.HighlightStart)
-    //         return BadRequest(new { Message = "HighlightEnd must be after HighlightStart." });
-    //
-    //     var days = OrderHelper.CalculateHighlightDays(request.HighlightStart, request.HighlightEnd);
-    //     if (days is < 1 or > 30)
-    //         return BadRequest(new { Message = "Highlight duration must be between 1 and 30 days." });
-    //
-    //     var job = await context.Jobs.FindAsync(jobId);
-    //     if (job == null)
-    //     {
-    //         return NotFound(new { Message = "Job not found." });
-    //     }
-    //
-    //     if (job.Status != JobStatus.Active)
-    //     {
-    //         return BadRequest(new { Message = "Job is not active." });
-    //     }
-    //
-    //     var amount = OrderHelper.CalculateHighlightCost(days);
-    //     var order = new Order
-    //     {
-    //         JobId = jobId,
-    //         Days = days,
-    //         Amount = amount,
-    //         StartDate = request.HighlightStart.AddMinutes(15),
-    //         EndDate = request.HighlightEnd.AddMinutes(15),
-    //         Status = OrderStatus.Pending
-    //     };
-    //
-    //     context.Orders.Add(order);
-    //     await context.SaveChangesAsync();
-    //
-    //     return Ok(new { OrderId = order.Id, Message = "Highlight request created successfully." });
-    // }
+
     [HttpPost("{jobId:guid}/save")]
     [Authorize(Roles = "Candidate")]
     public async Task<IActionResult> SaveJob(Guid jobId)
@@ -721,90 +689,71 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
     [HttpPost]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
-    public async Task<ActionResult<JobResponse>> CreateJob([FromForm] JobRequest request)
+    public async Task<IActionResult> CreateJob([FromForm] JobRequest request)
     {
+        const int maxFileSize = 10 * 1024 * 1024; // 10MB limit
+
+        // Validate request
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (recruiterId == null)
+        // Validate file size if present
+        if (request.JobDescriptionFile is { Length: > maxFileSize })
         {
-            return Unauthorized(new { Message = "User ID not found in access token." });
+            return BadRequest(new { Message = "File size exceeds the 10MB limit." });
         }
 
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        // Get and validate recruiter
+        var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(recruiterId, out var recruiterGuid))
+        {
+            return BadRequest(new { Message = "Invalid recruiter ID." });
+        }
 
+        var recruiter = await context.Users
+            .Include(u => u.CompanyDetail)
+            .ThenInclude(cd => cd!.Location)
+            .Include(u => u.CompanyDetail)
+            .ThenInclude(cd => cd!.Majors)
+            .Include(u => u.PurchasedPackages)
+            .SingleOrDefaultAsync(u => u.Id == recruiterGuid);
+
+        if (recruiter == null)
+        {
+            return BadRequest(new { Message = "Recruiter not found." });
+        }
+
+        // Start transaction for data consistency
+        await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            var campaign = await context.Campaigns.FindAsync(request.CampaignId);
-            if (campaign == null)
+            // Determine job status based on recruiter level and draft status
+            var isAutoAccept = recruiter.Level is AccountLevel.Elite or AccountLevel.Premium;
+            if (request.IsDraft)
             {
-                return NotFound(new { Message = "Campaign not found." });
+                isAutoAccept = false;
             }
 
-            if (campaign.RecruiterId != Guid.Parse(recruiterId))
-            {
-                return Forbid("You are not authorized to add jobs to this campaign.");
-            }
-
-            var skills = await context.Skills
-                .Where(s => request.Skills.Contains(s.Id))
+            // Get related entities for job
+            var jobLevels = await context.JobLevels
+                .Where(jl => request.JobLevels.Contains(jl.Id))
                 .ToListAsync();
-
-            if (skills.Count != request.Skills.Count)
-            {
-                return BadRequest(new { Message = "Some skills not found." });
-            }
-
-            var contractTypes = await context.ContractTypes
-                .Where(ct => request.ContractTypes.Contains(ct.Id))
-                .ToListAsync();
-
-            if (contractTypes.Count != request.ContractTypes.Count)
-            {
-                return BadRequest(new { Message = "Some contract types not found." });
-            }
 
             var jobTypes = await context.JobTypes
                 .Where(jt => request.JobTypes.Contains(jt.Id))
                 .ToListAsync();
 
-            if (jobTypes.Count != request.JobTypes.Count)
-            {
-                return BadRequest(new { Message = "Some job types not found." });
-            }
-
-            var jobLevels = await context.JobLevels
-                .Where(jl => request.JobLevels.Contains(jl.Id))
+            var contractTypes = await context.ContractTypes
+                .Where(ct => request.ContractTypes.Contains(ct.Id))
                 .ToListAsync();
 
-            if (jobLevels.Count != request.JobLevels.Count)
-            {
-                return BadRequest(new { Message = "Some job levels not found." });
-            }
+            var skills = await context.Skills
+                .Where(s => request.Skills.Contains(s.Id))
+                .ToListAsync();
 
-            var major = await context.Majors
-                .Where(m => m.Id == request.MajorId)
-                .AsNoTracking()
-                .SingleOrDefaultAsync();
-            if (major == null)
-            {
-                return NotFound(new { Message = "Major not found" });
-            }
-
-            var location = await context.Locations
-                .Where(l => l.Id == request.LocationId)
-                .AsNoTracking()
-                .SingleOrDefaultAsync();
-
-            if (location == null)
-            {
-                return NotFound(new { Message = "Location not found" });
-            }
-
-            // Create a new job
+            // Create job entity
             var job = new Job
             {
                 Id = Guid.NewGuid(),
@@ -816,21 +765,87 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 YearOfExperience = request.YearOfExperience,
                 MinSalary = request.MinSalary,
                 MaxSalary = request.MaxSalary,
-                MajorId = request.MajorId,
-                // IsHighlight = request.IsHighlight,
-                // HighlightStart = request.HighlightStart,
-                // HighlightEnd = request.HighlightEnd,
+                StartDate = request.StartDate,
+                EndDate = request.EndDate,
                 CampaignId = request.CampaignId,
+                MajorId = request.MajorId,
                 LocationId = request.LocationId,
-                Skills = skills,
-                ContractTypes = contractTypes,
+                Created = DateTime.UtcNow,
+                Modified = DateTime.UtcNow,
+                Status = isAutoAccept ? JobStatus.Active : JobStatus.Pending,
                 JobLevels = jobLevels,
-                JobTypes = jobTypes
+                JobTypes = jobTypes,
+                ContractTypes = contractTypes,
+                Skills = skills
             };
 
+            // Process job services if any
+            var jobServices = new List<JobService>();
+            var totalToken = 0;
+            var totalCash = 0.0;
+
+            if (request.ServiceIds is { Count: > 0 })
+            {
+                var serviceIds = request.ServiceIds;
+                var services = await context.Services
+                    .Where(s => serviceIds.Contains(s.Id))
+                    .ToListAsync();
+
+                var isHighlight = services.Any(s => s.Type == ServiceType.Highlight);
+                var isUrgent = services.Any(s => s.Type == ServiceType.Urgent);
+                var isHot = services.Any(s => s.Type == ServiceType.Hot);
+
+                // Check if job duration is valid for selected services
+                if (!JobHelper.IsValidProJob(job, isHighlight, isHot, isUrgent))
+                {
+                    return BadRequest(new { Message = "Invalid job duration for selected services." });
+                }
+
+                // Calculate service costs
+                foreach (var service in services)
+                {
+                    var jobDuration = (int)(job.EndDate - job.StartDate).TotalDays;
+                    switch (service.Type)
+                    {
+                        case ServiceType.Highlight:
+                            totalToken += jobDuration * service.XTokenPrice;
+                            var first7Days = Math.Min(jobDuration, 7);
+                            var remainingDays = jobDuration - first7Days;
+                            totalCash += (first7Days * service.CashPrice) +
+                                         (remainingDays * service.CashPrice * Convert.ToDouble(1.2m));
+                            break;
+                        case ServiceType.Urgent:
+                        case ServiceType.Hot:
+                            totalToken += service.XTokenPrice;
+                            totalCash += service.CashPrice;
+                            break;
+                        default:
+                            continue;
+                    }
+
+                    // Create job service association
+                    jobServices.Add(new JobService
+                    {
+                        Id = Guid.NewGuid(),
+                        JobId = job.Id,
+                        ServiceId = service.Id,
+                        IsActive = false,
+                        Created = DateTime.UtcNow,
+                        Modified = DateTime.UtcNow
+                    });
+                }
+
+                // Set job services if any
+                if (jobServices.Count > 0)
+                {
+                    job.JobServices = jobServices;
+                }
+            }
+
+            // Add job to context
             context.Jobs.Add(job);
 
-            // Process job description file if uploaded
+            // Process job description file if any
             if (request.JobDescriptionFile != null)
             {
                 var jobDescriptionsFolder = Path.Combine(env.WebRootPath, "jobDescriptions");
@@ -839,103 +854,92 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     Directory.CreateDirectory(jobDescriptionsFolder);
                 }
 
-                var jobDescriptionFileName =
-                    $"{Guid.NewGuid()}{Path.GetExtension(request.JobDescriptionFile.FileName)}";
-                var filePath = Path.Combine(jobDescriptionsFolder, jobDescriptionFileName);
+                var cleanFileName = PathHelper.GetCleanFileName(request.JobDescriptionFile.FileName);
+                var displayName = Path.GetFileName(cleanFileName);
 
-                await using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await request.JobDescriptionFile.CopyToAsync(stream);
-                }
+                var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.JobDescriptionFile.FileName)}";
+                var filePath = Path.Combine(jobDescriptionsFolder, uniqueFileName);
+
+                await using var stream = new FileStream(filePath, FileMode.Create);
+                await request.JobDescriptionFile.CopyToAsync(stream);
 
                 var jobDescription = new AttachedFile
                 {
                     Id = Guid.NewGuid(),
-                    Name = jobDescriptionFileName,
+                    Name = displayName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
-                    Type = TargetType.JobDescription,
-                    TargetId = job.Id,
-                    UploadedById = Guid.Parse(recruiterId)
+                    Type = FileType.JobDescription,
+                    Uploaded = DateTime.UtcNow,
+                    UploadedById = recruiterGuid
                 };
                 context.AttachedFiles.Add(jobDescription);
             }
 
-            await context.SaveChangesAsync();
-
-            var response = new JobResponse
+            // Process payment
+            if (request.PaymentMethod == JobPaymentMethod.XToken)
             {
-                Id = job.Id,
-                Title = job.Title,
-                Description = job.Description,
-                OfficeAddress = job.OfficeAddress,
-                Quantity = job.Quantity,
-                Status = job.Status,
-                EducationLevelRequire = job.EducationLevelRequire,
-                YearOfExperience = job.YearOfExperience,
-                MinSalary = job.MinSalary,
-                MaxSalary = job.MaxSalary,
-                Major = new MajorResponse
+                // Check if recruiter has enough tokens
+                if (recruiter.XTokenBalance < totalToken)
                 {
-                    Id = major.Id,
-                    Name = major.Name
-                },
-                Location = new LocationResponse
+                    return BadRequest(new { Message = "Not enough X Token." });
+                }
+
+                // Create token transaction
+                var tokenTransaction = new TokenTransaction
                 {
-                    Id = location.Id,
-                    Name = location.Name
-                },
-                JobDescription = await context.AttachedFiles
-                    .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
-                    .Select(f => new FileResponse
-                    {
-                        Id = f.Id,
-                        TargetId = f.TargetId,
-                        Name = f.Name,
-                        Path = f.Path,
-                        Uploaded = f.Uploaded
-                    })
-                    .AsNoTracking()
-                    .SingleOrDefaultAsync(),
-                Skills = job.Skills.Select(s => new SkillResponse
-                {
-                    Id = s.Id,
-                    Name = s.Name,
-                }).ToList(),
-                ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
-                {
-                    Id = ct.Id,
-                    Name = ct.Name
-                }).ToList(),
-                JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
-                {
-                    Id = jl.Id,
-                    Name = jl.Name
-                }).ToList(),
-                JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
-                {
-                    Id = jt.Id,
-                    Name = jt.Name
-                }).ToList(),
-                Created = job.Created,
-                Modified = job.Modified
+                    Id = Guid.NewGuid(),
+                    UserId = recruiterGuid,
+                    AmountToken = totalToken,
+                    JobId = job.Id,
+                    Type = TokenTransactionType.PurchaseJobService,
+                    Created = DateTime.UtcNow,
+                    Modified = DateTime.UtcNow
+                };
+
+                context.TokenTransactions.Add(tokenTransaction);
+
+                // Update recruiter token balance
+                recruiter.XTokenBalance -= totalToken;
+                context.Users.Update(recruiter);
+
+                // Save changes and commit transaction
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(new { Message = "Create job successfully." });
+            }
+
+            // Create order for cash payment
+            var order = new Order
+            {
+                Id = Guid.NewGuid(),
+                UserId = recruiter.Id,
+                Amount = totalCash,
+                Gateway = request.Gateway,
+                Type = OrderType.Job,
+                TargetId = job.Id,
+                Created = DateTime.UtcNow,
+                Modified = DateTime.UtcNow
             };
 
+            context.Orders.Add(order);
+
+            // Save changes and commit transaction
+            await context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return CreatedAtAction(nameof(GetJob), new { id = job.Id }, response);
+            return Ok(new { OrderId = order.Id, Message = "Create job successfully, pay to active services." });
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return StatusCode(500,
-                new { Message = "An error occurred while creating the job.", Error = ex.Message });
+            return StatusCode(500, new { ex.Message });
         }
     }
 
-
     [HttpPatch("{id:guid}")]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
-    public async Task<ActionResult<JobResponse>> UpdateJob([FromRoute] Guid id, [FromForm] UpdateJobRequest request)
+    public async Task<IActionResult> UpdateJob([FromRoute] Guid id, [FromForm] UpdateJobRequest request)
     {
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
@@ -1078,7 +1082,6 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             }
 
             // Handle Job Description File Upload
-            AttachedFile? jobDescription = null;
             if (request.JobDescriptionFile != null)
             {
                 var allowedExtensions = new[] { ".pdf", ".docx", ".doc" };
@@ -1110,12 +1113,12 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     return Unauthorized(new { Message = "Invalid user identity." });
                 }
 
-                jobDescription = new AttachedFile
+                var jobDescription = new AttachedFile
                 {
                     Id = Guid.NewGuid(),
                     Name = jobDescriptionFileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
-                    Type = TargetType.JobDescription,
+                    Type = FileType.JobDescription,
                     TargetId = job.Id,
                     UploadedById = parsedUserId
                 };
@@ -1124,76 +1127,8 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             }
 
             await context.SaveChangesAsync();
-
-            // Build Response
-            var response = new JobResponse
-            {
-                Id = job.Id,
-                Title = job.Title,
-                Description = job.Description,
-                OfficeAddress = job.OfficeAddress,
-                Quantity = job.Quantity,
-                Status = job.Status,
-                EducationLevelRequire = job.EducationLevelRequire,
-                YearOfExperience = job.YearOfExperience,
-                MinSalary = job.MinSalary,
-                MaxSalary = job.MaxSalary,
-                Major = new MajorResponse
-                {
-                    Id = majorToUpdate.Id,
-                    Name = majorToUpdate.Name
-                },
-                Location = new LocationResponse
-                {
-                    Id = locationToUpdate.Id,
-                    Name = locationToUpdate.Name
-                },
-                JobDescription = jobDescription != null
-                    ? new FileResponse
-                    {
-                        Id = jobDescription.Id,
-                        TargetId = jobDescription.TargetId,
-                        Name = jobDescription.Name,
-                        Path = jobDescription.Path,
-                        Uploaded = jobDescription.Uploaded
-                    }
-                    : context.AttachedFiles
-                        .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
-                        .Select(f => new FileResponse
-                        {
-                            Id = f.Id,
-                            TargetId = f.TargetId,
-                            Name = f.Name,
-                            Path = f.Path,
-                            Uploaded = f.Uploaded
-                        })
-                        .SingleOrDefault(),
-                Skills = job.Skills.Select(s => new SkillResponse
-                {
-                    Id = s.Id,
-                    Name = s.Name,
-                }).ToList(),
-                ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
-                {
-                    Id = ct.Id,
-                    Name = ct.Name
-                }).ToList(),
-                JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
-                {
-                    Id = jl.Id,
-                    Name = jl.Name
-                }).ToList(),
-                JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
-                {
-                    Id = jt.Id,
-                    Name = jt.Name
-                }).ToList(),
-                Created = job.Created,
-                Modified = job.Modified
-            };
-
             await transaction.CommitAsync();
-            return Ok(response);
+            return Ok(new { Message = $"Update job {id} successfully" });
         }
         catch (Exception ex)
         {
@@ -1205,7 +1140,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
-    public async Task<ActionResult> DeleteJob(Guid id)
+    public async Task<IActionResult> DeleteJob(Guid id)
     {
         var job = await context.Jobs.FindAsync(id);
         if (job == null)
@@ -1297,7 +1232,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
         var applicationIds = applications.Select(a => a.Id).ToList();
         var resumes = await context.AttachedFiles
-            .Where(f => f.Type == TargetType.Application && applicationIds.Contains(f.TargetId))
+            .Where(f => f.Type == FileType.Application && applicationIds.Contains(f.TargetId))
             .Select(f => new FileResponse
             {
                 Id = f.Id,
@@ -1371,7 +1306,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             PhoneNumber = application.PhoneNumber,
             Introduction = application.Introduction,
             Resume = await context.AttachedFiles
-                .Where(f => f.Type == TargetType.Application && f.TargetId == application.Id)
+                .Where(f => f.Type == FileType.Application && f.TargetId == application.Id)
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,

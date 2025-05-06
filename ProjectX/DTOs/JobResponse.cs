@@ -15,8 +15,10 @@ public class JobResponse
     public double? MinSalary { set; get; }
     public double? MaxSalary { set; get; }
     public bool IsHighlight { set; get; }
-    public DateTime? HighlightStart { set; get; }
-    public DateTime? HighlightEnd { set; get; }
+    public bool IsUrgent { set; get; }
+    public bool IsHot { set; get; }
+    public DateTime StartDate { set; get; }
+    public DateTime EndDate { set; get; }
     public int CountApplications { set; get; }
     public MajorResponse Major { set; get; } = null!;
     public LocationResponse Location { set; get; } = null!;

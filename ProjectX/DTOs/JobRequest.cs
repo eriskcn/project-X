@@ -23,12 +23,10 @@ public class JobRequest
     [Range(0, double.MaxValue)] public double? MaxSalary { set; get; }
 
     [Required] public Guid MajorId { set; get; }
-
-    // public bool IsHighlight { set; get; }
-    //
-    // public DateTime? HighlightStart { set; get; }
-    //
-    // public DateTime? HighlightEnd { set; get; }
+    public ICollection<Guid>? ServiceIds { set; get; } = new List<Guid>();
+    public bool IsDraft { set; get; } = false;
+    public DateTime StartDate { set; get; } = DateTime.UtcNow;
+    public DateTime EndDate { set; get; } = DateTime.UtcNow.AddDays(7);
 
     [Required] public Guid CampaignId { set; get; }
 
@@ -36,19 +34,14 @@ public class JobRequest
 
     public IFormFile? JobDescriptionFile { set; get; }
 
-    [FromForm(Name = "Skills[]")]
-    [MinLength(1, ErrorMessage = "At least one skill is required.")]
     public ICollection<Guid> Skills { get; set; } = new List<Guid>();
 
-    [FromForm(Name = "ContractTypes[]")]
-    [MinLength(1, ErrorMessage = "At least one contract type is required.")]
     public ICollection<Guid> ContractTypes { get; set; } = new List<Guid>();
 
-    [FromForm(Name = "JobLevels[]")]
-    [MinLength(1, ErrorMessage = "At least one job level is required.")]
     public ICollection<Guid> JobLevels { get; set; } = new List<Guid>();
 
-    [FromForm(Name = "JobTypes[]")]
-    [MinLength(1, ErrorMessage = "At least one job type is required.")]
     public ICollection<Guid> JobTypes { get; set; } = new List<Guid>();
+
+    public JobPaymentMethod PaymentMethod { set; get; } = JobPaymentMethod.XToken;
+    public PaymentGateway Gateway { set; get; } = PaymentGateway.VnPay;
 }

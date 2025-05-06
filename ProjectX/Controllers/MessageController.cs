@@ -105,7 +105,7 @@ public class MessageController(
                 Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath), 
                 Uploaded = DateTime.UtcNow,
                 UploadedById = senderGuid,
-                Type = TargetType.MessageAttachment
+                Type = FileType.MessageAttachment
             };
         }
 
@@ -248,7 +248,7 @@ public class MessageController(
                                  ?? message.Sender.ProfilePicture
             },
             AttachedFile = await context.AttachedFiles
-                .Where(f => f.Type == TargetType.MessageAttachment
+                .Where(f => f.Type == FileType.MessageAttachment
                             && f.TargetId == message.Id)
                 .Select(f => new FileResponse
                 {
@@ -320,7 +320,7 @@ public class MessageController(
                 ProfilePicture = message.Sender.CompanyDetail?.Logo ?? message.Sender.ProfilePicture
             },
             AttachedFile = context.AttachedFiles
-                .Where(f => f.Type == TargetType.MessageAttachment && f.TargetId == message.Id)
+                .Where(f => f.Type == FileType.MessageAttachment && f.TargetId == message.Id)
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,

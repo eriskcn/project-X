@@ -100,7 +100,7 @@ public class PostController(
             .ToDictionaryAsync(x => x.PostId, x => x.Count);
 
         var attachedFiles = await context.AttachedFiles
-            .Where(f => f.Type == TargetType.PostAttachment && postIds.Contains(f.TargetId))
+            .Where(f => f.Type == FileType.PostAttachment && postIds.Contains(f.TargetId))
             .ToListAsync();
 
         var items = posts.Select(p =>
@@ -198,7 +198,7 @@ public class PostController(
             .SumAsync(l => l.IsLike ? 1 : -1);
 
         var attachedFile = await context.AttachedFiles
-            .Where(f => f.Type == TargetType.PostAttachment && f.TargetId == post.Id)
+            .Where(f => f.Type == FileType.PostAttachment && f.TargetId == post.Id)
             .Select(f => new FileResponse
             {
                 Id = f.Id,
@@ -235,7 +235,7 @@ public class PostController(
                 LikesCount = context.Likes.Where(l => l.PostId == p.Id).Sum(l => l.IsLike ? 1 : -1),
                 CommentsCount = context.Posts.Count(c => c.ParentId == p.Id),
                 AttachedFile = context.AttachedFiles
-                                   .Where(f => f.Type == TargetType.PostAttachment && f.TargetId == post.ParentId)
+                                   .Where(f => f.Type == FileType.PostAttachment && f.TargetId == post.ParentId)
                                    .Select(f => new FileResponse
                                    {
                                        Id = f.Id,
@@ -287,7 +287,7 @@ public class PostController(
 
         // Query attached files for comments
         var commentAttachedFiles = await context.AttachedFiles
-            .Where(f => f.Type == TargetType.PostAttachment && commentIds.Contains(f.TargetId))
+            .Where(f => f.Type == FileType.PostAttachment && commentIds.Contains(f.TargetId))
             .Select(f => new FileResponse
             {
                 Id = f.Id,
@@ -442,7 +442,7 @@ public class PostController(
                 {
                     Name = fileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
-                    Type = TargetType.PostAttachment,
+                    Type = FileType.PostAttachment,
                     TargetId = comment.Id,
                     Uploaded = DateTime.UtcNow,
                     UploadedById = Guid.Parse(userId),
@@ -631,7 +631,7 @@ public class PostController(
 
             // Get attached file (if any)
             var attachedFile = await context.AttachedFiles
-                .Where(f => f.TargetId == post.Id && f.Type == TargetType.PostAttachment)
+                .Where(f => f.TargetId == post.Id && f.Type == FileType.PostAttachment)
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
@@ -802,7 +802,7 @@ public class PostController(
 
             // Get attached file (if any)
             var attachedFile = await context.AttachedFiles
-                .Where(f => f.TargetId == post.Id && f.Type == TargetType.PostAttachment)
+                .Where(f => f.TargetId == post.Id && f.Type == FileType.PostAttachment)
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
@@ -944,7 +944,7 @@ public class PostController(
                 {
                     Name = request.AttachedFile.FileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
-                    Type = TargetType.PostAttachment,
+                    Type = FileType.PostAttachment,
                     TargetId = post.Id,
                     Uploaded = DateTime.UtcNow,
                     UploadedById = Guid.Parse(userId)
@@ -1022,7 +1022,7 @@ public class PostController(
                 var filePath = Path.Combine(postAttachmentsFolder, fileName);
 
                 var existingFile = await context.AttachedFiles
-                    .SingleOrDefaultAsync(f => f.Type == TargetType.PostAttachment && f.TargetId == post.Id);
+                    .SingleOrDefaultAsync(f => f.Type == FileType.PostAttachment && f.TargetId == post.Id);
 
                 if (existingFile != null)
                     context.AttachedFiles.Remove(existingFile);
@@ -1031,7 +1031,7 @@ public class PostController(
                 {
                     Name = request.AttachedFile.FileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
-                    Type = TargetType.PostAttachment,
+                    Type = FileType.PostAttachment,
                     TargetId = post.Id,
                     Uploaded = DateTime.UtcNow
                 };

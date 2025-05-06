@@ -198,7 +198,7 @@ public class ConversationController(ApplicationDbContext context) : ControllerBa
                     IsEdited = m.IsEdited,
                     Edited = m.Edited,
                     AttachedFile = context.AttachedFiles
-                        .Where(f => f.Type == TargetType.MessageAttachment && f.TargetId == m.Id)
+                        .Where(f => f.Type == FileType.MessageAttachment && f.TargetId == m.Id)
                         .Select(f => new FileResponse
                         {
                             Id = f.Id,

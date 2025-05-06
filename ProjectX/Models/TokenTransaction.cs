@@ -15,17 +15,11 @@ public class TokenTransaction : BaseEntity
 
     [ForeignKey("UserId")] [JsonIgnore] public User User { get; set; } = null!;
 
-    [Required]
-    [Column(TypeName = "nvarchar(50)")]
-    public TokenTransactionType Type { get; set; }
+    public int AmountToken { get; set; }
+    [Column(TypeName = "nvarchar(50)")] public TokenTransactionType Type { get; set; }
+    public Guid? JobId { get; set; }
 
-    [Required] [Range(0, double.MaxValue)] public double Amount { get; set; }
-
-    [Column(TypeName = "nvarchar(50)")] public TokenTransactionPurpose Purpose { get; set; }
-
-    public Guid? OrderId { get; set; }
-
-    [ForeignKey("OrderId")] [JsonIgnore] public Order? Order { get; set; }
+    [JsonIgnore] [ForeignKey("JobId")] public Job? Job { get; set; }
 
     public DateTime Created { get; set; } = DateTime.UtcNow;
 
@@ -35,12 +29,6 @@ public class TokenTransaction : BaseEntity
 public enum TokenTransactionType
 {
     TopUp,
-    Spend
-}
-
-public enum TokenTransactionPurpose
-{
-    HighlightJob,
-    ViewHiddenStats,
-    TopUp,
+    ViewHiddenJobDetails,
+    PurchaseJobService
 }

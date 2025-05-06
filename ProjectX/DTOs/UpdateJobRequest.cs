@@ -15,21 +15,15 @@ public class UpdateJobRequest
     [Range(0, double.MaxValue)] public double? MaxSalary { set; get; }
 
     public Guid MajorId { set; get; }
-
-    // public Guid CampaignId { set; get; } đ ai cho đổi campaign của job cả 
     public Guid LocationId { set; get; }
     public IFormFile? JobDescriptionFile { set; get; }
 
-    [MinLength(1, ErrorMessage = "At least one skill is required.")]
     public ICollection<Guid> Skills { set; get; } = new List<Guid>();
 
-    [MinLength(1, ErrorMessage = "At least one contract type is required.")]
     public ICollection<Guid> ContractTypes { set; get; } = new List<Guid>();
 
-    [MinLength(1, ErrorMessage = "At least one job level is required.")]
     public ICollection<Guid> JobLevels { set; get; } = new List<Guid>();
 
-    [MinLength(1, ErrorMessage = "At least one job type is required.")]
     public ICollection<Guid> JobTypes { set; get; } = new List<Guid>();
 
     public JobStatus? Status { set; get; }

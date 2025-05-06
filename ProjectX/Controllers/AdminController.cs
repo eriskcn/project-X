@@ -82,7 +82,7 @@ public class AdminController(
                 .ToListAsync();
 
             var registrationFile = await context.AttachedFiles
-                .Where(f => f.Type == TargetType.BusinessRegistration && f.TargetId == company.Id)
+                .Where(f => f.Type == FileType.BusinessRegistration && f.TargetId == company.Id)
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
@@ -185,7 +185,7 @@ public class AdminController(
             .ToListAsync();
 
         var registrationFile = await context.AttachedFiles
-            .Where(f => f.Type == TargetType.BusinessRegistration && f.TargetId == company.Id)
+            .Where(f => f.Type == FileType.BusinessRegistration && f.TargetId == company.Id)
             .Select(f => new FileResponse
             {
                 Id = f.Id,
@@ -348,7 +348,7 @@ public class AdminController(
                         Status = freelanceRecruiter.Status,
                         RejectReason = freelanceRecruiter.RejectReason,
                         FrontIdCard = context.AttachedFiles
-                            .Where(f => f.Type == TargetType.FrontIdCard && f.TargetId == freelanceRecruiter.Id)
+                            .Where(f => f.Type == FileType.FrontIdCard && f.TargetId == freelanceRecruiter.Id)
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,
@@ -359,7 +359,7 @@ public class AdminController(
                             })
                             .SingleOrDefault(),
                         BackIdCard = context.AttachedFiles
-                            .Where(f => f.Type == TargetType.BackIdCard && f.TargetId == freelanceRecruiter.Id)
+                            .Where(f => f.Type == FileType.BackIdCard && f.TargetId == freelanceRecruiter.Id)
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,
@@ -436,7 +436,7 @@ public class AdminController(
                         Status = freelanceRecruiter.Status,
                         RejectReason = freelanceRecruiter.RejectReason,
                         FrontIdCard = context.AttachedFiles
-                            .Where(f => f.Type == TargetType.FrontIdCard && f.TargetId == freelanceRecruiter.Id)
+                            .Where(f => f.Type == FileType.FrontIdCard && f.TargetId == freelanceRecruiter.Id)
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,
@@ -447,7 +447,7 @@ public class AdminController(
                             })
                             .SingleOrDefault(),
                         BackIdCard = context.AttachedFiles
-                            .Where(f => f.Type == TargetType.BackIdCard && f.TargetId == freelanceRecruiter.Id)
+                            .Where(f => f.Type == FileType.BackIdCard && f.TargetId == freelanceRecruiter.Id)
                             .Select(f => new FileResponse
                             {
                                 Id = f.Id,
@@ -522,7 +522,7 @@ public class AdminController(
                 Status = user.FreelanceRecruiterDetail.Status,
                 RejectReason = user.FreelanceRecruiterDetail.RejectReason,
                 FrontIdCard = context.AttachedFiles
-                    .Where(f => f.Type == TargetType.FrontIdCard && f.TargetId == user.FreelanceRecruiterDetail.Id)
+                    .Where(f => f.Type == FileType.FrontIdCard && f.TargetId == user.FreelanceRecruiterDetail.Id)
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
@@ -533,7 +533,7 @@ public class AdminController(
                     })
                     .SingleOrDefault(),
                 BackIdCard = context.AttachedFiles
-                    .Where(f => f.Type == TargetType.BackIdCard && f.TargetId == user.FreelanceRecruiterDetail.Id)
+                    .Where(f => f.Type == FileType.BackIdCard && f.TargetId == user.FreelanceRecruiterDetail.Id)
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
@@ -546,5 +546,245 @@ public class AdminController(
             },
             FreelanceRecruiterVerified = user.RecruiterVerified
         });
+    }
+
+    [HttpGet("jobs")]
+    public async Task<ActionResult<IEnumerable<JobResponse>>> GetPendingJobs(
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        if (page <= 0 || pageSize <= 0)
+        {
+            return BadRequest(new
+            {
+                Message = "Page number and page size must be greater than zero."
+            });
+        }
+
+        var query = context.Jobs
+            .Include(j => j.Major)
+            .Include(j => j.Location)
+            .Include(j => j.Campaign)
+            .Include(j => j.ContractTypes)
+            .Include(j => j.JobLevels)
+            .Include(j => j.JobTypes)
+            .Include(j => j.Skills)
+            .Where(j => j.Status == JobStatus.Pending);
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(j => j.Title.Contains(search));
+        }
+
+        var totalItems = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var paginatedJobs = await query
+            .OrderByDescending(j => j.Created)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        var results = paginatedJobs.Select(job => new JobResponse
+        {
+            Id = job.Id,
+            Title = job.Title,
+            Description = job.Description,
+            OfficeAddress = job.OfficeAddress,
+            Quantity = job.Quantity,
+            Status = job.Status,
+            EducationLevelRequire = job.EducationLevelRequire,
+            YearOfExperience = job.YearOfExperience,
+            MinSalary = job.MinSalary,
+            MaxSalary = job.MaxSalary,
+            IsHighlight = job.IsHighlight,
+            IsHot = job.IsHot,
+            IsUrgent = job.IsUrgent,
+            StartDate = job.StartDate,
+            EndDate = job.EndDate,
+            Major = new MajorResponse
+            {
+                Id = job.Major.Id,
+                Name = job.Major.Name
+            },
+            Location = new LocationResponse
+            {
+                Id = job.Location.Id,
+                Name = job.Location.Name,
+                Region = job.Location.Region
+            },
+            JobDescription = context.AttachedFiles
+                .Where(f => f.Type == FileType.JobDescription && f.TargetId == job.Id)
+                .Select(f => new FileResponse
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    TargetId = f.TargetId,
+                    Uploaded = f.Uploaded
+                })
+                .SingleOrDefault(),
+            Skills = job.Skills.Select(s => new SkillResponse
+            {
+                Id = s.Id,
+                Name = s.Name
+            }).ToList(),
+            ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
+            {
+                Id = ct.Id,
+                Name = ct.Name
+            }).ToList(),
+            JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
+            {
+                Id = jl.Id,
+                Name = jl.Name
+            }).ToList(),
+            JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
+            {
+                Id = jt.Id,
+                Name = jt.Name
+            }).ToList(),
+            Created = job.Created,
+            Modified = job.Modified
+        }).ToList();
+
+        return Ok(new
+        {
+            TotalItems = totalItems,
+            TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
+            PageNumber = page,
+            PageSize = pageSize,
+            Items = results
+        });
+    }
+
+    [HttpGet("jobs/{id:guid}")]
+    public async Task<ActionResult<JobResponse>> GetPendingJob(Guid id)
+    {
+        var job = await context.Jobs
+            .Include(j => j.Major)
+            .Include(j => j.Location)
+            .Include(j => j.Campaign)
+            .Include(j => j.ContractTypes)
+            .Include(j => j.JobLevels)
+            .Include(j => j.JobTypes)
+            .Include(j => j.Skills)
+            .SingleOrDefaultAsync(j => j.Id == id && j.Status == JobStatus.Pending);
+
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        var response = new JobResponse
+        {
+            Id = job.Id,
+            Title = job.Title,
+            Description = job.Description,
+            OfficeAddress = job.OfficeAddress,
+            Quantity = job.Quantity,
+            Status = job.Status,
+            EducationLevelRequire = job.EducationLevelRequire,
+            YearOfExperience = job.YearOfExperience,
+            MinSalary = job.MinSalary,
+            MaxSalary = job.MaxSalary,
+            IsHighlight = job.IsHighlight,
+            IsHot = job.IsHot,
+            IsUrgent = job.IsUrgent,
+            StartDate = job.StartDate,
+            EndDate = job.EndDate,
+            Major = new MajorResponse
+            {
+                Id = job.Major.Id,
+                Name = job.Major.Name
+            },
+            Location = new LocationResponse
+            {
+                Id = job.Location.Id,
+                Name = job.Location.Name,
+                Region = job.Location.Region
+            },
+            JobDescription = context.AttachedFiles
+                .Where(f => f.Type == FileType.JobDescription && f.TargetId == job.Id)
+                .Select(f => new FileResponse
+                {
+                    Id = f.Id,
+                    Name = f.Name,
+                    Path = f.Path,
+                    TargetId = f.TargetId,
+                    Uploaded = f.Uploaded
+                })
+                .SingleOrDefault(),
+            Skills = job.Skills.Select(s => new SkillResponse
+            {
+                Id = s.Id,
+                Name = s.Name
+            }).ToList(),
+            ContractTypes = job.ContractTypes.Select(ct => new ContractTypeResponse
+            {
+                Id = ct.Id,
+                Name = ct.Name
+            }).ToList(),
+            JobLevels = job.JobLevels.Select(jl => new JobLevelResponse
+            {
+                Id = jl.Id,
+                Name = jl.Name
+            }).ToList(),
+            JobTypes = job.JobTypes.Select(jt => new JobTypeResponse
+            {
+                Id = jt.Id,
+                Name = jt.Name
+            }).ToList(),
+            Created = job.Created,
+            Modified = job.Modified
+        };
+
+        return Ok(response);
+    }
+
+    [HttpPatch("jobs/{id:guid}/accept")]
+    public async Task<IActionResult> AcceptJob([FromRoute] Guid id)
+    {
+        var job = await context.Jobs.FindAsync(id);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        if (job.Status != JobStatus.Pending)
+        {
+            return Conflict(new { Message = "Invalid job to accept." });
+        }
+
+        job.Status = JobStatus.Active;
+        context.Jobs.Update(job);
+        await context.SaveChangesAsync();
+
+        return Ok(new { Message = $"Accept job {id} successfully." });
+    }
+
+    [HttpPatch("jobs/{id:guid}/reject")]
+    public async Task<IActionResult> RejectJob([FromRoute] Guid id, [FromBody] RejectRequest request)
+    {
+        var job = await context.Jobs.FindAsync(id);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found." });
+        }
+
+        if (job.Status != JobStatus.Pending)
+        {
+            return Conflict(new { Message = "Invalid job to reject." });
+        }
+
+        job.Status = JobStatus.Active;
+        job.RejectReason = request.RejectReason;
+        context.Jobs.Update(job);
+        await context.SaveChangesAsync();
+
+        return Ok(new { Message = $"Accept job {id} successfully." });
     }
 }

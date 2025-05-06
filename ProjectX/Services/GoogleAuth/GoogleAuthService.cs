@@ -1,6 +1,6 @@
 using Google.Apis.Auth;
 
-namespace ProjectX.Services;
+namespace ProjectX.Services.GoogleAuth;
 
 public class GoogleAuthService : IGoogleAuthService
 {

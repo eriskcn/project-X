@@ -108,9 +108,9 @@ public class AppointmentController(ApplicationDbContext context) : ControllerBas
             {
                 Appointment = a,
                 JobDescription = context.AttachedFiles
-                    .FirstOrDefault(f => f.Type == TargetType.JobDescription && f.TargetId == a.Application.Job.Id),
+                    .FirstOrDefault(f => f.Type == FileType.JobDescription && f.TargetId == a.Application.Job.Id),
                 Resume = context.AttachedFiles
-                    .FirstOrDefault(f => f.Type == TargetType.Application && f.TargetId == a.Application.Id)
+                    .FirstOrDefault(f => f.Type == FileType.Application && f.TargetId == a.Application.Id)
             })
             .FirstOrDefaultAsync(a => a.Appointment.Id == id);
 
@@ -153,6 +153,11 @@ public class AppointmentController(ApplicationDbContext context) : ControllerBas
                     YearOfExperience = app.Application.Job.YearOfExperience,
                     MinSalary = app.Application.Job.MinSalary,
                     MaxSalary = app.Application.Job.MaxSalary,
+                    IsHighlight = app.Application.Job.IsHighlight,
+                    IsHot = app.Application.Job.IsHot,
+                    IsUrgent = app.Application.Job.IsUrgent,
+                    StartDate = app.Application.Job.StartDate,
+                    EndDate = app.Application.Job.EndDate,
                     Major = new MajorResponse
                     {
                         Id = app.Application.Job.Major.Id,

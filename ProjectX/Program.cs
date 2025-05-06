@@ -13,14 +13,15 @@ using ProjectX.Services;
 using DotNetEnv;
 using ProjectX.Hubs;
 using ProjectX.Services.Email;
+using ProjectX.Services.GoogleAuth;
 using ProjectX.Services.Notifications;
+using ProjectX.Services.QR;
+using VNPAY.NET;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Register configuration for dependency injection
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
-// builder.Services.AddHttpClient();
-// builder.Services.AddSingleton<NgrokService>();
 
 // Configure Identity options
 builder.Services.Configure<IdentityOptions>(options =>
@@ -28,6 +29,9 @@ builder.Services.Configure<IdentityOptions>(options =>
     // Password settings
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = true;
 
     // Lockout settings
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
@@ -141,11 +145,14 @@ builder.Services.AddAuthorizationBuilder()
 
 builder.Services.AddScoped<IAuthorizationHandler, RecruiterVerifiedHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, EmailConfirmedHandler>();
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, ProjectXAuthorizationPolicyProvider>();
 // Register token service for JWT generation
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IVietQrService, VietQrService>();
+builder.Services.AddScoped<IVnpay, Vnpay>();
 
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
@@ -155,6 +162,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 // builder.Services.AddHostedService<OrderExpirationService>();
 builder.Services.AddHostedService<DatabaseBackupService>();
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(8443, listenOptions => { listenOptions.UseHttps(); });
+});
 
 var app = builder.Build();
 

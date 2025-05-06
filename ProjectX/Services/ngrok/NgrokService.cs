@@ -1,7 +1,7 @@
 using System.Net.Http;
 using System.Text.Json;
 
-namespace ProjectX.Services;
+namespace ProjectX.Services.ngrok;
 
 public class NgrokService(HttpClient httpClient)
 {

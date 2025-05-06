@@ -35,6 +35,7 @@
       </Content>
       <Content Remove="Middlewares\**" />
       <Content Remove="Validation\**" />
+      <Content Remove="Services\ngrok\**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -42,17 +43,20 @@
       <Compile Remove="Services\IMessageService.cs" />
       <Compile Remove="Services\MessageService.cs" />
       <Compile Remove="Validation\**" />
-      <Compile Remove="Services\NgrokService.cs" />
+      <Compile Remove="Services\ngrok\**" />
+      <Compile Remove="Services\OrderExpirationService.cs" />
     </ItemGroup>
 
     <ItemGroup>
       <EmbeddedResource Remove="Middlewares\**" />
       <EmbeddedResource Remove="Validation\**" />
+      <EmbeddedResource Remove="Services\ngrok\**" />
     </ItemGroup>
 
     <ItemGroup>
       <None Remove="Middlewares\**" />
       <None Remove="Validation\**" />
+      <None Remove="Services\ngrok\**" />
     </ItemGroup>
 
 </Project>

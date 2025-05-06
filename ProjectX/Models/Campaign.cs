@@ -14,11 +14,6 @@ public class Campaign : BaseEntity
     [Required] [StringLength(256)] public required string Name { get; set; }
 
     [Required] [StringLength(10000)] public required string Description { get; set; }
-
-    [Required] public DateTime Open { get; set; } = DateTime.UtcNow;
-
-    [Required] public DateTime Close { get; set; } = DateTime.UtcNow.AddDays(7);
-
     [Required] public Guid RecruiterId { get; set; }
 
     [JsonIgnore]

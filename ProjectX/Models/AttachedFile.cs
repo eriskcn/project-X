@@ -17,7 +17,7 @@ public class AttachedFile : BaseEntity
 
     [Required]
     [Column(TypeName = "nvarchar(50)")]
-    public TargetType Type { get; set; }
+    public FileType Type { get; set; }
 
     [Required] public Guid TargetId { get; set; }
 
@@ -30,7 +30,7 @@ public class AttachedFile : BaseEntity
     public DateTime Uploaded { get; set; } = DateTime.UtcNow;
 }
 
-public enum TargetType
+public enum FileType
 {
     Application,
     BusinessRegistration,

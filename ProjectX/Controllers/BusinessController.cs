@@ -20,7 +20,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
         {
-            return Unauthorized("Access token is invalid.");
+            return Unauthorized(new { Message = "Access token is invalid." });
         }
 
         var user = await context.Users
@@ -29,7 +29,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
         if (user == null)
         {
-            return NotFound("User not found.");
+            return NotFound(new { Message = "User not found." });
         }
 
         var companyDetail = await context.CompanyDetails
@@ -39,11 +39,11 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
         if (companyDetail == null)
         {
-            return NotFound("Business registration not found.");
+            return NotFound(new { Message = "Business registration not found." });
         }
 
         var registrationFile = await context.AttachedFiles
-            .Where(f => f.Type == TargetType.BusinessRegistration && f.TargetId == companyDetail.Id)
+            .Where(f => f.Type == FileType.BusinessRegistration && f.TargetId == companyDetail.Id)
             .Select(f => new FileResponse
             {
                 Id = f.Id,
@@ -106,7 +106,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
         {
-            return Unauthorized("Access token is invalid.");
+            return Unauthorized(new { Message = "Access token is invalid." });
         }
 
         var summited = await context.CompanyDetails
@@ -120,7 +120,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
         var user = await context.Users.FindAsync(Guid.Parse(userId));
         if (user == null)
         {
-            return NotFound("User not found.");
+            return NotFound(new { Message = "User not found." });
         }
 
         try
@@ -129,19 +129,19 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
             if (request.Logo.Length == 0)
             {
-                return BadRequest("Logo file is required.");
+                return BadRequest(new { Message = "Logo file is required." });
             }
 
             var allowedImageExtensions = new[] { ".jpg", ".jpeg", ".png" };
             var logoExtension = Path.GetExtension(request.Logo.FileName).ToLowerInvariant();
             if (!allowedImageExtensions.Contains(logoExtension))
             {
-                return BadRequest("Invalid logo file extension. Only image files are allowed.");
+                return BadRequest(new { Message = "Invalid logo file extension. Only image files are allowed." });
             }
 
-            if (request.Logo.Length > 5 * 1024 * 1024)
+            if (request.Logo.Length > 10 * 1024 * 1024)
             {
-                return BadRequest("Logo file size exceeds the 5MB limit.");
+                return BadRequest(new { Message = "Logo file size exceeds the 10MB limit." });
             }
 
             var logosFolder = Path.Combine(env.WebRootPath, "logos");
@@ -165,19 +165,20 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
             if (request.RegistrationFile.Length == 0)
             {
-                return BadRequest("Registration file is required.");
+                return BadRequest(new { Message = "Registration file is required." });
             }
 
             var allowedDocExtensions = new[] { ".pdf", ".docx", ".doc", ".png", ".jpeg", ".jpg" };
             var registrationFileExtension = Path.GetExtension(request.RegistrationFile.FileName).ToLowerInvariant();
             if (!allowedDocExtensions.Contains(registrationFileExtension))
             {
-                return BadRequest("Invalid registration file extension. Only .pdf, .docx, and .doc files are allowed.");
+                return BadRequest(new
+                    { Message = "Invalid registration file extension. Only .pdf, .docx, and .doc files are allowed." });
             }
 
-            if (request.RegistrationFile.Length > 5 * 1024 * 1024)
+            if (request.RegistrationFile.Length > 10 * 1024 * 1024)
             {
-                return BadRequest("Registration file size exceeds the 5MB limit.");
+                return BadRequest(new { Message = "Registration file size exceeds the 10MB limit." });
             }
 
             var businessRegistrationsFolder = Path.Combine(env.WebRootPath, "businessRegistrations");
@@ -201,7 +202,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
             if (request.MajorIds.Count == 0)
             {
-                return BadRequest("At least one Major is required.");
+                return BadRequest(new { Message = "At least one Major is required." });
             }
 
             var majors = await context.Majors
@@ -210,7 +211,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
             if (majors.Count != request.MajorIds.Count)
             {
-                return BadRequest("One or more Major IDs are invalid.");
+                return BadRequest(new { Message = "One or more Major IDs are invalid." });
             }
 
             var companyDetail = new CompanyDetail
@@ -237,7 +238,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
             {
                 Name = registrationFileName,
                 Path = PathHelper.GetRelativePathFromAbsolute(registrationUrl, env.WebRootPath),
-                Type = TargetType.BusinessRegistration,
+                Type = FileType.BusinessRegistration,
                 TargetId = companyDetail.Id,
                 UploadedById = Guid.Parse(userId)
             };
@@ -272,7 +273,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
         {
-            return Unauthorized("Access token is invalid.");
+            return Unauthorized(new { Message = "Access token is invalid." });
         }
 
         var companyDetail = await context.CompanyDetails
@@ -281,7 +282,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
         if (companyDetail == null)
         {
-            return NotFound("Business registration not found.");
+            return NotFound(new { Message = "Business registration not found." });
         }
 
         if (request.CompanyName != null)
@@ -349,7 +350,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
             if (majors.Count != request.MajorIds.Count)
             {
-                return BadRequest("One or more Major IDs are invalid.");
+                return BadRequest(new { Message = "One or more Major IDs are invalid." });
             }
 
             companyDetail.Majors = majors;
@@ -361,12 +362,12 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
             var logoExtension = Path.GetExtension(request.Logo.FileName).ToLowerInvariant();
             if (!allowedImageExtensions.Contains(logoExtension))
             {
-                return BadRequest("Invalid logo file extension. Only image files are allowed.");
+                return BadRequest(new { Message = "Invalid logo file extension. Only image files are allowed." });
             }
 
-            if (request.Logo.Length > 5 * 1024 * 1024)
+            if (request.Logo.Length > 10 * 1024 * 1024)
             {
-                return BadRequest("Logo file size exceeds the 5MB limit.");
+                return BadRequest(new { Message = "Logo file size exceeds the 5MB limit." });
             }
 
             var logosFolder = Path.Combine(env.WebRootPath, "logos");
@@ -397,12 +398,13 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
             var registrationFileExtension = Path.GetExtension(request.RegistrationFile.FileName).ToLowerInvariant();
             if (!allowedDocExtensions.Contains(registrationFileExtension))
             {
-                return BadRequest("Invalid registration file extension. Only .pdf, .docx, and .doc files are allowed.");
+                return BadRequest(new
+                    { Message = "Invalid registration file extension. Only .pdf, .docx, and .doc files are allowed." });
             }
 
-            if (request.RegistrationFile.Length > 5 * 1024 * 1024)
+            if (request.RegistrationFile.Length > 10 * 1024 * 1024)
             {
-                return BadRequest("Registration file size exceeds the 5MB limit.");
+                return BadRequest(new { Message = "Registration file size exceeds the 10MB limit." });
             }
 
             var businessRegistrationsFolder = Path.Combine(env.WebRootPath, "businessRegistrations");
@@ -426,7 +428,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
             var registrationAttachedFile = await context.AttachedFiles
                 .SingleOrDefaultAsync(af =>
-                    af.TargetId == companyDetail.Id && af.Type == TargetType.BusinessRegistration);
+                    af.TargetId == companyDetail.Id && af.Type == FileType.BusinessRegistration);
 
             if (registrationAttachedFile != null)
             {
@@ -441,7 +443,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 {
                     Name = registrationFileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(registrationUrl, env.WebRootPath),
-                    Type = TargetType.BusinessRegistration,
+                    Type = FileType.BusinessRegistration,
                     TargetId = companyDetail.Id,
                     UploadedById = Guid.Parse(userId)
                 };

@@ -13,6 +13,11 @@ public class JobResponseForAppointment
     public double? YearOfExperience { set; get; }
     public double? MinSalary { set; get; }
     public double? MaxSalary { set; get; }
+    public bool IsHighlight { set; get; }
+    public bool IsHot { set; get; }
+    public bool IsUrgent { set; get; }
+    public DateTime StartDate { set; get; }
+    public DateTime EndDate { set; get; }
     public MajorResponse Major { set; get; } = null!;
     public LocationResponse Location { set; get; } = null!;
     public FileResponse? JobDescription { set; get; }

@@ -20,4 +20,15 @@ public static class PathHelper
         var relativePath = normalizedAbsolute.Substring(normalizedRoot.Length);
         return "/" + relativePath.TrimStart('/');
     }
+
+    /// <summary>
+    /// Loại bỏ các ký tự không hợp lệ khỏi tên file 
+    /// </summary>
+    public static string GetCleanFileName(string fileName)
+    {
+        var invalidChars = Path.GetInvalidFileNameChars();
+        var cleanFileName = string.Join("_",
+            fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+        return cleanFileName;
+    }
 }

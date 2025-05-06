@@ -26,7 +26,6 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
             return Unauthorized(new { Message = "User ID not found in access token." });
         }
 
-        // Main query with all includes
         var query = context.Applications
             .Include(a => a.Job)
             .ThenInclude(j => j.Major)
@@ -65,7 +64,7 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
             {
                 Application = a,
                 Resume = context.AttachedFiles
-                    .Where(f => f.Type == TargetType.Application)
+                    .Where(f => f.Type == FileType.Application)
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
@@ -76,7 +75,7 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
                     })
                     .SingleOrDefault(),
                 JobDescription = context.AttachedFiles
-                    .Where(f => f.Type == TargetType.JobDescription)
+                    .Where(f => f.Type == FileType.JobDescription)
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
@@ -134,9 +133,11 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
                     YearOfExperience = app.Job.YearOfExperience,
                     MinSalary = app.Job.MinSalary,
                     MaxSalary = app.Job.MaxSalary,
-                    // IsHighlight = app.Job.IsHighlight,
-                    // HighlightStart = app.Job.HighlightStart,
-                    // HighlightEnd = app.Job.HighlightEnd,
+                    IsHighlight = app.Job.IsHighlight,
+                    IsHot = app.Job.IsHot,
+                    IsUrgent = app.Job.IsUrgent,
+                    StartDate = app.Job.StartDate,
+                    EndDate = app.Job.EndDate,
                     Major = new MajorResponse
                     {
                         Id = app.Job.Major.Id,
@@ -276,7 +277,7 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
             .AnyAsync(ur => ur.UserId == recruiter.Id && ur.RoleId == freelanceRecruiterRoleId);
 
         var resume = await context.AttachedFiles
-            .Where(f => f.Type == TargetType.Application && f.TargetId == application.Id)
+            .Where(f => f.Type == FileType.Application && f.TargetId == application.Id)
             .Select(f => new FileResponse
             {
                 Id = f.Id,
@@ -288,7 +289,7 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
             .SingleOrDefaultAsync();
 
         var jobDescription = await context.AttachedFiles
-            .Where(f => f.Type == TargetType.JobDescription && f.TargetId == application.Job.Id)
+            .Where(f => f.Type == FileType.JobDescription && f.TargetId == application.Job.Id)
             .Select(f => new FileResponse
             {
                 Id = f.Id,
@@ -324,9 +325,11 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
                 YearOfExperience = application.Job.YearOfExperience,
                 MinSalary = application.Job.MinSalary,
                 MaxSalary = application.Job.MaxSalary,
-                // IsHighlight = application.Job.IsHighlight,
-                // HighlightStart = application.Job.HighlightStart,
-                // HighlightEnd = application.Job.HighlightEnd,
+                IsHighlight = application.Job.IsHighlight,
+                IsHot = application.Job.IsHot,
+                IsUrgent = application.Job.IsUrgent,
+                StartDate = application.Job.StartDate,
+                EndDate = application.Job.EndDate,
                 Major = new MajorResponse
                 {
                     Id = application.Job.Major.Id,
@@ -462,7 +465,7 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
                 }
 
                 var existingResume = await context.AttachedFiles
-                    .Where(f => f.Type == TargetType.Application && f.TargetId == id)
+                    .Where(f => f.Type == FileType.Application && f.TargetId == id)
                     .SingleOrDefaultAsync();
 
                 if (existingResume != null)
@@ -494,7 +497,7 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
                 {
                     Name = resumeFileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(resumeFilePath, env.WebRootPath),
-                    Type = TargetType.Application,
+                    Type = FileType.Application,
                     TargetId = id,
                     UploadedById = userIdGuid,
                     Uploaded = DateTime.UtcNow

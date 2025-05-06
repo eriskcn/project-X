@@ -8,6 +8,7 @@ using ProjectX.DTOs;
 using ProjectX.Models;
 using ProjectX.Services;
 using ProjectX.Services.Email;
+using ProjectX.Services.GoogleAuth;
 
 namespace ProjectX.Controllers;
 

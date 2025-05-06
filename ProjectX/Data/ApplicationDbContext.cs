@@ -26,6 +26,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Like> Likes { get; set; }
     public DbSet<Skill> Skills { get; set; }
     public DbSet<Order> Orders { get; set; }
+    public DbSet<Service> Services { get; set; }
+    public DbSet<JobService> JobServices { get; set; }
+    public DbSet<BusinessPackage> BusinessPackages { get; set; }
+    public DbSet<PurchasedPackage> PurchasedPackages { get; set; }
+    public DbSet<PackageUpdate> PackageUpdates { get; set; }
+
     public DbSet<Payment> Payments { get; set; }
 
     public DbSet<Notification> Notifications { get; set; }
@@ -208,6 +214,117 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             new Skill { Id = Guid.NewGuid(), Name = "JavaScript" },
             new Skill { Id = Guid.NewGuid(), Name = "Nextjs" },
             new Skill { Id = Guid.NewGuid(), Name = "Angular" }
+        );
+
+        builder.Entity<Service>().HasData(
+            new Service
+            {
+                Id = Guid.NewGuid(),
+                Name = "Mark as highlight",
+                Type = ServiceType.Highlight,
+                Description =
+                    "Hiển thị tin tại khu vực việc làm nổi bật (tối đa 14 ngày). 5 X Token/ngày hoặc 10.000đ/ngày (7 ngày đầu), 12.000đ/ngày từ ngày thứ 8.",
+                DayLimit = 14,
+                CashPrice = 10_000,
+                XTokenPrice = 5
+            },
+            new Service
+            {
+                Id = Guid.NewGuid(),
+                Name = "Mark as urgent",
+                Type = ServiceType.Urgent,
+                Description =
+                    "Gắn thẻ Urgent cho tin tuyển dụng (tối đa 7 ngày). Hỗ trợ lọc bằng bộ lọc Urgent. Giá: 20 X Token hoặc 40.000đ/tin.",
+                DayLimit = 7,
+                CashPrice = 40_000,
+                XTokenPrice = 20
+            },
+            new Service
+            {
+                Id = Guid.NewGuid(),
+                Name = "Mark as hot",
+                Description =
+                    "Gắn thẻ Hot cho tin tuyển dụng (tối đa 14 ngày). Hỗ trợ lọc bằng bộ lọc Hot. Giá: 20 X Token hoặc 40.000đ/tin.",
+                DayLimit = 14,
+                Type = ServiceType.Hot,
+                CashPrice = 40_000,
+                XTokenPrice = 20
+            }
+        );
+
+        builder.Entity<BusinessPackage>().HasData(
+            new BusinessPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Project X Premium - 1 month",
+                Description = "Basic package for businesses",
+                CashPrice = 249_000,
+                DurationInDays = 30,
+                MonthlyXTokenRewards = 100
+            },
+            new BusinessPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Project X Premium - 3 months",
+                Description = "Basic package for businesses",
+                CashPrice = 690_000,
+                DurationInDays = 90,
+                MonthlyXTokenRewards = 100
+            },
+            new BusinessPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Project X Premium - 6 months",
+                Description = "Basic package for businesses",
+                CashPrice = 1_290_000,
+                DurationInDays = 180,
+                MonthlyXTokenRewards = 100
+            },
+            new BusinessPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Project X Premium - 12 months",
+                Description = "Basic package for businesses",
+                CashPrice = 2_490_000,
+                DurationInDays = 360,
+                MonthlyXTokenRewards = 100
+            },
+            new BusinessPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Project X Elite - 1 month",
+                Description = "Elite package for businesses",
+                CashPrice = 499_000,
+                DurationInDays = 30,
+                MonthlyXTokenRewards = 500
+            },
+            new BusinessPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Project X Elite - 3 months",
+                Description = "Elite package for businesses",
+                CashPrice = 1_390_000,
+                DurationInDays = 90,
+                MonthlyXTokenRewards = 500
+            },
+            new BusinessPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Project X Elite - 6 months",
+                Description = "Elite package for businesses",
+                CashPrice = 2_490_000,
+                DurationInDays = 180,
+                MonthlyXTokenRewards = 500
+            },
+            new BusinessPackage
+            {
+                Id = Guid.NewGuid(),
+                Name = "Project X Elite - 12 months",
+                Description = "Elite package for businesses",
+                CashPrice = 4_990_000,
+                DurationInDays = 360,
+                MonthlyXTokenRewards = 500
+            }
         );
     }
 }

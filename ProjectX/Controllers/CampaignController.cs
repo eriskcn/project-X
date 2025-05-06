@@ -32,8 +32,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         {
             Name = request.Name,
             Description = request.Description,
-            Open = request.Open,
-            Close = request.Close,
             Status = request.Status,
             RecruiterId = Guid.Parse(recruiterId)
         };
@@ -41,17 +39,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         context.Campaigns.Add(campaign);
         await context.SaveChangesAsync();
 
-        var response = new CampaignResponse
-        {
-            Id = campaign.Id,
-            Name = campaign.Name,
-            Description = campaign.Description,
-            Open = campaign.Open,
-            Close = campaign.Close,
-            Status = campaign.Status
-        };
-
-        return CreatedAtAction(nameof(GetCampaign), new { id = campaign.Id }, response);
+        return Ok(new { Message = $"Create campaign successfully, campaignId: {campaign.Id}" });
     }
 
 
@@ -74,8 +62,8 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Id = campaign.Id,
             Name = campaign.Name,
             Description = campaign.Description,
-            Open = campaign.Open,
-            Close = campaign.Close,
+            // Open = campaign.Open,
+            // Close = campaign.Close,
             CountJobs = countJobs,
             Status = campaign.Status
         };
@@ -127,7 +115,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         var campaignList = await query
-            .OrderByDescending(c => c.Open)
+            .OrderByDescending(c => c.Created)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -145,8 +133,8 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             Id = c.Id,
             Name = c.Name,
             Description = c.Description,
-            Open = c.Open,
-            Close = c.Close,
+            // Open = c.Open,
+            // Close = c.Close,
             CountJobs = jobCounts.GetValueOrDefault(c.Id, 0),
             Status = c.Status
         }).ToList();
@@ -165,7 +153,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
 
     [HttpPatch("{id:guid}")]
-    public async Task<ActionResult<CampaignResponse>> UpdateCampaign([FromRoute] Guid id,
+    public async Task<IActionResult> UpdateCampaign([FromRoute] Guid id,
         [FromBody] UpdateCampaignRequest request)
     {
         if (!ModelState.IsValid)
@@ -189,33 +177,19 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
         campaign.Name = request.Name ?? campaign.Name;
         campaign.Description = request.Description ?? campaign.Description;
-        campaign.Open = request.Open ?? campaign.Open;
-        campaign.Close = request.Close ?? campaign.Close;
+        // campaign.Open = request.Open ?? campaign.Open;
+        // campaign.Close = request.Close ?? campaign.Close;
         campaign.Status = request.Status ?? campaign.Status;
 
         context.Campaigns.Update(campaign);
         await context.SaveChangesAsync();
 
-        var response = new CampaignResponse
-        {
-            Id = campaign.Id,
-            Name = campaign.Name,
-            Description = campaign.Description,
-            Open = campaign.Open,
-            Close = campaign.Close,
-            CountJobs = await context.Jobs
-                .CountAsync(j => j.CampaignId == campaign.Id),
-            Status = campaign.Status
-        };
-
-        return Ok(response);
+        return Ok(new { Message = $"Update campaign {id} successfully." });
     }
 
 
     [HttpGet("{campaignId:guid}/jobs")]
     public async Task<ActionResult<IEnumerable<JobResponse>>> GetCampaignJobs([FromRoute] Guid campaignId,
-        [FromQuery] bool? highlighted,
-        [FromQuery] bool? highlightExpired,
         [FromQuery] JobStatus? status,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
@@ -257,21 +231,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         {
             query = query.Where(j => j.Status == status.Value);
         }
-
-        if (highlighted.HasValue)
-        {
-            query = query.Where(j => j.IsHighlight == highlighted.Value);
-
-            if (highlightExpired.HasValue && highlighted.Value)
-            {
-                var now = DateTime.UtcNow;
-
-                query = highlightExpired.Value
-                    ? query.Where(j => j.HighlightStart <= now && j.HighlightEnd >= now)
-                    : query.Where(j => j.HighlightEnd < now || j.HighlightStart > now);
-            }
-        }
-
 
         if (jobLevels is { Count: > 0 })
         {
@@ -320,8 +279,10 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             MinSalary = j.MinSalary,
             MaxSalary = j.MaxSalary,
             IsHighlight = j.IsHighlight,
-            HighlightStart = j.HighlightStart,
-            HighlightEnd = j.HighlightEnd,
+            IsHot = j.IsHot,
+            IsUrgent = j.IsUrgent,
+            StartDate = j.StartDate,
+            EndDate = j.EndDate,
             CountApplications =
                 jobApplications.GetValueOrDefault(j.Id, 0),
             Major = new MajorResponse
@@ -336,7 +297,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
                 Region = j.Location.Region
             },
             JobDescription = context.AttachedFiles
-                .Where(f => f.Type == TargetType.JobDescription && f.TargetId == j.Id)
+                .Where(f => f.Type == FileType.JobDescription && f.TargetId == j.Id)
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
@@ -424,8 +385,10 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             MinSalary = job.MinSalary,
             MaxSalary = job.MaxSalary,
             IsHighlight = job.IsHighlight,
-            HighlightStart = job.HighlightStart,
-            HighlightEnd = job.HighlightEnd,
+            IsHot = job.IsHot,
+            IsUrgent = job.IsUrgent,
+            StartDate = job.StartDate,
+            EndDate = job.EndDate,
             CountApplications = jobWithApplications.CountApplications,
             Major = new MajorResponse
             {
@@ -438,7 +401,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
                 Name = job.Location.Name
             },
             JobDescription = await context.AttachedFiles
-                .Where(f => f.Type == TargetType.JobDescription && f.TargetId == job.Id)
+                .Where(f => f.Type == FileType.JobDescription && f.TargetId == job.Id)
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,
@@ -553,7 +516,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             PhoneNumber = a.PhoneNumber,
             Introduction = a.Introduction,
             Resume = context.AttachedFiles
-                .Where(f => f.Type == TargetType.Application && f.TargetId == a.Id)
+                .Where(f => f.Type == FileType.Application && f.TargetId == a.Id)
                 .Select(f => new FileResponse
                 {
                     Id = f.Id,

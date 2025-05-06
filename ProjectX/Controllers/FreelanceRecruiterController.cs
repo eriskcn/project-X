@@ -51,7 +51,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
                 Id = detail.Id,
                 Status = detail.Status,
                 FrontIdCard = await context.AttachedFiles
-                    .Where(f => f.TargetId == detail.Id && f.Type == TargetType.FrontIdCard)
+                    .Where(f => f.TargetId == detail.Id && f.Type == FileType.FrontIdCard)
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
@@ -62,7 +62,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
                     })
                     .SingleOrDefaultAsync(),
                 BackIdCard = await context.AttachedFiles
-                    .Where(f => f.TargetId == detail.Id && f.Type == TargetType.BackIdCard)
+                    .Where(f => f.TargetId == detail.Id && f.Type == FileType.BackIdCard)
                     .Select(f => new FileResponse
                     {
                         Id = f.Id,
@@ -143,7 +143,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
         {
             Name = frontIdCardFileName,
             Path = PathHelper.GetRelativePathFromAbsolute(frontUrl, env.WebRootPath),
-            Type = TargetType.FrontIdCard,
+            Type = FileType.FrontIdCard,
             TargetId = freelanceRecruiterDetail.Id,
             UploadedById = user.Id
         };
@@ -152,7 +152,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
         {
             Name = backIdCardFileName,
             Path = PathHelper.GetRelativePathFromAbsolute(backUrl, env.WebRootPath),
-            Type = TargetType.BackIdCard,
+            Type = FileType.BackIdCard,
             TargetId = freelanceRecruiterDetail.Id,
             UploadedById = user.Id
         };
@@ -217,7 +217,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
             }
 
             var frontIdCard = await context.AttachedFiles
-                .SingleOrDefaultAsync(f => f.TargetId == detail.Id && f.Type == TargetType.FrontIdCard);
+                .SingleOrDefaultAsync(f => f.TargetId == detail.Id && f.Type == FileType.FrontIdCard);
 
             if (frontIdCard == null)
             {
@@ -254,7 +254,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
             }
 
             var backIdCard = await context.AttachedFiles
-                .SingleOrDefaultAsync(f => f.TargetId == detail.Id && f.Type == TargetType.BackIdCard);
+                .SingleOrDefaultAsync(f => f.TargetId == detail.Id && f.Type == FileType.BackIdCard);
 
             if (backIdCard == null)
             {

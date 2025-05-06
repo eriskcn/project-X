@@ -17,11 +17,11 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
     : ControllerBase
 {
     [HttpGet("me")]
-    public async Task<ActionResult<ProfileInfoResponse>> GetProfile()
+    public async Task<ActionResult<ProfileInfoResponse>> GetMe()
     {
         if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
-            return Unauthorized(new { Message = "Unauthorized" });
+            return Unauthorized(new { Message = "User Id not found in access token" });
         }
 
         var user = await context.Users.Include(u => u.CompanyDetail)
@@ -47,6 +47,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
             RecruiterVerified = user.RecruiterVerified,
             VerificationSubmitted = user.VerificationSubmitted,
             XTokenBalance = user.XTokenBalance,
+            IsElite = user.Level == AccountLevel.Elite,
             IsExternalLogin = user.IsExternalLogin,
             Provider = user.Provider,
             Status = user.Status
@@ -148,4 +149,6 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
 
         return Ok(usersList);
     }
+    
+    
 }
