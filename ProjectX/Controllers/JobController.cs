@@ -1078,6 +1078,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
 
             if (request.Status.HasValue)
             {
+                if (request.Status.Value is JobStatus.Active or JobStatus.Pending or JobStatus.Rejected)
+                {
+                    return Unauthorized(new { Message = "You are not authorized to do this action." });
+                }
+
                 job.Status = request.Status.Value;
             }
 
@@ -1091,9 +1096,9 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     return BadRequest(new { Message = "Invalid file type. Only PDF, DOCX and DOC are allowed." });
                 }
 
-                if (request.JobDescriptionFile.Length > 5 * 1024 * 1024)
+                if (request.JobDescriptionFile.Length > 10 * 1024 * 1024)
                 {
-                    return BadRequest(new { Message = "File size exceeds 5MB limit." });
+                    return BadRequest(new { Message = "File size exceeds 10MB limit." });
                 }
 
                 var jobDescriptionsFolder = Path.Combine(env.WebRootPath, "jobDescriptions");
@@ -1126,6 +1131,8 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 await context.SaveChangesAsync();
             }
 
+            job.Modified = DateTime.UtcNow;
+            context.Jobs.Update(job);
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
             return Ok(new { Message = $"Update job {id} successfully" });
