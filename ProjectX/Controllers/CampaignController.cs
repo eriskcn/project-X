@@ -357,21 +357,23 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             return NotFound(new { Message = "Campaign not found or you are not authorized to view its jobs." });
         }
 
-        var jobWithApplications = await context.Jobs
+        var job = await context.Jobs
+            .Include(j => j.Major)
+            .Include(j => j.Location)
+            .Include(j => j.Skills)
+            .Include(j => j.ContractTypes)
+            .Include(j => j.JobLevels)
+            .Include(j => j.JobTypes)
             .Where(j => j.CampaignId == campaignId && j.Id == jobId)
-            .Select(j => new
-            {
-                Job = j,
-                CountApplications = context.Applications.Count(a => a.JobId == j.Id)
-            })
             .SingleOrDefaultAsync();
 
-        if (jobWithApplications == null)
+        if (job == null)
         {
             return NotFound(new { Message = "Job not found." });
         }
 
-        var job = jobWithApplications.Job;
+        var countApplications = await context.Applications
+            .CountAsync(a => a.JobId == job.Id);
 
         var response = new JobResponse
         {
@@ -391,7 +393,7 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
             IsUrgent = job.IsUrgent,
             StartDate = job.StartDate,
             EndDate = job.EndDate,
-            CountApplications = jobWithApplications.CountApplications,
+            CountApplications = countApplications,
             Major = new MajorResponse
             {
                 Id = job.Major.Id,
