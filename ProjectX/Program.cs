@@ -16,6 +16,7 @@ using ProjectX.Services.Email;
 using ProjectX.Services.GoogleAuth;
 using ProjectX.Services.Notifications;
 using ProjectX.Services.QR;
+using ProjectX.Services.Stats;
 using VNPAY.NET;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -153,19 +154,18 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IVietQrService, VietQrService>();
 builder.Services.AddScoped<IVnpay, Vnpay>();
-
+builder.Services.AddScoped<IStatsService, StatsService>();
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
 
 // Add Swagger for API documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-// builder.Services.AddHostedService<OrderExpirationService>();
 builder.Services.AddHostedService<DatabaseBackupService>();
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(8443, listenOptions => { listenOptions.UseHttps(); });
-});
+// builder.WebHost.ConfigureKestrel(options =>
+// {
+//     options.ListenAnyIP(8443, listenOptions => { listenOptions.UseHttps(); });
+// });
 
 var app = builder.Build();
 
