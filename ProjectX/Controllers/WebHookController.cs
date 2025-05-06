@@ -139,7 +139,6 @@ public class WebHookController(
 
                     user.XTokenBalance += topUpTransaction.AmountToken;
                     _context.Users.Update(user);
-                    await _context.SaveChangesAsync();
                     break;
                 case OrderType.Job:
                     var job = await context.Jobs
@@ -170,11 +169,10 @@ public class WebHookController(
                         jobService.IsActive = true;
                     }
 
-                    context.Jobs.Update(job);
-                    await context.SaveChangesAsync();
+                    _context.Jobs.Update(job);
                     break;
                 case OrderType.Business:
-                    var purchased = await context.PurchasedPackages
+                    var purchased = await _context.PurchasedPackages
                         .Include(pp => pp.User)
                         .Include(pp => pp.BusinessPackage)
                         .SingleOrDefaultAsync(pp => pp.Id == order.TargetId);
@@ -191,10 +189,13 @@ public class WebHookController(
                     purchased.User.Level = purchased.BusinessPackage.Level == BusinessLevel.Elite
                         ? AccountLevel.Elite
                         : AccountLevel.Premium;
+                    _context.PurchasedPackages.Update(purchased);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation(
                 "Received SePay webhook: {TransactionId}, Amount: {Amount}, Gateway: {Gateway}, PaymentId = {PaymentId}",
