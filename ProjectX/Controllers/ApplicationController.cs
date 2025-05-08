@@ -438,7 +438,7 @@ public class ApplicationController(
 
             if (application.Status != ApplicationStatus.Draft && request.Status != ApplicationStatus.Submitted)
             {
-                return BadRequest(new { Message = "You cannot update application status from Draft to Summitted" });
+                return BadRequest(new { Message = "You only update application status from Draft to Summitted" });
             }
 
             // Update application fields
