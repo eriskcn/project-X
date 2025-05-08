@@ -20,7 +20,6 @@ public class TokenTransactionController(ApplicationDbContext context) : Controll
             return BadRequest(ModelState);
         }
 
-        // if (request.AmountCash % 2_000 != 0)
         if (request.AmountCash % 10_000 != 0)
         {
             return BadRequest(new { Message = "AmountCash must be a multiple of 10,000." });
@@ -67,34 +66,12 @@ public class TokenTransactionController(ApplicationDbContext context) : Controll
 
         await context.SaveChangesAsync();
 
-        var response = new OrderTopUpResponse
-        {
-            Id = order.Id,
-            Gateway = order.Gateway,
-            AmountCash = order.Amount,
-            AmountToken = topUpTransaction.AmountToken,
-            Created = order.Created,
-            Modified = order.Modified
-        };
-
-        return Ok(response);
+        return Ok(new { order.Id });
     }
 }
 
 public class TopUpRequest
 {
     [Range(10_000, double.MaxValue)] public double AmountCash { get; set; }
-    // [Range(2_000, double.MaxValue)] public double AmountCash { get; set; }
-
     public PaymentGateway Gateway { get; set; }
-}
-
-public class OrderTopUpResponse
-{
-    public Guid Id { get; set; }
-    public double AmountCash { get; set; }
-    public PaymentGateway Gateway { get; set; }
-    public int AmountToken { get; set; }
-    public DateTime Created { get; set; }
-    public DateTime Modified { get; set; }
 }
