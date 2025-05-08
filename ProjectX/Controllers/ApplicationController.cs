@@ -438,7 +438,7 @@ public class ApplicationController(
 
             if (application.Status != ApplicationStatus.Draft && request.Status != ApplicationStatus.Submitted)
             {
-                return BadRequest(new { Message = "You only update application status from Draft to Summitted" });
+                return BadRequest(new { Message = "You only update application status from Draft to Submitted" });
             }
 
             // Update application fields
@@ -516,7 +516,7 @@ public class ApplicationController(
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            return StatusCode(500, new { Message = "An error occurred while updating the application." });
+            return StatusCode(500, new { Message = $"An error occurred while updating the application.{ex.Message}" });
         }
     }
 
