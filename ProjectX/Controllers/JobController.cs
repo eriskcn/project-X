@@ -1058,7 +1058,7 @@ public class JobController(
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return Ok(new { OrderId = order.Id, Message = "Create job successfully, pay to active services." });
+            return Ok(new { order.Id, Message = "Create job successfully, pay to active services." });
         }
         catch (Exception ex)
         {

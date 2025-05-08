@@ -540,7 +540,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
         await context.SaveChangesAsync();
         return Ok(new
         {
-            OrderId = order.Id,
+            order.Id,
             Message = "You must pay to active business package."
         });
     }
