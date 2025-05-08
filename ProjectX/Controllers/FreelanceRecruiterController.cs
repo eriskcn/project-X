@@ -50,6 +50,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
             {
                 Id = detail.Id,
                 Status = detail.Status,
+                RejectReason = detail.RejectReason,
                 FrontIdCard = await context.AttachedFiles
                     .Where(f => f.TargetId == detail.Id && f.Type == FileType.FrontIdCard)
                     .Select(f => new FileResponse
