@@ -116,7 +116,12 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
             Directory.CreateDirectory(idCardsFolder);
         }
 
+        var frontCleanFileName = PathHelper.GetCleanFileName(request.FrontIdCard.FileName);
+        var frontDisplayFileName = Path.GetFileName(frontCleanFileName);
         var frontIdCardFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.FrontIdCard.FileName)}";
+        
+        var backCleanFileName = PathHelper.GetCleanFileName(request.BackIdCard.FileName);
+        var backDisplayFileName = Path.GetFileName(backCleanFileName);
         var backIdCardFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.BackIdCard.FileName)}";
 
         await using (var stream = new FileStream(Path.Combine(idCardsFolder, frontIdCardFileName), FileMode.Create))
@@ -141,7 +146,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
 
         var frontIdCard = new AttachedFile
         {
-            Name = frontIdCardFileName,
+            Name = frontDisplayFileName,
             Path = PathHelper.GetRelativePathFromAbsolute(frontUrl, env.WebRootPath),
             Type = FileType.FrontIdCard,
             TargetId = freelanceRecruiterDetail.Id,
@@ -150,7 +155,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
 
         var backIdCard = new AttachedFile
         {
-            Name = backIdCardFileName,
+            Name = backDisplayFileName,
             Path = PathHelper.GetRelativePathFromAbsolute(backUrl, env.WebRootPath),
             Type = FileType.BackIdCard,
             TargetId = freelanceRecruiterDetail.Id,
