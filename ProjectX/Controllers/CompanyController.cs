@@ -425,6 +425,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
                 Created = r.Created
             })
             .ToListAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         return Ok(new
         {
@@ -432,6 +433,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
             TotalItems = totalItems,
             PageNumber = page,
             PageSize = pageSize,
+            TotalPage = totalPages,
             First = page == 1,
             Last = page * pageSize >= totalItems
         });
