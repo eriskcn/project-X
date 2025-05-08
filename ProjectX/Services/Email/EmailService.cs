@@ -1,14 +1,20 @@
 using Google.Apis.Auth.OAuth2;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using ProjectX.Data;
+using ProjectX.Helpers;
+using ProjectX.Models;
 
 namespace ProjectX.Services.Email;
 
-public class EmailService(IOptions<GoogleSettings> emailSettings, ApplicationDbContext context) : IEmailService
+public class EmailService(
+    IOptions<GoogleSettings> emailSettings,
+    ApplicationDbContext context,
+    UserManager<User> userManager) : IEmailService
 {
     private readonly GoogleSettings _googleSettings = emailSettings.Value;
 
@@ -45,6 +51,99 @@ public class EmailService(IOptions<GoogleSettings> emailSettings, ApplicationDbC
         </div>";
 
         await SendEmailAsync(email, subject, textBody, htmlBody);
+    }
+
+
+    public async Task SendNewPasswordViaEmailAsync(string email)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user == null)
+            throw new Exception("Không tìm thấy người dùng.");
+
+        var newPassword = PasswordHelper.GenerateCompliantPassword();
+        var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await userManager.ResetPasswordAsync(user, resetToken, newPassword);
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            throw new Exception($"Đặt lại mật khẩu thất bại: {errors}");
+        }
+
+        var fullName = user.FullName ?? "Người dùng";
+        var subject = "Mật khẩu mới của bạn từ ProjectX";
+
+        var plainText = $@"
+Xin chào {fullName},
+
+Hệ thống đã thiết lập lại mật khẩu cho tài khoản của bạn.
+
+Mật khẩu tạm thời mới của bạn là: {newPassword}
+
+Vui lòng đăng nhập và thay đổi mật khẩu ngay để đảm bảo an toàn cho tài khoản.
+
+Nếu bạn không yêu cầu đặt lại mật khẩu, hãy đăng nhập và đổi mật khẩu ngay lập tức để tránh mất quyền kiểm soát.
+
+Trân trọng,
+ProjectX Team
+";
+
+        var htmlContent = $@"
+<html>
+<head>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }}
+        .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }}
+        .header {{
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }}
+        .warning {{
+            color: #c0392b;
+            font-weight: bold;
+        }}
+        .footer {{
+            margin-top: 20px;
+            font-size: 13px;
+            color: #999;
+        }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>Thông báo đặt lại mật khẩu</div>
+        <p>Xin chào {fullName},</p>
+        <p>Hệ thống đã thiết lập lại mật khẩu cho tài khoản của bạn.</p>
+        <p>Mật khẩu tạm thời mới của bạn là: <strong>{newPassword}</strong></p>
+        <p>
+            <strong>Lưu ý:</strong> Vui lòng đăng nhập bằng mật khẩu này <span class='warning'>ngay khi có thể</span> và thay đổi mật khẩu để bảo vệ tài khoản của bạn.
+        </p>
+        <p class='warning'>
+            Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng đăng nhập ngay và đổi mật khẩu để đảm bảo an toàn cho tài khoản của mình.
+        </p>
+        <p>Trân trọng,<br/>Project X Team</p>
+        <div class='footer'>
+            Đây là email tự động, vui lòng không trả lời thư này.
+        </div>
+    </div>
+</body>
+</html>
+";
+
+        await SendEmailAsync(email, subject, plainText, htmlContent);
     }
 
 

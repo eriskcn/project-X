@@ -380,4 +380,11 @@ public class AuthController(
             return StatusCode(500, new { Message = "An error occurred during sign-in", Error = ex.Message });
         }
     }
+
+    [HttpPatch("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+    {
+        await emailService.SendNewPasswordViaEmailAsync(request.Email);
+        return Ok(new { Message = "Please check your email to receive a temporary password for your account." });
+    }
 }
