@@ -367,7 +367,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
             if (request.Logo.Length > 10 * 1024 * 1024)
             {
-                return BadRequest(new { Message = "Logo file size exceeds the 5MB limit." });
+                return BadRequest(new { Message = "Logo file size exceeds the 10MB limit." });
             }
 
             var logosFolder = Path.Combine(env.WebRootPath, "logos");

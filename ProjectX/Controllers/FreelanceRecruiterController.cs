@@ -105,9 +105,9 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
             return BadRequest("Invalid ID card file extension. Only image files are allowed.");
         }
 
-        if (request.FrontIdCard.Length > 5 * 1024 * 1024 || request.BackIdCard.Length > 5 * 1024 * 1024)
+        if (request.FrontIdCard.Length > 10 * 1024 * 1024 || request.BackIdCard.Length > 10 * 1024 * 1024)
         {
-            return BadRequest("ID card file size exceeds the 5MB limit.");
+            return BadRequest("ID card file size exceeds the 10MB limit.");
         }
 
         var idCardsFolder = Path.Combine(env.WebRootPath, "idCards");
@@ -211,9 +211,9 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
                 return BadRequest("Invalid front ID card file extension. Only image files are allowed.");
             }
 
-            if (request.FrontIdCard.Length > 5 * 1024 * 1024)
+            if (request.FrontIdCard.Length > 10 * 1024 * 1024)
             {
-                return BadRequest("Front ID card file size exceeds the 5MB limit.");
+                return BadRequest("Front ID card file size exceeds the 10MB limit.");
             }
 
             var frontIdCard = await context.AttachedFiles
@@ -248,9 +248,9 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
                 return BadRequest("Invalid back ID card file extension. Only image files are allowed.");
             }
 
-            if (request.BackIdCard.Length > 5 * 1024 * 1024)
+            if (request.BackIdCard.Length > 10 * 1024 * 1024)
             {
-                return BadRequest("Back ID card file size exceeds the 5MB limit.");
+                return BadRequest("Back ID card file size exceeds the 10MB limit.");
             }
 
             var backIdCard = await context.AttachedFiles
