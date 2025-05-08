@@ -10,7 +10,7 @@ public class CompanyProfileResponse
     public required string TaxCode { get; set; }
     public required string HeadQuarterAddress { get; set; }
     public required string Logo { get; set; }
-    public string? Cover { get; set; } = "images/default_cover.png";
+    public string? Cover { get; set; } 
     public required string ContactEmail { get; set; }
     public required string ContactPhone { get; set; }
     public string? Website { get; set; }
