@@ -90,7 +90,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
                 return BadRequest(new { Message = "Invalid file type" });
             }
 
-            if (request.ProfilePicture.Length > 5 * 1024 * 1024)
+            if (request.ProfilePicture.Length > 10 * 1024 * 1024)
             {
                 return BadRequest(new { Message = "File size too large" });
             }

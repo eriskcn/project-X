@@ -594,7 +594,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 return BadRequest("Invalid registration file extension. Only .pdf, .docx, and .doc files are allowed.");
             }
 
-            if (request.Resume.Length > 5 * 1024 * 1024)
+            if (request.Resume.Length > 10 * 1024 * 1024)
             {
                 return BadRequest("Registration file size exceeds the 5MB limit.");
             }
