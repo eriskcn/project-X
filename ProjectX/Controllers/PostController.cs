@@ -372,21 +372,17 @@ public class PostController(
     [HttpPost("{id:guid}/comments")]
     public async Task<ActionResult<PostResponse>> CommentPost([FromRoute] Guid id, [FromForm] PostRequest request)
     {
-        // Validate model state
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        // Get user ID from claims
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
             return Unauthorized("Access token is invalid.");
 
-        // Verify user exists
         var user = await context.Users.FindAsync(Guid.Parse(userId));
         if (user == null)
             return NotFound("User not found.");
 
-        // Verify parent post exists
         var parentPost = await context.Posts.FindAsync(id);
         if (parentPost == null)
             return NotFound("Parent post not found.");
@@ -394,7 +390,6 @@ public class PostController(
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            // Create new comment (as a Post with ParentId)
             var comment = new Post
             {
                 Content = request.Content,
@@ -404,31 +399,23 @@ public class PostController(
                 Modified = DateTime.UtcNow
             };
 
-            // Add comment to context
             context.Posts.Add(comment);
 
-            string? filePath = null;
-            AttachedFile? attachedFile = null;
-
-            // Handle file upload if present
             if (request.AttachedFile != null)
             {
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
                 var fileExtension = Path.GetExtension(request.AttachedFile.FileName).ToLowerInvariant();
 
-                // Validate file extension
                 if (!allowedExtensions.Contains(fileExtension))
                 {
                     return BadRequest("Invalid file extension. Only image files are allowed.");
                 }
 
-                // Validate file size (10MB limit)
                 if (request.AttachedFile.Length > 10 * 1024 * 1024)
                 {
                     return BadRequest("File size exceeds the 10MB limit.");
                 }
 
-                // Prepare upload directory
                 var postAttachmentsFolder = Path.Combine(env.WebRootPath, "postAttachments");
                 if (!Directory.Exists(postAttachmentsFolder))
                 {
@@ -439,9 +426,10 @@ public class PostController(
                 var displayFileName = Path.GetFileName(cleanFileName);
 
                 var fileName = $"{Guid.NewGuid()}{fileExtension}";
-                filePath = Path.Combine(postAttachmentsFolder, fileName);
-
-                attachedFile = new AttachedFile
+                var filePath = Path.Combine(postAttachmentsFolder, fileName);
+                await using var stream = new FileStream(filePath, FileMode.Create);
+                await request.AttachedFile.CopyToAsync(stream);
+                var attachedFile = new AttachedFile
                 {
                     Name = displayFileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
@@ -454,94 +442,11 @@ public class PostController(
                 context.AttachedFiles.Add(attachedFile);
             }
 
-            // Save changes to database (comment and attached file record)
             await context.SaveChangesAsync();
 
-            // Only save file to disk after database operations are confirmed
-            if (request.AttachedFile != null && filePath != null)
-            {
-                await using var stream = new FileStream(filePath, FileMode.Create);
-                await request.AttachedFile.CopyToAsync(stream);
-            }
-
-            // Fetch additional data for response within transaction
-            var commentUser = await context.Users
-                .Include(u => u.CompanyDetail)
-                .Where(u => u.Id == comment.UserId)
-                .Select(u => new UserResponse
-                {
-                    Id = u.Id,
-                    Name = u.CompanyDetail != null ? u.CompanyDetail.CompanyName : u.FullName,
-                    ProfilePicture = u.CompanyDetail != null ? u.CompanyDetail.Logo : u.ProfilePicture
-                })
-                .SingleOrDefaultAsync();
-
-            if (commentUser == null)
-            {
-                throw new InvalidOperationException("Comment user not found.");
-            }
-
-            var parentPostResponse = await context.Posts
-                .Include(p => p.User)
-                .ThenInclude(u => u.CompanyDetail)
-                .Where(p => p.Id == comment.ParentId)
-                .Select(p => new PostResponse
-                {
-                    Id = p.Id,
-                    Content = p.Content,
-                    User = new UserResponse
-                    {
-                        Id = p.User.Id,
-                        Name = p.User.CompanyDetail != null ? p.User.CompanyDetail.CompanyName : p.User.FullName,
-                        ProfilePicture = p.User.CompanyDetail != null
-                            ? p.User.CompanyDetail.Logo
-                            : p.User.ProfilePicture
-                    },
-                    LikesCount = context.Likes.Count(l => l.PostId == p.Id),
-                    CommentsCount = context.Posts.Count(c => c.ParentId == p.Id),
-                    Created = p.Created
-                })
-                .SingleOrDefaultAsync();
-
-            if (parentPostResponse == null)
-            {
-                throw new InvalidOperationException("Parent post not found.");
-            }
-
-            // Create response
-            var response = new PostResponse
-            {
-                Id = comment.Id,
-                Content = comment.Content,
-                User = commentUser,
-                ParentPost = parentPostResponse,
-                LikesCount = context.Likes.Where(l => l.PostId == comment.Id).Sum(l => l.IsLike ? 1 : -1),
-                CommentsCount = context.Posts.Count(c => c.ParentId == comment.Id), // Comments for comment
-                Created = comment.Created,
-                AttachedFile = attachedFile != null
-                    ? new FileResponse
-                    {
-                        Id = attachedFile.Id,
-                        TargetId = attachedFile.TargetId,
-                        Name = attachedFile.Name,
-                        Path = attachedFile.Path,
-                        Uploaded = attachedFile.Uploaded
-                    }
-                    : new FileResponse
-                    {
-                        Id = Guid.Empty,
-                        TargetId = Guid.Empty,
-                        Name = "No attached file",
-                        Path = "",
-                        Uploaded = DateTime.UtcNow
-                    }
-            };
-
-            // Commit transaction
             await transaction.CommitAsync();
-
-            // Return success response
-            return CreatedAtAction(nameof(GetPost), new { id = comment.Id }, response);
+            await notificationService.SendNotificationAsync(NotificationType.NewComment, parentPost.UserId, comment.Id);
+            return Ok(new { Message = "Comment successfully." });
         }
         catch (Exception ex)
         {
@@ -556,21 +461,17 @@ public class PostController(
     [HttpPost("{id:guid}/like")]
     public async Task<ActionResult<PostResponse>> LikePost([FromRoute] Guid id)
     {
-        // Validate model state
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        // Get user ID from claims
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
             return Unauthorized("Access token is invalid.");
 
-        // Verify user exists
         var user = await context.Users.FindAsync(Guid.Parse(userId));
         if (user == null)
             return NotFound("User not found.");
 
-        // Verify post exists
         var post = await context.Posts.FindAsync(id);
         if (post == null)
             return NotFound("Post not found.");
@@ -578,24 +479,20 @@ public class PostController(
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            // Check if the user has already liked/disliked the post
             var existingLike = await context.Likes
                 .IgnoreSoftDelete()
                 .SingleOrDefaultAsync(l => l.UserId == user.Id && l.PostId == id);
 
-            bool? isLiked; // Default to null (no interaction)
             if (existingLike != null)
             {
                 if (existingLike is { IsDeleted: false, IsLike: true })
                 {
                     existingLike.IsDeleted = true;
-                    isLiked = null; // Like removed, no interaction
                 }
                 else
                 {
                     existingLike.IsDeleted = false;
                     existingLike.IsLike = true;
-                    isLiked = true; // Like applied
                 }
             }
             else
@@ -609,104 +506,15 @@ public class PostController(
                     IsDeleted = false
                 };
                 context.Likes.Add(newLike);
-                isLiked = true; // New like
             }
 
-            // Save changes to database
             await context.SaveChangesAsync();
 
-            // Fetch data for response within transaction
-            var postUser = await context.Users
-                .Include(u => u.CompanyDetail)
-                .Where(u => u.Id == post.UserId)
-                .Select(u => new UserResponse
-                {
-                    Id = u.Id,
-                    Name = u.CompanyDetail != null ? u.CompanyDetail.CompanyName : u.FullName,
-                    ProfilePicture = u.CompanyDetail != null ? u.CompanyDetail.Logo : u.ProfilePicture
-                })
-                .SingleOrDefaultAsync();
-
-            if (postUser == null)
-            {
-                throw new InvalidOperationException("Post user not found.");
-            }
-
-            // Get attached file (if any)
-            var attachedFile = await context.AttachedFiles
-                .Where(f => f.TargetId == post.Id && f.Type == FileType.PostAttachment)
-                .Select(f => new FileResponse
-                {
-                    Id = f.Id,
-                    TargetId = f.TargetId,
-                    Name = f.Name,
-                    Path = f.Path,
-                    Uploaded = f.Uploaded
-                })
-                .SingleOrDefaultAsync();
-
-            // Check if user liked/disliked the parent post (if applicable)
-            bool? parentPostLiked = null;
-            if (post.ParentId != null)
-            {
-                var parentLike = await context.Likes
-                    .Where(l => l.UserId == user.Id && l.PostId == post.ParentId && !l.IsDeleted)
-                    .Select(l => new { l.IsLike })
-                    .SingleOrDefaultAsync();
-                parentPostLiked = parentLike?.IsLike;
-            }
-
-            // Create response
-            var response = new PostResponse
-            {
-                Id = post.Id,
-                Content = post.Content,
-                Liked = isLiked, // Set Liked based on the like action
-                User = postUser,
-                ParentPost = post.ParentId != null
-                    ? await context.Posts
-                        .Include(p => p.User)
-                        .ThenInclude(u => u.CompanyDetail)
-                        .Where(p => p.Id == post.ParentId)
-                        .Select(p => new PostResponse
-                        {
-                            Id = p.Id,
-                            Content = p.Content,
-                            Liked = parentPostLiked, // Set Liked for parent post
-                            User = new UserResponse
-                            {
-                                Id = p.User.Id,
-                                Name = p.User.CompanyDetail != null
-                                    ? p.User.CompanyDetail.CompanyName
-                                    : p.User.FullName,
-                                ProfilePicture = p.User.CompanyDetail != null
-                                    ? p.User.CompanyDetail.Logo
-                                    : p.User.ProfilePicture
-                            },
-                            LikesCount = context.Likes.Where(l => l.PostId == p.Id && !l.IsDeleted)
-                                .Sum(l => l.IsLike ? 1 : -1),
-                            CommentsCount = context.Posts.Count(c => c.ParentId == p.Id),
-                            Created = p.Created
-                        })
-                        .SingleOrDefaultAsync()
-                    : null,
-                LikesCount = context.Likes.Where(l => l.PostId == post.Id && !l.IsDeleted).Sum(l => l.IsLike ? 1 : -1),
-                CommentsCount = context.Posts.Count(c => c.ParentId == post.Id),
-                Created = post.Created,
-                AttachedFile = attachedFile ?? new FileResponse
-                {
-                    Id = Guid.Empty,
-                    TargetId = Guid.Empty,
-                    Name = "No attached file",
-                    Path = string.Empty,
-                    Uploaded = DateTime.UtcNow
-                }
-            };
-            // Commit transaction
             await transaction.CommitAsync();
-            await notificationService.SendNotificationAsync(NotificationType.NewReactToPost, postUser.Id, post.Id);
-            // Return success response
-            return Ok(response);
+
+            await notificationService.SendNotificationAsync(NotificationType.NewReactToPost, post.UserId, post.Id);
+
+            return Ok(new { Message = "Like post successfully." });
         }
         catch (Exception ex)
         {
@@ -721,21 +529,17 @@ public class PostController(
     [HttpPost("{id:guid}/dislike")]
     public async Task<ActionResult<PostResponse>> DislikePost([FromRoute] Guid id)
     {
-        // Validate model state
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        // Get user ID from claims
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
             return Unauthorized("Access token is invalid.");
 
-        // Verify user exists
         var user = await context.Users.FindAsync(Guid.Parse(userId));
         if (user == null)
             return NotFound("User not found.");
 
-        // Verify post exists
         var post = await context.Posts.FindAsync(id);
         if (post == null)
             return NotFound("Post not found.");
@@ -743,24 +547,20 @@ public class PostController(
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            // Check if the user has already liked/disliked the post
             var existingLike = await context.Likes
                 .IgnoreSoftDelete()
                 .SingleOrDefaultAsync(l => l.UserId == user.Id && l.PostId == id);
 
-            bool? isLiked; // Default to null (no interaction)
             if (existingLike != null)
             {
                 if (existingLike is { IsDeleted: false, IsLike: false })
                 {
                     existingLike.IsDeleted = true;
-                    isLiked = null; // Dislike removed, no interaction
                 }
                 else
                 {
                     existingLike.IsDeleted = false;
                     existingLike.IsLike = false;
-                    isLiked = false; // Dislike applied
                 }
             }
             else
@@ -774,105 +574,13 @@ public class PostController(
                     IsDeleted = false
                 };
                 context.Likes.Add(newLike);
-                isLiked = false; // New dislike
             }
 
-            // Save changes to database
             await context.SaveChangesAsync();
 
-            // Fetch data for response within transaction
-            var postUser = await context.Users
-                .Include(u => u.CompanyDetail)
-                .Where(u => u.Id == post.UserId)
-                .Select(u => new UserResponse
-                {
-                    Id = u.Id,
-                    Name = u.CompanyDetail != null ? u.CompanyDetail.CompanyName : u.FullName,
-                    ProfilePicture = u.CompanyDetail != null ? u.CompanyDetail.Logo : u.ProfilePicture
-                })
-                .SingleOrDefaultAsync();
-
-            if (postUser == null)
-            {
-                throw new InvalidOperationException("Post user not found.");
-            }
-
-            // Get attached file (if any)
-            var attachedFile = await context.AttachedFiles
-                .Where(f => f.TargetId == post.Id && f.Type == FileType.PostAttachment)
-                .Select(f => new FileResponse
-                {
-                    Id = f.Id,
-                    TargetId = f.TargetId,
-                    Name = f.Name,
-                    Path = f.Path,
-                    Uploaded = f.Uploaded
-                })
-                .SingleOrDefaultAsync();
-
-            // Check if user liked/disliked the parent post (if applicable)
-            bool? parentPostLiked = null;
-            if (post.ParentId != null)
-            {
-                var parentLike = await context.Likes
-                    .Where(l => l.UserId == user.Id && l.PostId == post.ParentId && !l.IsDeleted)
-                    .Select(l => new { l.IsLike })
-                    .SingleOrDefaultAsync();
-                parentPostLiked = parentLike?.IsLike;
-            }
-
-            // Create response
-            var response = new PostResponse
-            {
-                Id = post.Id,
-                Content = post.Content,
-                Liked = isLiked, // Set Liked based on the dislike action
-                User = postUser,
-                ParentPost = post.ParentId != null
-                    ? await context.Posts
-                        .Include(p => p.User)
-                        .ThenInclude(u => u.CompanyDetail)
-                        .Where(p => p.Id == post.ParentId)
-                        .Select(p => new PostResponse
-                        {
-                            Id = p.Id,
-                            Content = p.Content,
-                            Liked = parentPostLiked, // Set Liked for parent post
-                            User = new UserResponse
-                            {
-                                Id = p.User.Id,
-                                Name = p.User.CompanyDetail != null
-                                    ? p.User.CompanyDetail.CompanyName
-                                    : p.User.FullName,
-                                ProfilePicture = p.User.CompanyDetail != null
-                                    ? p.User.CompanyDetail.Logo
-                                    : p.User.ProfilePicture
-                            },
-                            LikesCount = context.Likes.Where(l => l.PostId == p.Id && !l.IsDeleted)
-                                .Sum(l => l.IsLike ? 1 : -1),
-                            CommentsCount = context.Posts.Count(c => c.ParentId == p.Id),
-                            Created = p.Created
-                        })
-                        .SingleOrDefaultAsync()
-                    : null,
-                LikesCount = context.Likes.Where(l => l.PostId == post.Id && !l.IsDeleted).Sum(l => l.IsLike ? 1 : -1),
-                CommentsCount = context.Posts.Count(c => c.ParentId == post.Id),
-                Created = post.Created,
-                AttachedFile = attachedFile ?? new FileResponse
-                {
-                    Id = Guid.Empty,
-                    TargetId = Guid.Empty,
-                    Name = "No attached file",
-                    Path = string.Empty,
-                    Uploaded = DateTime.UtcNow
-                }
-            };
-
-            // Commit transaction
             await transaction.CommitAsync();
-
-            // Return success response
-            return Ok(response);
+            await notificationService.SendNotificationAsync(NotificationType.NewReactToPost, post.UserId, post.Id);
+            return Ok(new { Message = "Dislike post successfully." });
         }
         catch (Exception ex)
         {
@@ -911,8 +619,6 @@ public class PostController(
 
             context.Posts.Add(post);
 
-            string? filePath = null;
-
             if (request.AttachedFile != null)
             {
                 var allowedExtensions = new[] { ".jpg", ".jpeg", ".png" };
@@ -938,8 +644,9 @@ public class PostController(
                 var displayFileName = Path.GetFileName(cleanFileName);
 
                 var fileName = $"{Guid.NewGuid()}{fileExtension}";
-                filePath = Path.Combine(postAttachmentsFolder, fileName);
-
+                var filePath = Path.Combine(postAttachmentsFolder, fileName);
+                await using var stream = new FileStream(filePath, FileMode.Create);
+                await request.AttachedFile.CopyToAsync(stream);
                 var attachedFile = new AttachedFile
                 {
                     Name = displayFileName,
@@ -955,18 +662,9 @@ public class PostController(
 
             await context.SaveChangesAsync();
 
-            if (request.AttachedFile != null)
-            {
-                if (filePath != null)
-                {
-                    await using var stream = new FileStream(filePath, FileMode.Create);
-                    await request.AttachedFile.CopyToAsync(stream);
-                }
-            }
-
             await transaction.CommitAsync();
 
-            return CreatedAtAction(nameof(GetPost), new { id = post.Id }, post);
+            return Ok(new { Message = "Create post successfully." });
         }
         catch (Exception ex)
         {
