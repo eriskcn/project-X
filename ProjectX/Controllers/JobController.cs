@@ -599,6 +599,9 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 return BadRequest("Registration file size exceeds the 5MB limit.");
             }
 
+            var cleanFileName = PathHelper.GetCleanFileName(request.Resume.FileName);
+            var displayName = Path.GetFileName(cleanFileName);
+
             var resumeFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.Resume.FileName)}";
             var filePath = Path.Combine(resumesFolder, resumeFileName);
             await using var stream = new FileStream(filePath, FileMode.Create);
@@ -607,7 +610,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             var resume = new AttachedFile
             {
                 Id = Guid.NewGuid(),
-                Name = resumeFileName,
+                Name = displayName,
                 Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                 Type = FileType.Application,
                 TargetId = application.Id,
@@ -1205,6 +1208,9 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                     Directory.CreateDirectory(jobDescriptionsFolder);
                 }
 
+                var cleanFileName = PathHelper.GetCleanFileName(request.JobDescriptionFile.FileName);
+                var displayFileName = Path.GetFileName(cleanFileName);
+
                 var jobDescriptionFileName = $"{Guid.NewGuid()}{extension}";
                 var filePath = Path.Combine(jobDescriptionsFolder, jobDescriptionFileName);
                 await using var stream = new FileStream(filePath, FileMode.Create);
@@ -1219,7 +1225,7 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 var jobDescription = new AttachedFile
                 {
                     Id = Guid.NewGuid(),
-                    Name = jobDescriptionFileName,
+                    Name = displayFileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = FileType.JobDescription,
                     TargetId = job.Id,

@@ -86,9 +86,7 @@ public class MessageController(
             var uploadsFolder = Path.Combine(env.WebRootPath, "messageAttachments");
             Directory.CreateDirectory(uploadsFolder);
 
-            var invalidChars = Path.GetInvalidFileNameChars();
-            var cleanFileName = string.Join("_",
-                request.AttachedFile.FileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
+            var cleanFileName = PathHelper.GetCleanFileName(request.AttachedFile.FileName);
             var displayName = Path.GetFileName(cleanFileName);
 
             var uniqueFileName = $"{Path.GetFileNameWithoutExtension(cleanFileName)}_{Guid.NewGuid()}{fileExtension}";
@@ -101,8 +99,8 @@ public class MessageController(
 
             attachedFile = new AttachedFile
             {
-                Name = displayName, 
-                Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath), 
+                Name = displayName,
+                Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                 Uploaded = DateTime.UtcNow,
                 UploadedById = senderGuid,
                 Type = FileType.MessageAttachment
