@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.DTOs.Orders;
 using ProjectX.Models;
 
 namespace ProjectX.Controllers;
@@ -13,76 +14,55 @@ namespace ProjectX.Controllers;
 [Authorize]
 public class OrderController(ApplicationDbContext context) : ControllerBase
 {
-    [HttpGet("top-up/{id:guid}")]
-    public async Task<ActionResult<OrderTopUpResponse>> GetTopUpOrder(Guid id)
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<OrderResponse>> GetOrder(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(userId, out var userGuid))
-        {
             return Unauthorized("Invalid user ID.");
-        }
 
         var user = await context.Users.FindAsync(userGuid);
         if (user == null)
-        {
             return NotFound(new { Message = "User not found." });
-        }
 
-        var order = await context.Orders.FindAsync(id);
+        var order = await context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
         if (order == null)
-        {
             return NotFound(new { Message = "Order not found." });
-        }
 
         if (order.UserId != userGuid)
-        {
             return Unauthorized(new { Message = "You are not authorized to view this order." });
-        }
 
-        var topUpTransaction = await context.TokenTransactions.FindAsync(order.TargetId);
-        if (topUpTransaction == null)
+        OrderResponse response = order.Type switch
         {
-            return NotFound(new { Message = "Transaction not found." });
-        }
-
-        var response = new OrderTopUpResponse
-        {
-            Id = order.Id,
-            AmountCash = order.Amount,
-            AmountToken = topUpTransaction.AmountToken,
-            Gateway = order.Gateway,
-            Created = order.Created,
-            Modified = order.Modified
+            OrderType.TopUp => await BuildTopUpResponse(order),
+            OrderType.Job => await BuildJobResponse(order),
+            OrderType.Business => await BuildBusinessResponse(order),
+            _ => throw new InvalidOperationException("Unknown order type.")
         };
+
         return Ok(response);
     }
 
-    [HttpGet("job/{id:guid}")]
-    public async Task<ActionResult<OrderJobResponse>> GetJobOrder(Guid id)
+    private async Task<OrderTopUpResponse> BuildTopUpResponse(Order order)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userId, out var userGuid))
-        {
-            return Unauthorized("Invalid user ID.");
-        }
+        var topUpTransaction = await context.TokenTransactions.FindAsync(order.TargetId);
+        if (topUpTransaction == null)
+            throw new Exception("Transaction not found.");
 
-        var user = await context.Users.FindAsync(userGuid);
-        if (user == null)
+        return new OrderTopUpResponse
         {
-            return NotFound(new { Message = "User not found." });
-        }
+            Id = order.Id,
+            AmountCash = order.Amount,
+            Gateway = order.Gateway,
+            Status = order.Status,
+            AmountToken = topUpTransaction.AmountToken,
+            Created = order.Created,
+            Modified = order.Modified
+        };
+    }
 
-        var order = await context.Orders.FindAsync(id);
-        if (order == null)
-        {
-            return NotFound(new { Message = "Order not found." });
-        }
-
-        if (order.UserId != userGuid)
-        {
-            return Unauthorized(new { Message = "You are not authorized to view this order." });
-        }
-
+    private async Task<OrderJobResponse> BuildJobResponse(Order order)
+    {
         var jobServices = await context.JobServices
             .Include(js => js.Service)
             .Where(js => js.JobId == order.TargetId)
@@ -96,60 +76,35 @@ public class OrderController(ApplicationDbContext context) : ControllerBase
             })
             .ToListAsync();
 
-        var response = new OrderJobResponse
+        return new OrderJobResponse
         {
             Id = order.Id,
             AmountCash = order.Amount,
             Gateway = order.Gateway,
+            Status = order.Status,
             Services = jobServices,
             Created = order.Created,
             Modified = order.Modified
         };
-
-        return Ok(response);
     }
 
-    [HttpGet("business/{id:guid}")]
-    public async Task<ActionResult<OrderBusinessResponse>> GetBusinessOrder(Guid id)
+    private async Task<OrderBusinessResponse> BuildBusinessResponse(Order order)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userId, out var userGuid))
-        {
-            return Unauthorized(new { Message = "Invalid user Id" });
-        }
-
-        var user = await context.Users.FindAsync(userGuid);
-        if (user == null)
-        {
-            return NotFound(new { Message = "User not found." });
-        }
-
-        var order = await context.Orders.FindAsync(id);
-        if (order == null)
-        {
-            return NotFound(new { Message = "Order not found." });
-        }
-
-        if (userGuid != order.UserId)
-        {
-            return Unauthorized(new { Message = "You are not authorized to view this order." });
-        }
-
         var purchasedPackage = await context.PurchasedPackages
             .Include(pp => pp.BusinessPackage)
             .SingleOrDefaultAsync(pp => pp.Id == order.TargetId);
 
         if (purchasedPackage == null)
-        {
-            return NotFound(new { Message = "Purchased Package not found." });
-        }
+            throw new Exception("Purchased Package not found.");
 
-
-        var response = new OrderBusinessResponse
+        return new OrderBusinessResponse
         {
             Id = order.Id,
-            Amount = order.Amount,
+            AmountCash = order.Amount,
             Gateway = order.Gateway,
+            Status = order.Status,
+            Created = order.Created,
+            Modified = order.Modified,
             PurchasedPackage = new PurchasedPackageResponse
             {
                 Id = purchasedPackage.Id,
@@ -170,23 +125,9 @@ public class OrderController(ApplicationDbContext context) : ControllerBase
                 EndDate = purchasedPackage.EndDate,
                 Created = purchasedPackage.Created,
                 Modified = purchasedPackage.Modified
-            },
-            Created = order.Created,
-            Modified = order.Modified
+            }
         };
-
-        return Ok(response);
     }
-}
-
-public class OrderJobResponse
-{
-    public Guid Id { get; set; }
-    public double AmountCash { get; set; }
-    public PaymentGateway Gateway { get; set; }
-    public ICollection<JobServiceResponse>? Services { get; set; } = new List<JobServiceResponse>();
-    public DateTime Created { get; set; }
-    public DateTime Modified { get; set; }
 }
 
 public class JobServiceResponse
@@ -194,16 +135,6 @@ public class JobServiceResponse
     public Guid Id { set; get; }
     public ServiceType Type { set; get; }
     public bool IsActive { set; get; }
-    public DateTime Created { set; get; }
-    public DateTime Modified { set; get; }
-}
-
-public class OrderBusinessResponse
-{
-    public Guid Id { set; get; }
-    public double Amount { set; get; }
-    public PaymentGateway Gateway { set; get; }
-    public PurchasedPackageResponse PurchasedPackage { set; get; } = null!;
     public DateTime Created { set; get; }
     public DateTime Modified { set; get; }
 }
