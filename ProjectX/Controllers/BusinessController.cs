@@ -187,6 +187,9 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 Directory.CreateDirectory(businessRegistrationsFolder);
             }
 
+            var cleanRegistrationFileName = PathHelper.GetCleanFileName(request.RegistrationFile.FileName);
+            var displayFileName = Path.GetFileName(cleanRegistrationFileName);
+
             var registrationFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.RegistrationFile.FileName)}";
             var registrationUrl = Path.Combine(businessRegistrationsFolder, registrationFileName);
 
@@ -236,7 +239,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
             var registrationAttachedFile = new AttachedFile
             {
-                Name = registrationFileName,
+                Name = displayFileName,
                 Path = PathHelper.GetRelativePathFromAbsolute(registrationUrl, env.WebRootPath),
                 Type = FileType.BusinessRegistration,
                 TargetId = companyDetail.Id,
@@ -413,6 +416,9 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
                 Directory.CreateDirectory(businessRegistrationsFolder);
             }
 
+            var cleanFileName = PathHelper.GetCleanFileName(request.RegistrationFile.FileName);
+            var displayName = Path.GetFileName(cleanFileName);
+
             var registrationFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.RegistrationFile.FileName)}";
             var registrationUrl = Path.Combine(businessRegistrationsFolder, registrationFileName);
 
@@ -432,7 +438,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
 
             if (registrationAttachedFile != null)
             {
-                registrationAttachedFile.Name = registrationFileName;
+                registrationAttachedFile.Name = displayName;
                 registrationAttachedFile.Path =
                     PathHelper.GetRelativePathFromAbsolute(registrationUrl, env.WebRootPath);
                 registrationAttachedFile.UploadedById = Guid.Parse(userId);
@@ -441,7 +447,7 @@ public class BusinessController(ApplicationDbContext context, IWebHostEnvironmen
             {
                 registrationAttachedFile = new AttachedFile
                 {
-                    Name = registrationFileName,
+                    Name = displayName,
                     Path = PathHelper.GetRelativePathFromAbsolute(registrationUrl, env.WebRootPath),
                     Type = FileType.BusinessRegistration,
                     TargetId = companyDetail.Id,
