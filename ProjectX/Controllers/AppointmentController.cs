@@ -5,13 +5,15 @@ using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Models;
+using ProjectX.Services.Notifications;
 
 namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/appointments")]
 [Authorize]
-public class AppointmentController(ApplicationDbContext context) : ControllerBase
+public class AppointmentController(ApplicationDbContext context, INotificationService notificationService)
+    : ControllerBase
 {
     [HttpPost]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
@@ -63,7 +65,10 @@ public class AppointmentController(ApplicationDbContext context) : ControllerBas
 
         context.Appointments.Add(appointment);
         await context.SaveChangesAsync();
-
+        await notificationService.SendNotificationAsync(
+            NotificationType.NewAppointment,
+            application.CandidateId,
+            appointment.Id);
         return Ok(new { Message = "Appointment created successfully.", AppointmentId = appointment.Id });
     }
 
@@ -76,7 +81,6 @@ public class AppointmentController(ApplicationDbContext context) : ControllerBas
             return BadRequest(new { Message = "Invalid or missing user ID in claims." });
         }
 
-        // Optimized query with minimal Includes
         var appointment = await context.Appointments
             .AsNoTracking()
             .Include(a => a.Application)
@@ -108,11 +112,11 @@ public class AppointmentController(ApplicationDbContext context) : ControllerBas
             {
                 Appointment = a,
                 JobDescription = context.AttachedFiles
-                    .FirstOrDefault(f => f.Type == FileType.JobDescription && f.TargetId == a.Application.Job.Id),
+                    .SingleOrDefault(f => f.Type == FileType.JobDescription && f.TargetId == a.Application.Job.Id),
                 Resume = context.AttachedFiles
-                    .FirstOrDefault(f => f.Type == FileType.Application && f.TargetId == a.Application.Id)
+                    .SingleOrDefault(f => f.Type == FileType.Application && f.TargetId == a.Application.Id)
             })
-            .FirstOrDefaultAsync(a => a.Appointment.Id == id);
+            .SingleOrDefaultAsync(a => a.Appointment.Id == id);
 
         if (appointment?.Appointment == null)
         {
