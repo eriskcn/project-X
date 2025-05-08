@@ -422,7 +422,7 @@ public class PostController(
                     return BadRequest("Invalid file extension. Only image files are allowed.");
                 }
 
-                // Validate file size (5MB limit)
+                // Validate file size (10MB limit)
                 if (request.AttachedFile.Length > 10 * 1024 * 1024)
                 {
                     return BadRequest("File size exceeds the 10MB limit.");
@@ -435,12 +435,15 @@ public class PostController(
                     Directory.CreateDirectory(postAttachmentsFolder);
                 }
 
+                var cleanFileName = PathHelper.GetCleanFileName(request.AttachedFile.FileName);
+                var displayFileName = Path.GetFileName(cleanFileName);
+
                 var fileName = $"{Guid.NewGuid()}{fileExtension}";
                 filePath = Path.Combine(postAttachmentsFolder, fileName);
 
                 attachedFile = new AttachedFile
                 {
-                    Name = fileName,
+                    Name = displayFileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = FileType.PostAttachment,
                     TargetId = comment.Id,
@@ -937,12 +940,15 @@ public class PostController(
                     Directory.CreateDirectory(postAttachmentsFolder);
                 }
 
+                var cleanFileName = PathHelper.GetCleanFileName(request.AttachedFile.FileName);
+                var displayFileName = Path.GetFileName(cleanFileName);
+
                 var fileName = $"{Guid.NewGuid()}{fileExtension}";
                 filePath = Path.Combine(postAttachmentsFolder, fileName);
 
                 var attachedFile = new AttachedFile
                 {
-                    Name = request.AttachedFile.FileName,
+                    Name = displayFileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = FileType.PostAttachment,
                     TargetId = post.Id,
@@ -1018,6 +1024,9 @@ public class PostController(
                 if (!Directory.Exists(postAttachmentsFolder))
                     Directory.CreateDirectory(postAttachmentsFolder);
 
+                var cleanFileName = PathHelper.GetCleanFileName(request.AttachedFile.FileName);
+                var displayFileName = Path.GetFileName(cleanFileName);
+
                 var fileName = $"{Guid.NewGuid()}{fileExtension}";
                 var filePath = Path.Combine(postAttachmentsFolder, fileName);
 
@@ -1029,7 +1038,7 @@ public class PostController(
 
                 var attachedFile = new AttachedFile
                 {
-                    Name = request.AttachedFile.FileName,
+                    Name = displayFileName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = FileType.PostAttachment,
                     TargetId = post.Id,
