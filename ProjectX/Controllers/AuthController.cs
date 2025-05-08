@@ -387,4 +387,25 @@ public class AuthController(
         await emailService.SendNewPasswordViaEmailAsync(request.Email);
         return Ok(new { Message = "Please check your email to receive a temporary password for your account." });
     }
+
+    [HttpPatch("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+            return Unauthorized(new { Message = "Invalid user ID." });
+
+        var user = await userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found" });
+        }
+
+        var result = await userManager.ChangePasswordAsync(user, request.OldPassword, request.NewPassword);
+
+        if (result.Succeeded) return Ok(new { Message = "Change password successfully." });
+
+        var errors = result.Errors.Select(e => e.Description);
+        return BadRequest(new { Message = "Change password failed.", Errors = errors });
+    }
 }
