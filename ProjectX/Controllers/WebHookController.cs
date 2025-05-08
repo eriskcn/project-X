@@ -6,6 +6,7 @@ using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Helpers;
 using ProjectX.Models;
+using ProjectX.Services.Notifications;
 using ProjectX.Services.QR;
 
 namespace ProjectX.Controllers;
@@ -15,7 +16,8 @@ namespace ProjectX.Controllers;
 public class WebHookController(
     ApplicationDbContext context,
     ILogger<WebHookController> logger,
-    IVietQrService qrService)
+    IVietQrService qrService,
+    INotificationService notificationService)
     : ControllerBase
 {
     private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -105,6 +107,10 @@ public class WebHookController(
                 return NotFound(new { Message = "Payment not found." });
             }
 
+            var order = payment.Order;
+            var isSuccess = (int)request.TransferAmount == (int)order.Amount;
+            order.Status = isSuccess ? OrderStatus.Completed : OrderStatus.Pending;
+
             payment.Gateway = request.Gateway;
             payment.TransactionRef = request.Id.ToString();
             payment.TransferType = request.TransferType;
@@ -121,7 +127,6 @@ public class WebHookController(
             _context.Payments.Update(payment);
             await _context.SaveChangesAsync();
 
-            var order = payment.Order;
             switch (order.Type)
             {
                 case OrderType.TopUp:
@@ -209,7 +214,9 @@ public class WebHookController(
 
 
             _logger.LogInformation("Successfully processed webhook: {TransactionId}", request.Id);
-
+            if (isSuccess)
+                await notificationService.SendNotificationAsync(NotificationType.SuccessPayment, order.UserId,
+                    order.Id);
             return Ok(new { success = true, message = "Webhook processed successfully" });
         }
         catch
