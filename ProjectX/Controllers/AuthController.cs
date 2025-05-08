@@ -151,7 +151,9 @@ public class AuthController(
             return Unauthorized(new { Message = "User not authenticated" });
         }
 
-        var user = await context.Users.AsNoTracking().SingleOrDefaultAsync(u => u.Id == Guid.Parse(userIdString));
+        var user = await context.Users
+            .AsNoTracking()
+            .SingleOrDefaultAsync(u => u.Id == Guid.Parse(userIdString));
         if (user == null)
         {
             return NotFound(new { Message = "User not found" });
