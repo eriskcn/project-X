@@ -423,9 +423,9 @@ public class PostController(
                 }
 
                 // Validate file size (5MB limit)
-                if (request.AttachedFile.Length > 5 * 1024 * 1024)
+                if (request.AttachedFile.Length > 10 * 1024 * 1024)
                 {
-                    return BadRequest("File size exceeds the 5MB limit.");
+                    return BadRequest("File size exceeds the 10MB limit.");
                 }
 
                 // Prepare upload directory
@@ -926,9 +926,9 @@ public class PostController(
                     return BadRequest("Invalid file extension. Only image files are allowed.");
                 }
 
-                if (request.AttachedFile.Length > 5 * 1024 * 1024)
+                if (request.AttachedFile.Length > 10 * 1024 * 1024)
                 {
-                    return BadRequest("File size exceeds the 5MB limit.");
+                    return BadRequest("File size exceeds the 10MB limit.");
                 }
 
                 var postAttachmentsFolder = Path.Combine(env.WebRootPath, "postAttachments");
@@ -1011,8 +1011,8 @@ public class PostController(
                 if (!allowedExtensions.Contains(fileExtension))
                     return BadRequest("Invalid file extension. Only image files are allowed.");
 
-                if (request.AttachedFile.Length > 5 * 1024 * 1024)
-                    return BadRequest("File size exceeds the 5MB limit.");
+                if (request.AttachedFile.Length > 10 * 1024 * 1024)
+                    return BadRequest("File size exceeds the 10MB limit.");
 
                 var postAttachmentsFolder = Path.Combine(env.WebRootPath, "postAttachments");
                 if (!Directory.Exists(postAttachmentsFolder))
