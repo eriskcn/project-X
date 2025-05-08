@@ -6,13 +6,17 @@ using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Helpers;
 using ProjectX.Models;
+using ProjectX.Services.Notifications;
 
 namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/applications")]
 [Authorize]
-public class ApplicationController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
+public class ApplicationController(
+    ApplicationDbContext context,
+    IWebHostEnvironment env,
+    INotificationService notificationService) : ControllerBase
 {
     [HttpGet]
     [Authorize(Roles = "Candidate")]
@@ -432,9 +436,9 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
                 return Unauthorized(new { Message = "You are not authorized to update this application." });
             }
 
-            if (application.Status != ApplicationStatus.Draft)
+            if (application.Status != ApplicationStatus.Draft && request.Status != ApplicationStatus.Submitted)
             {
-                return BadRequest(new { Message = "You cannot update a submitted or seen application." });
+                return BadRequest(new { Message = "You cannot update application status from Draft to Summitted" });
             }
 
             // Update application fields
@@ -543,7 +547,8 @@ public class ApplicationController(ApplicationDbContext context, IWebHostEnviron
 
         application.Status = ApplicationStatus.Seen;
         await context.SaveChangesAsync();
-
+        await notificationService.SendNotificationAsync(NotificationType.ApplicationSeen, application.CandidateId,
+            application.Id);
         return Ok(new { Message = "Application seen." });
     }
 
