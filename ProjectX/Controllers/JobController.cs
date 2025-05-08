@@ -309,6 +309,7 @@ public class JobController(
     }
 
     [HttpGet("{id:guid}")]
+    [AllowAnonymous]
     public async Task<ActionResult<JobResponseForCandidate>> GetJob(Guid id)
     {
         var isSaved = false;
@@ -634,7 +635,7 @@ public class JobController(
                 NotificationType.NewApplication,
                 job.Campaign.RecruiterId,
                 job.CampaignId);
-            
+
             await context.SaveChangesAsync();
 
             await transaction.CommitAsync();
