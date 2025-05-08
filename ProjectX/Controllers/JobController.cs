@@ -796,6 +796,11 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             return BadRequest(new { Message = "File size exceeds the 10MB limit." });
         }
 
+        if (request.MinSalary > request.MaxSalary)
+        {
+            return BadRequest(new { Message = "Max salary must be greater than min salary." });
+        }
+
         // Get and validate recruiter
         var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(recruiterId, out var recruiterGuid))
