@@ -9,14 +9,14 @@ namespace ProjectX.Services.Notifications;
 public class NotificationService(IHubContext<NotificationHub> hubContext, ApplicationDbContext dbContext)
     : INotificationService
 {
-    public async Task SendNotificationAsync(NotificationRequest notificationRequest)
+    public async Task SendNotificationAsync(NotificationType type, Guid recipientId, Guid targetId)
     {
         var notification = new Notification
         {
             Id = Guid.NewGuid(),
-            Type = notificationRequest.Type,
-            RecipientId = notificationRequest.RecipientId,
-            TargetId = notificationRequest.TargetId
+            Type = type,
+            RecipientId = recipientId,
+            TargetId = targetId
         };
 
         dbContext.Add(notification);
@@ -32,7 +32,7 @@ public class NotificationService(IHubContext<NotificationHub> hubContext, Applic
             Read = notification.Read,
             Created = notification.Created
         };
-        await hubContext.Clients.User(notificationRequest.RecipientId.ToString())
+        await hubContext.Clients.User(recipientId.ToString())
             .SendAsync("ReceiveNotification", notificationResponse);
     }
 }

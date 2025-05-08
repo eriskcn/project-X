@@ -1,8 +1,9 @@
 using ProjectX.DTOs;
+using ProjectX.Models;
 
 namespace ProjectX.Services.Notifications;
 
 public interface INotificationService
 {
-    Task SendNotificationAsync(NotificationRequest notificationRequest);
+    Task SendNotificationAsync(NotificationType type, Guid recipientId, Guid targetId);
 }

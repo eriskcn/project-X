@@ -6,6 +6,7 @@ using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Helpers;
 using ProjectX.Models;
+using ProjectX.Services.Notifications;
 using ProjectX.Services.Stats;
 
 namespace ProjectX.Controllers;
@@ -13,7 +14,11 @@ namespace ProjectX.Controllers;
 [ApiController]
 [Route("capablanca/api/v0/jobs")]
 [Authorize]
-public class JobController(ApplicationDbContext context, IWebHostEnvironment env, IStatsService statsService)
+public class JobController(
+    ApplicationDbContext context,
+    IWebHostEnvironment env,
+    IStatsService statsService,
+    INotificationService notificationService)
     : ControllerBase
 {
     [HttpGet]
@@ -553,7 +558,14 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
             return Unauthorized(new { Message = "User ID not found in access token." });
         }
 
-        var job = await context.Jobs.FindAsync(jobId);
+        var job = await context.Jobs
+            .Include(j => j.Campaign)
+            .SingleOrDefaultAsync(j =>
+                j.Id == jobId
+                && j.Campaign.Status == CampaignStatus.Opened
+                && j.Status == JobStatus.Active
+                && j.StartDate <= DateTime.UtcNow
+                && j.EndDate >= DateTime.UtcNow);
         if (job == null)
         {
             return NotFound(new { Message = "Job not found." });
@@ -617,6 +629,12 @@ public class JobController(ApplicationDbContext context, IWebHostEnvironment env
                 UploadedById = Guid.Parse(userId)
             };
             context.AttachedFiles.Add(resume);
+
+            await notificationService.SendNotificationAsync(
+                NotificationType.NewApplication,
+                job.Campaign.RecruiterId,
+                job.CampaignId);
+            
             await context.SaveChangesAsync();
 
             await transaction.CommitAsync();

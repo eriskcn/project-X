@@ -702,15 +702,9 @@ public class PostController(
                     Uploaded = DateTime.UtcNow
                 }
             };
-            var notification = new NotificationRequest
-            {
-                Type = NotificationType.NewReactToPost,
-                RecipientId = postUser.Id,
-                TargetId = post.Id
-            };
             // Commit transaction
             await transaction.CommitAsync();
-            await notificationService.SendNotificationAsync(notification);
+            await notificationService.SendNotificationAsync(NotificationType.NewReactToPost, postUser.Id, post.Id);
             // Return success response
             return Ok(response);
         }
