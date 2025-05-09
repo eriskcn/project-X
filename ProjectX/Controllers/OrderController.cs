@@ -14,6 +14,70 @@ namespace ProjectX.Controllers;
 [Authorize]
 public class OrderController(ApplicationDbContext context) : ControllerBase
 {
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<OrderResponse>>> GetOwnOrders(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
+    {
+        if (page <= 0 || pageSize < 0)
+        {
+            return BadRequest(new { Message = "Invalid page or pageSize." });
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+        {
+            return Unauthorized(new { Message = "Invalid user Id." });
+        }
+
+        var user = await context.Users.FindAsync(userGuid);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        var baseQuery = context.Orders
+            .AsNoTracking()
+            .Where(o => o.UserId == userGuid);
+
+        var orderedQuery = baseQuery.OrderByDescending(o => o.Created);
+
+        var totalItems = await orderedQuery.CountAsync();
+
+        if (pageSize > 0)
+        {
+            pageSize = Math.Min(pageSize, 100);
+            orderedQuery = (IOrderedQueryable<Order>)orderedQuery
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize);
+        }
+
+        var orders = await orderedQuery.ToListAsync();
+
+        var responses = new List<OrderResponse>();
+        foreach (var order in orders)
+        {
+            OrderResponse response = order.Type switch
+            {
+                OrderType.TopUp => await BuildTopUpResponse(order),
+                OrderType.Job => await BuildJobResponse(order),
+                OrderType.Business => await BuildBusinessResponse(order),
+                _ => throw new InvalidOperationException("Unknown order type.")
+            };
+            responses.Add(response);
+        }
+
+        return Ok(new
+        {
+            Items = responses,
+            TotalItems = totalItems,
+            First = page == 1,
+            Last = pageSize == 0 || page * pageSize >= totalItems,
+            PageNumber = page,
+            PageSize = pageSize
+        });
+    }
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<OrderResponse>> GetOrder(Guid id)
     {
@@ -25,7 +89,9 @@ public class OrderController(ApplicationDbContext context) : ControllerBase
         if (user == null)
             return NotFound(new { Message = "User not found." });
 
-        var order = await context.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
+        var order = await context.Orders
+            .AsNoTracking()
+            .SingleOrDefaultAsync(o => o.Id == id);
         if (order == null)
             return NotFound(new { Message = "Order not found." });
 
@@ -128,24 +194,4 @@ public class OrderController(ApplicationDbContext context) : ControllerBase
             }
         };
     }
-}
-
-public class JobServiceResponse
-{
-    public Guid Id { set; get; }
-    public ServiceType Type { set; get; }
-    public bool IsActive { set; get; }
-    public DateTime Created { set; get; }
-    public DateTime Modified { set; get; }
-}
-
-public class PurchasedPackageResponse
-{
-    public Guid Id { set; get; }
-    public BusinessPackageResponse BusinessPackage { set; get; } = null!;
-    public bool IsActive { set; get; }
-    public DateTime StartDate { set; get; }
-    public DateTime EndDate { set; get; }
-    public DateTime Created { set; get; }
-    public DateTime Modified { set; get; }
 }
