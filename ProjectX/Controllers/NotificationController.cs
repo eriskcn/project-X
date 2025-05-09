@@ -11,7 +11,7 @@ namespace ProjectX.Controllers;
 public class NotificationController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<NotificationResponse>>> GetOwnNotifications()
+    public async Task<ActionResult<IEnumerable<NotificationResponse>>> GetOwnNotifications([FromQuery] bool? isRead)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
@@ -26,7 +26,7 @@ public class NotificationController(ApplicationDbContext context) : ControllerBa
         }
 
         var notifications = await context.Notifications
-            .Where(n => n.RecipientId == Guid.Parse(userId))
+            .Where(n => n.RecipientId == Guid.Parse(userId) && (!isRead.HasValue || n.IsRead == isRead))
             .OrderByDescending(n => n.Created)
             .Select(n => new NotificationResponse
             {
