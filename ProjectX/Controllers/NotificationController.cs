@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
+using ProjectX.Models;
 
 namespace ProjectX.Controllers;
 
@@ -26,7 +27,8 @@ public class NotificationController(ApplicationDbContext context) : ControllerBa
         }
 
         var notifications = await context.Notifications
-            .Where(n => n.RecipientId == Guid.Parse(userId) && (!isRead.HasValue || n.IsRead == isRead))
+            .Where(n => n.RecipientId == Guid.Parse(userId) && n.Type != NotificationType.SuccessPayment &&
+                        (!isRead.HasValue || n.IsRead == isRead))
             .OrderByDescending(n => n.Created)
             .Select(n => new NotificationResponse
             {
