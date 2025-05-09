@@ -17,6 +17,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
     public async Task<ActionResult> GetCompanyProfiles([FromQuery] string? search,
         [FromQuery] bool topCompanyOnly,
         [FromQuery] bool eliteOnly,
+        [FromQuery] Guid? majorId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -36,6 +37,17 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
         if (eliteOnly)
         {
             query = query.Where(c => c.IsElite);
+        }
+
+        if (majorId.HasValue)
+        {
+            var major = await context.Majors.FindAsync(majorId);
+            if (major == null)
+            {
+                return NotFound(new { Message = "Major not found." });
+            }
+
+            query = query.Where(c => c.Majors.Contains(major));
         }
 
         if (!string.IsNullOrWhiteSpace(search))
