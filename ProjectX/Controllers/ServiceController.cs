@@ -1,9 +1,8 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
-using ProjectX.Models;
+using ProjectX.DTOs;
 
 namespace ProjectX.Controllers;
 
@@ -30,17 +29,4 @@ public class ServiceController(ApplicationDbContext context) : ControllerBase
 
         return Ok(services);
     }
-}
-
-public class ServiceResponse
-{
-    public Guid Id { get; set; }
-    [StringLength(150)] public required string Name { get; set; }
-    [StringLength(500)] public required string Description { get; set; }
-    public required int DayLimit { get; set; }
-    public ServiceType Type { get; set; }
-    public double CashPrice { get; set; }
-    public int XTokenPrice { get; set; }
-    public DateTime Created { get; set; }
-    public DateTime Modified { get; set; }
 }
