@@ -385,7 +385,7 @@ public class AuthController(
     }
 
     [HttpPatch("forgot-password")]
-    [Authorize(Policy = "EmailConfirmed")]
+    [AllowAnonymous]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         await emailService.SendNewPasswordViaEmailAsync(request.Email);
