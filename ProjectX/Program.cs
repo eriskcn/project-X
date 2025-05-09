@@ -163,6 +163,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<DatabaseBackupService>();
 builder.Services.AddHostedService<AppointmentReminderService>();
+builder.Services.AddHostedService<BusinessPackageService>();
 builder.WebHost.ConfigureKestrel(options =>
 {
     // options.ListenAnyIP(8443, listenOptions =>
