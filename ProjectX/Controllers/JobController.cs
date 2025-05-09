@@ -812,7 +812,6 @@ public class JobController(
             return BadRequest(ModelState);
         }
 
-        // Validate file size if present
         if (request.JobDescriptionFile is { Length: > maxFileSize })
         {
             return BadRequest(new { Message = "File size exceeds the 10MB limit." });
@@ -823,7 +822,6 @@ public class JobController(
             return BadRequest(new { Message = "Max salary must be greater than min salary." });
         }
 
-        // Get and validate recruiter
         var recruiterId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(recruiterId, out var recruiterGuid))
         {
@@ -843,18 +841,15 @@ public class JobController(
             return BadRequest(new { Message = "Recruiter not found." });
         }
 
-        // Start transaction for data consistency
         await using var transaction = await context.Database.BeginTransactionAsync();
         try
         {
-            // Determine job status based on recruiter level and draft status
             var isAutoAccept = recruiter.Level is AccountLevel.Elite or AccountLevel.Premium;
             if (request.IsDraft)
             {
                 isAutoAccept = false;
             }
 
-            // Get related entities for job
             var jobLevels = await context.JobLevels
                 .Where(jl => request.JobLevels.Contains(jl.Id))
                 .ToListAsync();
@@ -871,7 +866,6 @@ public class JobController(
                 .Where(s => request.Skills.Contains(s.Id))
                 .ToListAsync();
 
-            // Create job entity
             var job = new Job
             {
                 Id = Guid.NewGuid(),
@@ -896,12 +890,12 @@ public class JobController(
                 ContractTypes = contractTypes,
                 Skills = skills
             };
+
             if (!JobHelper.IsValidJobDuration(job))
             {
                 return BadRequest(new { Message = "Invalid StartDate and EndDate" });
             }
 
-            // Process job services if any
             var jobServices = new List<JobService>();
             var totalToken = 0;
             var totalCash = 0.0;
@@ -917,13 +911,11 @@ public class JobController(
                 var isUrgent = services.Any(s => s.Type == ServiceType.Urgent);
                 var isHot = services.Any(s => s.Type == ServiceType.Hot);
 
-                // Check if job duration is valid for selected services
                 if (!JobHelper.IsValidProJob(job, isHighlight, isHot, isUrgent))
                 {
                     return BadRequest(new { Message = "Invalid job duration for selected services." });
                 }
 
-                // Calculate service costs
                 foreach (var service in services)
                 {
                     var jobDuration = (int)(job.EndDate - job.StartDate).TotalDays;
@@ -945,7 +937,6 @@ public class JobController(
                             continue;
                     }
 
-                    // Create job service association
                     jobServices.Add(new JobService
                     {
                         Id = Guid.NewGuid(),
@@ -957,17 +948,71 @@ public class JobController(
                     });
                 }
 
-                // Set job services if any
                 if (jobServices.Count > 0)
                 {
                     job.JobServices = jobServices;
+
+                    if (request.PaymentMethod == JobPaymentMethod.XToken)
+                    {
+                        if (recruiter.XTokenBalance < totalToken)
+                        {
+                            return BadRequest(new { Message = "Not enough X Token." });
+                        }
+
+                        var tokenTransaction = new TokenTransaction
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = recruiterGuid,
+                            AmountToken = totalToken,
+                            JobId = job.Id,
+                            Type = TokenTransactionType.PurchaseJobService,
+                            Created = DateTime.UtcNow,
+                            Modified = DateTime.UtcNow
+                        };
+
+                        context.TokenTransactions.Add(tokenTransaction);
+
+                        recruiter.XTokenBalance -= totalToken;
+                        context.Users.Update(recruiter);
+                        job.IsHighlight = true;
+                        job.IsUrgent = true;
+                        job.IsHot = true;
+
+                        foreach (var jobService in job.JobServices)
+                        {
+                            jobService.IsActive = true;
+                        }
+
+                        context.Jobs.Add(job);
+                        await context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+
+                        return Ok(new { Message = "Create job successfully." });
+                    }
+
+                    var order = new Order
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = recruiter.Id,
+                        Amount = totalCash,
+                        Gateway = request.Gateway,
+                        Type = OrderType.Job,
+                        TargetId = job.Id,
+                        Created = DateTime.UtcNow,
+                        Modified = DateTime.UtcNow
+                    };
+
+                    context.Orders.Add(order);
+                    context.Jobs.Add(job);
+                    await context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new { order.Id, Message = "Create job successfully, pay to active services." });
                 }
             }
 
-            // Add job to context
             context.Jobs.Add(job);
 
-            // Process job description file if any
             if (request.JobDescriptionFile != null)
             {
                 var jobDescriptionsFolder = Path.Combine(env.WebRootPath, "jobDescriptions");
@@ -997,68 +1042,10 @@ public class JobController(
                 context.AttachedFiles.Add(jobDescription);
             }
 
-            // Process payment
-            if (request.PaymentMethod == JobPaymentMethod.XToken)
-            {
-                // Check if recruiter has enough tokens
-                if (recruiter.XTokenBalance < totalToken)
-                {
-                    return BadRequest(new { Message = "Not enough X Token." });
-                }
-
-                // Create token transaction
-                var tokenTransaction = new TokenTransaction
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = recruiterGuid,
-                    AmountToken = totalToken,
-                    JobId = job.Id,
-                    Type = TokenTransactionType.PurchaseJobService,
-                    Created = DateTime.UtcNow,
-                    Modified = DateTime.UtcNow
-                };
-
-                context.TokenTransactions.Add(tokenTransaction);
-
-                // Update recruiter token balance
-                recruiter.XTokenBalance -= totalToken;
-                context.Users.Update(recruiter);
-                job.IsHighlight = true;
-                job.IsUrgent = true;
-                job.IsHot = true;
-
-                foreach (var jobService in job.JobServices)
-                {
-                    jobService.IsActive = true;
-                }
-
-                // Save changes and commit transaction
-                await context.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                return Ok(new { Message = "Create job successfully." });
-            }
-
-            // Create order for cash payment
-            var order = new Order
-            {
-                Id = Guid.NewGuid(),
-                UserId = recruiter.Id,
-                Amount = totalCash,
-                Gateway = request.Gateway,
-                Type = OrderType.Job,
-                TargetId = job.Id,
-                Created = DateTime.UtcNow,
-                Modified = DateTime.UtcNow
-            };
-
-            context.Orders.Add(order);
-
-            // Save changes and commit transaction
             await context.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            return Ok(new { order.Id, Message = "Create job successfully, pay to active services." });
+            return Ok(new { Message = "Create job successfully." });
         }
         catch (Exception ex)
         {
