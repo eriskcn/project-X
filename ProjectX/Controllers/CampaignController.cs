@@ -10,11 +10,10 @@ namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/campaigns")]
-[Authorize]
+[Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
 public class CampaignController(ApplicationDbContext context) : ControllerBase
 {
     [HttpPost]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<CampaignResponse>> CreateCampaign([FromBody] CampaignRequest request)
     {
         if (!ModelState.IsValid)
@@ -73,7 +72,6 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
 
     [HttpGet]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<IEnumerable<CampaignResponse>>> GetOwnCampaigns(
         [FromQuery] string? search,
         [FromQuery] CampaignStatus? status,
