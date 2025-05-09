@@ -43,8 +43,8 @@ public class AppointmentReminderService(
             TimeZoneInfo.ConvertTimeToUtc(nextRun, TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"));
         var utcTimeUntilNextRun = utcNextRun - utcNow;
 
-        // _timer = new Timer(DoWork, null, utcTimeUntilNextRun, TimeSpan.FromDays(1));
-        _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromDays(1));
+        _timer = new Timer(DoWork, null, utcTimeUntilNextRun, TimeSpan.FromDays(1));
+        // _timer = new Timer(DoWork, null, TimeSpan.Zero, TimeSpan.FromDays(1));
         return Task.CompletedTask;
     }
 
