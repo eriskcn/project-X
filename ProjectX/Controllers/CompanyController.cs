@@ -41,13 +41,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
 
         if (majorId.HasValue)
         {
-            var major = await context.Majors.FindAsync(majorId);
-            if (major == null)
-            {
-                return NotFound(new { Message = "Major not found." });
-            }
-
-            query = query.Where(c => c.Majors.Contains(major));
+            query = query.Where(c => c.Majors.Any(m => m.Id == majorId));
         }
 
         if (!string.IsNullOrWhiteSpace(search))
