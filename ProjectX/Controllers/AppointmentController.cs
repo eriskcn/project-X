@@ -73,6 +73,7 @@ public class AppointmentController(ApplicationDbContext context, INotificationSe
     }
 
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "EmailConfirmed")]
     public async Task<ActionResult<AppointmentResponse>> GetAppointment(Guid id)
     {
         // Early validation of user ID
@@ -242,6 +243,7 @@ public class AppointmentController(ApplicationDbContext context, INotificationSe
     }
 
     [HttpGet]
+    [Authorize(Policy = "EmailConfirmed")]
     public async Task<ActionResult<IEnumerable<AppointmentShortResponse>>> GetOwnAppointments(
         [FromQuery] string? search,
         [FromQuery] bool thisWeek = false,

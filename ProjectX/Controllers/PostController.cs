@@ -12,7 +12,7 @@ namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/posts")]
-[Authorize]
+[Authorize(Policy = "EmailConfirmed")]
 public class PostController(
     ApplicationDbContext context,
     IWebHostEnvironment env,

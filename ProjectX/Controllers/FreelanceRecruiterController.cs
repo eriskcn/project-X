@@ -11,7 +11,7 @@ namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/freelance-recruiter")]
-[Authorize(Roles = "FreelanceRecruiter")]
+[Authorize(Roles = "FreelanceRecruiter", Policy = "EmailConfirmed")]
 public class FreelanceRecruiterController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet("verifications")]
@@ -120,7 +120,7 @@ public class FreelanceRecruiterController(ApplicationDbContext context, IWebHost
         var frontCleanFileName = PathHelper.GetCleanFileName(request.FrontIdCard.FileName);
         var frontDisplayFileName = Path.GetFileName(frontCleanFileName);
         var frontIdCardFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.FrontIdCard.FileName)}";
-        
+
         var backCleanFileName = PathHelper.GetCleanFileName(request.BackIdCard.FileName);
         var backDisplayFileName = Path.GetFileName(backCleanFileName);
         var backIdCardFileName = $"{Guid.NewGuid()}{Path.GetExtension(request.BackIdCard.FileName)}";

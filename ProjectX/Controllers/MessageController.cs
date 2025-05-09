@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/messages")]
+[Authorize(Policy = "EmailConfirmed")]
 public class MessageController(
     ApplicationDbContext context,
     IHubContext<MessageHub> hubContext,

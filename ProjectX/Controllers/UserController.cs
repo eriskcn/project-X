@@ -55,6 +55,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
     }
 
     [HttpPatch]
+    [Authorize(Policy = "EmailConfirmed")]
     public async Task<ActionResult<ProfileInfoResponse>> UpdateProfile([FromForm] ProfileInfoRequest request)
     {
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty);
@@ -111,6 +112,7 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
 
 
     [HttpGet]
+    [Authorize(Policy = "EmailConfirmed")]
     public async Task<ActionResult<IEnumerable<UserResponse>>> GetUsers([FromQuery] string? search)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -149,6 +151,4 @@ public class UserController(ApplicationDbContext context, UserManager<User> user
 
         return Ok(usersList);
     }
-    
-    
 }

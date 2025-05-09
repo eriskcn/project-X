@@ -170,7 +170,7 @@ public class VnPayController : ControllerBase
     }
 
     [HttpPost("create-payment-url")]
-    [Authorize]
+    [Authorize(Policy = "EmailConfirmed")]
     public async Task<ActionResult<string>> CreatePaymentUrl([FromBody] OrderRequest request)
     {
         if (!ModelState.IsValid)

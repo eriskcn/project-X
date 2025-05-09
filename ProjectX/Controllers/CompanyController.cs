@@ -135,6 +135,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
     }
 
     [HttpGet("self")]
+    [Authorize(Roles = "Business", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<CompanyProfileResponse>> GetOwnCompanyProfile()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

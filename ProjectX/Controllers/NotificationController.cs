@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
@@ -9,6 +10,7 @@ namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/notifications")]
+[Authorize(Policy = "EmailConfirmed")]
 public class NotificationController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]

@@ -7,9 +7,9 @@ using ProjectX.Models;
 
 namespace ProjectX.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("capablanca/api/v0/job-levels")]
+[Authorize(Policy = "EmailConfirmed")]
 public class JobLevelController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]

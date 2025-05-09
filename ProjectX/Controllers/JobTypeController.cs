@@ -8,13 +8,12 @@ using ProjectX.Models;
 namespace ProjectX.Controllers;
 
 [ApiController]
-[Authorize]
 [Route("capablanca/api/v0/job-types")]
+[Authorize(Policy = "EmailConfirmed")]
 public class JobTypeController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
-
     public async Task<ActionResult<IEnumerable<JobTypeResponse>>> GetJobTypes(
         [FromQuery] string? search,
         [FromQuery] int page = 1,

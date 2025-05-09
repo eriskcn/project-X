@@ -10,8 +10,8 @@ using ProjectX.Models;
 namespace ProjectX.Controllers;
 
 [ApiController]
-[Authorize(Roles = "Business")]
 [Route("capablanca/api/v0/business")]
+[Authorize(Roles = "Business", Policy = "EmailConfirmed")]
 public class BusinessController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet("verifications")]

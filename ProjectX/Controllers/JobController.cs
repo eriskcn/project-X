@@ -480,6 +480,7 @@ public class JobController(
     }
 
     [HttpGet("{id:guid}/hidden-stats")]
+    [Authorize(Roles = "Candidate", Policy = "EmailConfirmed")]
     public async Task<IActionResult> GetHiddenStats(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);

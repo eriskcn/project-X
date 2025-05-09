@@ -10,7 +10,7 @@ namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/conversations")]
-[Authorize]
+[Authorize(Policy = "EmailConfirmed")]
 public class ConversationController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]

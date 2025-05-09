@@ -7,9 +7,9 @@ using ProjectX.Models;
 
 namespace ProjectX.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("capablanca/api/v0/skills")]
+[Authorize(Policy = "EmailConfirmed")]
 public class SkillController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]

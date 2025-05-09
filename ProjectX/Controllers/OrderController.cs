@@ -11,7 +11,7 @@ namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/orders")]
-[Authorize]
+[Authorize(Policy = "EmailConfirmed")]
 public class OrderController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]

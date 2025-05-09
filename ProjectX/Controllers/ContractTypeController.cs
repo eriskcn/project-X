@@ -7,9 +7,9 @@ using ProjectX.Models;
 
 namespace ProjectX.Controllers;
 
-[Authorize]
 [ApiController]
 [Route("capablanca/api/v0/contract-types")]
+[Authorize(Policy = "EmailConfirmed")]
 public class ContractTypeController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]

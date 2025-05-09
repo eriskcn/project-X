@@ -9,12 +9,11 @@ namespace ProjectX.Controllers;
 
 [ApiController]
 [Route("capablanca/api/v0/majors")]
-[Authorize]
+[Authorize(Policy = "EmailConfirmed")]
 public class MajorController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
     [AllowAnonymous]
-
     public async Task<ActionResult<IEnumerable<MajorResponse>>> GetMajors(
         [FromQuery] string? search,
         [FromQuery] int page = 1,

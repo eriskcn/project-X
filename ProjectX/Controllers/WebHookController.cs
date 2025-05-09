@@ -24,7 +24,7 @@ public class WebHookController(
     private readonly ILogger<WebHookController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     [HttpPost("create-payment-qr")]
-    [Authorize]
+    [Authorize(Policy = "EmailConfirmed")]
     public async Task<IActionResult> CreatePaymentQr([FromBody] OrderRequest request)
     {
         if (!ModelState.IsValid)
