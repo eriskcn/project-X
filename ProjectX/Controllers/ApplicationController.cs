@@ -19,7 +19,7 @@ public class ApplicationController(
     INotificationService notificationService) : ControllerBase
 {
     [HttpGet]
-    [Authorize(Roles = "Candidate")]
+    [Authorize(Roles = "Candidate", Policy = "EmailConfirmed")]
     public async Task<ActionResult<IEnumerable<ApplicationResponseForCandidate>>> GetOwnApplications(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
@@ -234,7 +234,7 @@ public class ApplicationController(
     }
 
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = "Candidate")]
+    [Authorize(Roles = "Candidate", Policy = "EmailConfirmed")]
     public async Task<ActionResult<ApplicationResponseForCandidate>> GetOwnApplication(Guid id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -408,7 +408,7 @@ public class ApplicationController(
     }
 
     [HttpPatch("{id:guid}")]
-    [Authorize(Roles = "Candidate")]
+    [Authorize(Roles = "Candidate", Policy = "EmailConfirmed")]
     public async Task<IActionResult> UpdateApplication([FromRoute] Guid id, [FromForm] UpdateApplicationRequest request)
     {
         if (!ModelState.IsValid)

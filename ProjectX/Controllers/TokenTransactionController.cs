@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectX.Data;
 using ProjectX.Models;
@@ -13,6 +14,7 @@ public class TokenTransactionController(ApplicationDbContext context) : Controll
     private const double ExchangeRateCashToToken = 2_000;
 
     [HttpPost("top-up")]
+    [Authorize(Policy = "EmailConfirmed")]
     public async Task<IActionResult> TopUpToken([FromBody] TopUpRequest request)
     {
         if (!ModelState.IsValid)

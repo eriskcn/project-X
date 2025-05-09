@@ -322,7 +322,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
     }
 
     [HttpPost("{companyId:guid}/ratings")]
-    [Authorize(Roles = "Candidate")]
+    [Authorize(Roles = "Candidate", Policy = "EmailConfirmed")]
     public async Task<ActionResult<RatingResponse>> RatingCompany(
         [FromRoute] Guid companyId,
         [FromBody] RatingRequest request)

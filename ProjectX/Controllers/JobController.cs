@@ -545,7 +545,7 @@ public class JobController(
     }
 
     [HttpPost("{jobId:guid}/apply")]
-    [Authorize(Roles = "Candidate")]
+    [Authorize(Roles = "Candidate", Policy = "EmailConfirmed")]
     public async Task<IActionResult> ApplyJob([FromRoute] Guid jobId, [FromForm] ApplicationRequest request)
     {
         if (!ModelState.IsValid)
@@ -650,7 +650,7 @@ public class JobController(
     }
 
     [HttpPost("{jobId:guid}/save")]
-    [Authorize(Roles = "Candidate")]
+    [Authorize(Roles = "Candidate", Policy = "EmailConfirmed")]
     public async Task<IActionResult> SaveJob(Guid jobId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -685,7 +685,7 @@ public class JobController(
     }
 
     [HttpDelete("{jobId:guid}/un-save")]
-    [Authorize(Roles = "Candidate")]
+    [Authorize(Roles = "Candidate", Policy = "EmailConfirmed")]
     public async Task<IActionResult> UnSaveJob(Guid jobId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -721,7 +721,7 @@ public class JobController(
     }
 
     [HttpGet("saved")]
-    [Authorize(Roles = "Candidate")]
+    [Authorize(Roles = "Candidate", Policy = "EmailConfirmed")]
     public async Task<ActionResult<IEnumerable<SavedJobResponse>>> GetSavedJobs(
         [FromQuery] string? search, int page = 1, int pageSize = 10)
     {
