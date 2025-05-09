@@ -16,6 +16,7 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
     [HttpGet]
     public async Task<ActionResult> GetCompanyProfiles([FromQuery] string? search,
         [FromQuery] bool topCompanyOnly,
+        [FromQuery] bool eliteOnly,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -30,6 +31,11 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
         if (topCompanyOnly)
         {
             query = query.Where(c => c.AvgRatings >= 4);
+        }
+
+        if (eliteOnly)
+        {
+            query = query.Where(c => c.IsElite);
         }
 
         if (!string.IsNullOrWhiteSpace(search))
