@@ -611,7 +611,10 @@ public class ApplicationController(
 
         application.Process = ApplicationProcess.Rejected;
         await context.SaveChangesAsync();
-
+        await notificationService.SendNotificationAsync(
+            NotificationType.ApplicationRejected,
+            application.CandidateId,
+            application.Id);
         return Ok(new { Message = "Application rejected." });
     }
 

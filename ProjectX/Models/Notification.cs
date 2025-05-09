@@ -33,4 +33,5 @@ public enum NotificationType
     SuccessPayment, // payment id
     ApplicationSeen, // application id
     BusinessPackageExpired, // purchased packed id
+    ApplicationRejected // application id
 }
