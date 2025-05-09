@@ -58,7 +58,7 @@ public class EmailService(
     {
         var user = await userManager.FindByEmailAsync(email);
         if (user == null)
-            throw new Exception("Không tìm thấy người dùng.");
+            throw new Exception("User not found");
 
         var newPassword = PasswordHelper.GenerateCompliantPassword();
         var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
@@ -70,7 +70,7 @@ public class EmailService(
             throw new Exception($"Đặt lại mật khẩu thất bại: {errors}");
         }
 
-        var fullName = user.FullName ?? "Người dùng";
+        var fullName = user.FullName;
         var subject = "Mật khẩu mới của bạn từ ProjectX";
 
         var plainText = $@"
@@ -144,6 +144,70 @@ ProjectX Team
 ";
 
         await SendEmailAsync(email, subject, plainText, htmlContent);
+    }
+
+    public async Task SendAppointmentReminderViaEmailAsync(string email, Appointment appointment)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new ArgumentException("Email cannot be empty", nameof(email));
+        }
+
+        ArgumentNullException.ThrowIfNull(appointment);
+
+        var user = await context.Users
+            .Include(u => u.CompanyDetail)
+            .SingleOrDefaultAsync(u => u.Email == email);
+
+        if (user == null)
+        {
+            throw new Exception($"User with email {email} not found.");
+        }
+
+        // Format the start time in local timezone
+        var localStartTime = TimeZoneInfo.ConvertTimeFromUtc(
+            appointment.StartTime,
+            TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time")); // UTC+7
+
+        var formattedDate = localStartTime.ToString("dddd, dd/MM/yyyy");
+        var formattedTime = localStartTime.ToString("HH:mm");
+
+        var subject = $"Nhắc nhở cuộc hẹn phỏng vấn vào {formattedTime} ngày {formattedDate}";
+
+        var plainText = @$"
+Xin chào {user.FullName},
+
+Bạn có một cuộc hẹn phỏng vấn vào lúc {formattedTime} ngày {formattedDate}.
+Vui lòng truy cập ProjectX để xem thông tin chi tiết.
+
+Trân trọng,
+ProjectX Team
+";
+
+        string htmlContent = @$"
+<html>
+<body>
+    <p>Kính gửi <strong>{user.FullName}</strong>,</p>
+    
+    <p>Bạn có một cuộc hẹn phỏng vấn vào lúc <strong>{formattedTime}</strong> ngày <strong>{formattedDate}</strong>.</p>
+    
+    <p>Vui lòng truy cập <a href='https://projectx.com/appointments/{appointment.Id}'>ProjectX</a> để xem thông tin chi tiết.</p>
+    
+    <p>Trân trọng,<br/>
+    ProjectX Team
+</p>
+</body>
+</html>
+";
+
+        try
+        {
+            await SendEmailAsync(email, subject, plainText, htmlContent);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to send appointment reminder email to {email}", ex);
+        }
     }
 
 
