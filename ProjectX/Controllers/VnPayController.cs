@@ -134,8 +134,9 @@ public class VnPayController : ControllerBase
                     case OrderType.Business:
                         var purchased = await _dbContext.PurchasedPackages
                             .Include(pp => pp.User)
+                            .ThenInclude(u => u.CompanyDetail)
                             .Include(pp => pp.BusinessPackage)
-                            .SingleOrDefaultAsync(pp => pp.Id == order.TargetId);
+                            .SingleOrDefaultAsync(pp => pp.Id == order.TargetId && pp.User.CompanyDetail != null);
                         if (purchased == null)
                         {
                             return NotFound(new { Message = "Purchased package not found." });
@@ -149,6 +150,7 @@ public class VnPayController : ControllerBase
                         purchased.User.Level = purchased.BusinessPackage.Level == BusinessLevel.Elite
                             ? AccountLevel.Elite
                             : AccountLevel.Premium;
+                        purchased.User.CompanyDetail!.IsElite = purchased.BusinessPackage.Level == BusinessLevel.Elite;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
