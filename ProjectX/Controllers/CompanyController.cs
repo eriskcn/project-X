@@ -19,10 +19,9 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        if (page <= 0 || pageSize <= 0)
+        if (page <= 0 || pageSize < 0)
             return BadRequest("Page and pageSize must be greater than 0.");
 
-        pageSize = Math.Min(pageSize, 100);
         var query = context.CompanyDetails
             .AsNoTracking()
             .Include(c => c.Majors)
@@ -38,10 +37,14 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
 
         var totalItems = await query.CountAsync();
 
+        if (pageSize > 0)
+        {
+            pageSize = Math.Min(pageSize, 100);
+            query = query.Skip((page - 1) * pageSize).Take(pageSize);
+        }
+
         var items = await query
             .OrderBy(c => c.CompanyName)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
             .Select(c => new CompanyProfileResponse
             {
                 Id = c.Id,
@@ -78,11 +81,12 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
             Items = items,
             TotalItems = totalItems,
             First = page == 1,
-            Last = page * pageSize >= totalItems,
+            Last = pageSize == 0 || page * pageSize >= totalItems,
             PageNumber = page,
             PageSize = pageSize
         });
     }
+
 
     [HttpGet("{companyId:guid}")]
     public async Task<ActionResult> GetCompanyProfile(Guid companyId)
