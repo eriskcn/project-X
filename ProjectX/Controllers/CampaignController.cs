@@ -189,8 +189,12 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
 
 
     [HttpGet("{campaignId:guid}/jobs")]
-    public async Task<ActionResult<IEnumerable<JobResponse>>> GetCampaignJobs([FromRoute] Guid campaignId,
+    public async Task<ActionResult<IEnumerable<JobResponse>>> GetCampaignJobs(
+        [FromRoute] Guid campaignId,
         [FromQuery] JobStatus? status,
+        [FromQuery] bool isPro,
+        [FromQuery] bool isPublic,
+        [FromQuery] bool isExpired,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] string? search = null,
@@ -214,17 +218,33 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         }
 
         var query = context.Jobs
+            .Include(j => j.Campaign)
             .Include(j => j.Major)
             .Include(j => j.Location)
             .Include(j => j.Skills)
             .Include(j => j.ContractTypes)
             .Include(j => j.JobLevels)
             .Include(j => j.JobTypes)
+            .Include(j => j.JobServices)
             .Where(j => j.CampaignId == campaignId);
 
-        if (!string.IsNullOrEmpty(search))
+        if (isPro)
         {
-            query = query.Where(j => j.Title.Contains(search) || j.Description.Contains(search));
+            query = query.Where(j => j.JobServices.Count > 0);
+        }
+
+        if (isPublic)
+        {
+            query = query.Where(j =>
+                j.Status == JobStatus.Active
+                && j.StartDate <= DateTime.UtcNow
+                && j.EndDate >= DateTime.UtcNow
+                && j.Campaign.Status == CampaignStatus.Opened);
+        }
+
+        if (isExpired)
+        {
+            query = query.Where(j => j.EndDate < DateTime.UtcNow);
         }
 
         if (status.HasValue)
@@ -246,6 +266,12 @@ public class CampaignController(ApplicationDbContext context) : ControllerBase
         {
             query = query.Where(j => contractTypes.Any(t => j.ContractTypes.Any(ct => ct.Id == t)));
         }
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(j => j.Title.Contains(search) || j.Description.Contains(search));
+        }
+
 
         var totalItems = await query.CountAsync();
         var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
