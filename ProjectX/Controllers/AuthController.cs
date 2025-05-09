@@ -214,7 +214,6 @@ public class AuthController(
     }
 
     [HttpPost("refresh-token")]
-    [Authorize]
     public async Task<IActionResult> RefreshToken()
     {
         if (!Request.Cookies.TryGetValue("RefreshToken", out var refreshToken))
