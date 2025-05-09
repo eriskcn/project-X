@@ -14,7 +14,9 @@ namespace ProjectX.Controllers;
 public class CompanyController(ApplicationDbContext context, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult> GetCompanyProfiles([FromQuery] string? search, [FromQuery] int page = 1,
+    public async Task<ActionResult> GetCompanyProfiles([FromQuery] string? search,
+        [FromQuery] bool topCompanyOnly,
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
         if (page <= 0 || pageSize <= 0)
@@ -25,6 +27,11 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
             .AsNoTracking()
             .Include(c => c.Majors)
             .Where(c => c.Status == VerifyStatus.Verified);
+
+        if (topCompanyOnly)
+        {
+            query = query.Where(c => c.AvgRatings >= 4);
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
             query = query.Where(c => EF.Functions.Like(c.CompanyName, $"%{search}%"));
