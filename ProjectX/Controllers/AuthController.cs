@@ -384,6 +384,7 @@ public class AuthController(
     }
 
     [HttpPatch("forgot-password")]
+    [Authorize(Policy = "EmailConfirmed")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
     {
         await emailService.SendNewPasswordViaEmailAsync(request.Email);
@@ -391,6 +392,7 @@ public class AuthController(
     }
 
     [HttpPatch("change-password")]
+    [Authorize(Policy = "EmailConfirmed")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
