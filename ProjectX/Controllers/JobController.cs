@@ -262,7 +262,7 @@ public class JobController(
                 CompanyRecruiter = recruiter.CompanyDetail != null
                     ? new CompanyRecruiterResponse
                     {
-                        Id = recruiter.Id,
+                        Id = recruiter.CompanyDetail.Id,
                         CompanyName = recruiter.CompanyDetail.CompanyName,
                         ShortName = recruiter.CompanyDetail.ShortName,
                         TaxCode = recruiter.CompanyDetail.TaxCode,
@@ -440,7 +440,7 @@ public class JobController(
             CompanyRecruiter = recruiter.CompanyDetail != null
                 ? new CompanyRecruiterResponse
                 {
-                    Id = recruiter.Id,
+                    Id = recruiter.CompanyDetail.Id,
                     CompanyName = recruiter.CompanyDetail.CompanyName,
                     ShortName = recruiter.CompanyDetail.ShortName,
                     TaxCode = recruiter.CompanyDetail.TaxCode,
