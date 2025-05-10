@@ -61,6 +61,7 @@ public class OrderController(ApplicationDbContext context) : ControllerBase
         var orderedQuery = baseQuery.OrderByDescending(o => o.Created);
 
         var totalItems = await orderedQuery.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
 
         if (pageSize > 0)
         {
@@ -89,6 +90,7 @@ public class OrderController(ApplicationDbContext context) : ControllerBase
         {
             Items = responses,
             TotalItems = totalItems,
+            TotalPage = totalPages,
             First = page == 1,
             Last = pageSize == 0 || page * pageSize >= totalItems,
             PageNumber = page,
