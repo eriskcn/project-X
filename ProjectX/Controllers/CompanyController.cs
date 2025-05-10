@@ -146,6 +146,132 @@ public class CompanyController(ApplicationDbContext context, IWebHostEnvironment
         return Ok(response);
     }
 
+    [HttpGet("{companyId:guid}/jobs")]
+    [AllowAnonymous]
+    public async Task<ActionResult<IEnumerable<JobResponse>>> GetCompanyJobs([FromRoute] Guid companyId,
+        [FromQuery] string? search,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10
+    )
+    {
+        if (page <= 0 || pageSize <= 0)
+        {
+            return BadRequest(new { Message = "Invalid page or pageSize." });
+        }
+
+        var query = context.Jobs
+            .Include(j => j.Campaign)
+            .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Majors)
+            .Include(j => j.Campaign)
+            .ThenInclude(c => c.Recruiter)
+            .ThenInclude(r => r.CompanyDetail)
+            .ThenInclude(cd => cd!.Location)
+            .Include(j => j.Major)
+            .Include(j => j.Location)
+            .Include(j => j.Skills)
+            .Include(j => j.ContractTypes)
+            .Include(j => j.JobLevels)
+            .Include(j => j.JobTypes)
+            .Where(j => j.Campaign.Recruiter.CompanyDetail!.Id == companyId
+                        && j.Campaign.Recruiter.CompanyDetail != null
+                        && j.Status == JobStatus.Active
+                        && j.Campaign.Status == CampaignStatus.Opened
+                        && j.StartDate <= DateTime.UtcNow
+                        && j.EndDate >= DateTime.UtcNow)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(search))
+        {
+            var searchLower = search.ToLower();
+            query = query.Where(j => j.Title.ToLower().Contains(searchLower)
+                                     || j.Description.ToLower().Contains(searchLower));
+        }
+
+        query = query.OrderByDescending(j => j.Created);
+        var totalItems = await query.CountAsync();
+        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+        var jobs = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(j => new JobResponse
+            {
+                Id = j.Id,
+                Title = j.Title,
+                Description = j.Description,
+                OfficeAddress = j.OfficeAddress,
+                Quantity = j.Quantity,
+                Status = j.Status,
+                EducationLevelRequire = j.EducationLevelRequire,
+                YearOfExperience = j.YearOfExperience,
+                MinSalary = j.MinSalary,
+                MaxSalary = j.MaxSalary,
+                IsHighlight = j.IsHighlight,
+                IsHot = j.IsHot,
+                IsUrgent = j.IsUrgent,
+                StartDate = j.StartDate,
+                EndDate = j.EndDate,
+                Major = new MajorResponse
+                {
+                    Id = j.Major.Id,
+                    Name = j.Major.Name
+                },
+                Location = new LocationResponse
+                {
+                    Id = j.Location.Id,
+                    Name = j.Location.Name,
+                    Region = j.Location.Region
+                },
+                JobDescription = context.AttachedFiles
+                    .Where(f => f.Type == FileType.JobDescription && f.TargetId == j.Id)
+                    .Select(f => new FileResponse
+                    {
+                        Id = f.Id,
+                        Name = f.Name,
+                        Path = f.Path,
+                        TargetId = f.TargetId,
+                        Uploaded = f.Uploaded
+                    })
+                    .SingleOrDefault(),
+                Skills = j.Skills.Select(s => new SkillResponse
+                {
+                    Id = s.Id,
+                    Name = s.Name
+                }).ToList(),
+                ContractTypes = j.ContractTypes.Select(ct => new ContractTypeResponse
+                {
+                    Id = ct.Id,
+                    Name = ct.Name
+                }).ToList(),
+                JobLevels = j.JobLevels.Select(jl => new JobLevelResponse
+                {
+                    Id = jl.Id,
+                    Name = jl.Name
+                }).ToList(),
+                JobTypes = j.JobTypes.Select(jt => new JobTypeResponse
+                {
+                    Id = jt.Id,
+                    Name = jt.Name
+                }).ToList(),
+                Created = j.Created,
+                Modified = j.Modified
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            Items = jobs,
+            TotalItems = totalItems,
+            TotalPages = totalPages,
+            First = page == 1,
+            Last = page == totalPages,
+            PageNumber = page,
+            PageSize = pageSize
+        });
+    }
+
     [HttpGet("self")]
     [Authorize(Roles = "Business", Policy = "RecruiterVerifiedOnly")]
     public async Task<ActionResult<CompanyProfileResponse>> GetOwnCompanyProfile()
