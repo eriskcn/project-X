@@ -5,6 +5,7 @@ namespace ProjectX.DTOs;
 public class ApplicationResponse
 {
     public Guid Id { get; set; }
+    public Guid UserId { get; set; }
     public required string FullName { get; set; }
     public required string Email { get; set; }
     public required string PhoneNumber { get; set; }

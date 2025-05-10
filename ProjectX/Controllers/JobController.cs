@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
@@ -24,6 +25,7 @@ public class JobController(
 {
     [HttpGet]
     [AllowAnonymous]
+    [EnableRateLimiting("fixed")]
     public async Task<ActionResult<IEnumerable<JobResponseForCandidate>>> GetJobs(
         [FromQuery] string? search,
         [FromQuery] bool? companyName,
@@ -1459,6 +1461,7 @@ public class JobController(
         var items = applications.Select(a => new ApplicationResponse
         {
             Id = a.Id,
+            UserId = a.CandidateId,
             JobId = a.JobId,
             FullName = a.FullName,
             Email = a.Email,
@@ -1513,6 +1516,7 @@ public class JobController(
         var response = new ApplicationResponse
         {
             Id = application.Id,
+            UserId = application.CandidateId,
             JobId = application.JobId,
             FullName = application.FullName,
             Email = application.Email,
