@@ -341,15 +341,17 @@ public class StatsService(ApplicationDbContext context) : IStatsService
 
         var currentMonthJobCount = await context.Jobs
             .Include(j => j.Campaign)
-            .CountAsync(j => (j.Status == JobStatus.Active || j.Status == JobStatus.Closed)
+            .CountAsync(j => j.Campaign.RecruiterId == user.Id
+                             && (j.Status == JobStatus.Active || j.Status == JobStatus.Closed)
                              && j.Created.Month == currentMonth
                              && j.Created.Year == currentYear);
 
         var previousMonthJobCount = await context.Jobs
             .Include(j => j.Campaign)
-            .CountAsync(j => (j.Status == JobStatus.Active || j.Status == JobStatus.Closed)
-                             && j.Created.Month == previousMonth
-                             && j.Created.Year == previousYear);
+            .CountAsync(j =>j.Campaign.RecruiterId == user.Id
+                            && (j.Status == JobStatus.Active || j.Status == JobStatus.Closed)
+                            && j.Created.Month == previousMonth
+                            && j.Created.Year == previousYear);
 
         var jobCountRateCompared = previousMonthJobCount != 0
             ? (double)(currentMonthJobCount - previousMonthJobCount) / previousMonthJobCount * 100
