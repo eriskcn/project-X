@@ -8,6 +8,7 @@ public class CompanyRecruiterResponse
     public string CompanyName { get; set; } = string.Empty;
     public string ShortName { get; set; } = string.Empty;
     public string TaxCode { get; set; } = string.Empty;
+    public bool IsElite { get; set; }
     public string HeadQuarterAddress { get; set; } = string.Empty;
     public string Logo { get; set; } = string.Empty;
     public string ContactEmail { get; set; } = string.Empty;

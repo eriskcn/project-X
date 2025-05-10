@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -269,6 +268,7 @@ public class JobController(
                         CompanyName = recruiter.CompanyDetail.CompanyName,
                         ShortName = recruiter.CompanyDetail.ShortName,
                         TaxCode = recruiter.CompanyDetail.TaxCode,
+                        IsElite = recruiter.CompanyDetail.IsElite,
                         HeadQuarterAddress = recruiter.CompanyDetail.HeadQuarterAddress,
                         Logo = recruiter.CompanyDetail.Logo,
                         ContactEmail = recruiter.CompanyDetail.ContactEmail,
@@ -447,6 +447,7 @@ public class JobController(
                     CompanyName = recruiter.CompanyDetail.CompanyName,
                     ShortName = recruiter.CompanyDetail.ShortName,
                     TaxCode = recruiter.CompanyDetail.TaxCode,
+                    IsElite = recruiter.CompanyDetail.IsElite,
                     HeadQuarterAddress = recruiter.CompanyDetail.HeadQuarterAddress,
                     Logo = recruiter.CompanyDetail.Logo,
                     ContactEmail = recruiter.CompanyDetail.ContactEmail,
