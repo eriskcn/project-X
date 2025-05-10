@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
@@ -43,9 +42,15 @@ public class JobController(
         [FromQuery] int pageSize = 10,
         [FromQuery] int page = 1)
     {
-        if (page <= 0 || pageSize <= 0)
+        // Validate pageSize and page parameters
+        if (pageSize < 0)
         {
-            return BadRequest(new { Message = "Page number and page size must be greater than zero." });
+            return BadRequest(new { Message = "Page size must be greater than or equal to zero." });
+        }
+
+        if (page <= 0 && pageSize > 0)
+        {
+            return BadRequest(new { Message = "Page number must be greater than zero when page size is positive." });
         }
 
         if (minSalary > maxSalary)
@@ -176,12 +181,24 @@ public class JobController(
             .ThenByDescending(j => j.Created);
 
         var totalItems = await query.CountAsync();
-        var totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+        int totalPages;
+        List<Job> jobs;
 
-        var jobs = await query
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .ToListAsync();
+        if (pageSize == 0)
+        {
+            // No pagination, get all items
+            jobs = await query.ToListAsync();
+            totalPages = 1;
+            page = 1; // Ensure page is 1 in response
+        }
+        else
+        {
+            totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+            jobs = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
 
         var freelanceRecruiterRoleId = await context.Roles
             .Where(r => r.Name == "FreelanceRecruiter")
