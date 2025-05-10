@@ -24,7 +24,7 @@ public class JobController(
 {
     [HttpGet]
     [AllowAnonymous]
-    [EnableRateLimiting("fixed")]
+    // [EnableRateLimiting("fixed")]
     public async Task<ActionResult<IEnumerable<JobResponseForCandidate>>> GetJobs(
         [FromQuery] string? search,
         [FromQuery] bool? companyName,
