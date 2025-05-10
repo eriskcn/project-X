@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
@@ -1261,10 +1262,25 @@ public class JobController(
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
     public async Task<IActionResult> CloseJob(Guid id)
     {
-        var job = await context.Jobs.SingleOrDefaultAsync(j => j.Id == id && j.Status == JobStatus.Active);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+        {
+            return Unauthorized(new { Message = "Invalid user Id." });
+        }
+
+        var user = await context.Users.FindAsync(userGuid);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        var job = await context.Jobs
+            .Include(j => j.Campaign)
+            .SingleOrDefaultAsync(j =>
+                j.Id == id && j.Status == JobStatus.Active && j.Campaign.RecruiterId == userGuid);
         if (job == null)
         {
-            return NotFound(new { Message = "Job not found." });
+            return NotFound(new { Message = "Job not found or you are not authorized to close this job." });
         }
 
         job.Status = JobStatus.Closed;
@@ -1273,14 +1289,60 @@ public class JobController(
         return Ok(new { Message = "Close job successfully." });
     }
 
-    [HttpPatch("{id:guid}/publish")]
+    [HttpPatch("{id:guid}/open")]
     [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
-    public async Task<IActionResult> Publish(Guid id)
+    public async Task<IActionResult> OpenJob(Guid id)
     {
-        var job = await context.Jobs.SingleOrDefaultAsync(j => j.Id == id && j.Status == JobStatus.Draft);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+        {
+            return Unauthorized(new { Message = "Invalid user Id." });
+        }
+
+        var user = await context.Users.FindAsync(userGuid);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        var job = await context.Jobs
+            .Include(j => j.Campaign)
+            .SingleOrDefaultAsync(j =>
+                j.Id == id && j.Status == JobStatus.Closed && j.Campaign.RecruiterId == userGuid);
         if (job == null)
         {
-            return NotFound(new { Message = "Job not found." });
+            return NotFound(new { Message = "Job not found or you are not authorized to open this job." });
+        }
+
+        job.Status = JobStatus.Active;
+        context.Jobs.Update(job);
+        await context.SaveChangesAsync();
+        return Ok(new { Message = "Open job successfully." });
+    }
+
+    [HttpPatch("{id:guid}/publish")]
+    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
+    public async Task<IActionResult> PublishJob(Guid id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var userGuid))
+        {
+            return Unauthorized(new { Message = "Invalid user Id." });
+        }
+
+        var user = await context.Users.FindAsync(userGuid);
+        if (user == null)
+        {
+            return NotFound(new { Message = "User not found." });
+        }
+
+        var job = await context.Jobs
+            .Include(j => j.Campaign)
+            .SingleOrDefaultAsync(j =>
+                j.Id == id && j.Status == JobStatus.Draft && j.Campaign.RecruiterId == userGuid);
+        if (job == null)
+        {
+            return NotFound(new { Message = "Job not found or you are not authorized to publish this job." });
         }
 
         job.Status = JobStatus.Pending;
