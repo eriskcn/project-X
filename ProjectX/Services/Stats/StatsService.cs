@@ -79,11 +79,9 @@ public class StatsService(ApplicationDbContext context) : IStatsService
             : 0;
 
         var currentJobCount = await context.Jobs
-            .Where(j => j.Created.Year == currentYear && j.Created.Month == currentMonth)
-            .CountAsync();
+            .CountAsync(j => j.Created.Year == currentYear && j.Created.Month == currentMonth);
         var previousJobCount = await context.Jobs
-            .Where(j => j.Created.Year == previousYear && j.Created.Month == previousMonth)
-            .CountAsync();
+            .CountAsync(j => j.Created.Year == previousYear && j.Created.Month == previousMonth);
         var jobRateCompared = previousJobCount != 0
             ? (double)(currentJobCount - previousJobCount) / previousJobCount * 100
             : 0;
@@ -271,27 +269,27 @@ public class StatsService(ApplicationDbContext context) : IStatsService
                 Revenue = new Revenue
                 {
                     Total = currentMonthRevenue,
-                    RateCompared = revenueRateCompared
+                    RateCompared = Math.Round(revenueRateCompared, 2)
                 },
                 JobCount = new JobCount
                 {
                     Count = currentJobCount,
-                    RateCompared = jobRateCompared
+                    RateCompared = Math.Round(jobRateCompared, 2)
                 },
                 CompanyCount = new CompanyCount
                 {
                     Count = currentCompanyCount,
-                    RateCompared = companyRateCompared
+                    RateCompared = Math.Round(companyRateCompared, 2)
                 },
                 FreelancerCount = new FreelancerCount
                 {
                     Count = currentFreelancerCount,
-                    RateCompared = freelancerRateCompared
+                    RateCompared = Math.Round(freelancerRateCompared, 2)
                 },
                 CandidateCount = new CandidateCount
                 {
                     Count = currentCandidateCount,
-                    RateCompared = candidateRateCompared
+                    RateCompared = Math.Round(candidateRateCompared, 2)
                 }
             },
             DailyJobCounts = dailyJobCountList,
@@ -334,7 +332,7 @@ public class StatsService(ApplicationDbContext context) : IStatsService
         var applicationCount = new ApplicationCount
         {
             Count = currentMonthApplicationCount,
-            RateCompared = applicationRateCompared
+            RateCompared = Math.Round(applicationRateCompared, 2)
         };
 
         var currentMonthJobCount = await context.Jobs
@@ -356,7 +354,7 @@ public class StatsService(ApplicationDbContext context) : IStatsService
         var jobCount = new JobCount
         {
             Count = currentMonthJobCount,
-            RateCompared = jobCountRateCompared
+            RateCompared = Math.Round(jobCountRateCompared, 2)
         };
 
         var currentMonthSeenApplicationCount = await context.Applications
@@ -383,7 +381,7 @@ public class StatsService(ApplicationDbContext context) : IStatsService
         var seenApplicationCount = new SeenApplicationCount
         {
             Count = currentMonthSeenApplicationCount,
-            RateCompared = seenApplicationRateCompared
+            RateCompared = Math.Round(seenApplicationRateCompared, 2)
         };
 
         var currentHiredCount = await context.Applications
@@ -418,8 +416,8 @@ public class StatsService(ApplicationDbContext context) : IStatsService
 
         var hiredRate = new HiredRate
         {
-            Rate = currenHiredRate,
-            RateCompared = hiredRateRateCompared
+            Rate = Math.Round(currenHiredRate, 2),
+            RateCompared = Math.Round(hiredRateRateCompared, 2)
         };
 
         var recruitmentMonthStats = new RecruitmentMonthStats
