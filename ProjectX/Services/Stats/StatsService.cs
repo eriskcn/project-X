@@ -228,15 +228,19 @@ public class StatsService(ApplicationDbContext context) : IStatsService
             .Select(g => new
             {
                 Type = g.Key,
-                Revenue = g.Sum(o => o.Amount)
+                Revenue = g.Sum(o => o.Amount),
+                Count = g.Count()
             })
             .ToListAsync();
 
         var revenueByTypeResult = new RevenueByType
         {
             TopUpRevenue = revenueByType.FirstOrDefault(r => r.Type == OrderType.TopUp)?.Revenue ?? 0,
+            TopUpCount = revenueByType.FirstOrDefault(r => r.Type == OrderType.TopUp)?.Count ?? 0,
             JobServiceRevenue = revenueByType.FirstOrDefault(r => r.Type == OrderType.Job)?.Revenue ?? 0,
-            BusinessPackageRevenue = revenueByType.FirstOrDefault(r => r.Type == OrderType.Business)?.Revenue ?? 0
+            JobServiceCount = revenueByType.FirstOrDefault(r => r.Type == OrderType.Job)?.Count ?? 0,
+            BusinessPackageRevenue = revenueByType.FirstOrDefault(r => r.Type == OrderType.Business)?.Revenue ?? 0,
+            BusinessPackageCount = revenueByType.FirstOrDefault(r => r.Type == OrderType.Business)?.Count ?? 0
         };
 
         var fiveLatestOrders = await context.Orders

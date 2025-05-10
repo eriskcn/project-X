@@ -66,8 +66,11 @@ public class DailyRevenue
 public class RevenueByType
 {
     public double TopUpRevenue { get; set; }
+    public int TopUpCount { get; set; }
     public double JobServiceRevenue { get; set; }
+    public int JobServiceCount { get; set; }
     public double BusinessPackageRevenue { get; set; }
+    public int BusinessPackageCount { get; set; }
 }
 
 public class OrderShortResponse
