@@ -20,7 +20,7 @@ public class StatsController(ApplicationDbContext context, IStatsService statsSe
     }
 
     [HttpGet("recruitment")]
-    [Authorize(Roles = "Business, FreelanceRecruiter", Policy = "RecruiterVerifiedOnly")]
+    [Authorize(Roles = "Business, FreelanceRecruiter")]
     public async Task<ActionResult> GetRecruitmentStats()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
