@@ -5,6 +5,7 @@ using ProjectX.Data;
 using ProjectX.DTOs;
 using ProjectX.Models;
 using Microsoft.AspNetCore.Identity;
+using ProjectX.Services.Notifications;
 
 namespace ProjectX.Controllers;
 
@@ -13,7 +14,8 @@ namespace ProjectX.Controllers;
 [Route("capablanca/api/v0/admin")]
 public class AdminController(
     ApplicationDbContext context,
-    RoleManager<Role> roleManager)
+    RoleManager<Role> roleManager,
+    INotificationService notificationService)
     : ControllerBase
 {
     [HttpGet("business-verifications")]
@@ -254,7 +256,7 @@ public class AdminController(
         companyDetail.Status = VerifyStatus.Verified;
         companyDetail.RejectReason = null;
         await context.SaveChangesAsync();
-
+        await notificationService.SendNotificationAsync(NotificationType.AcceptRecruiter, user.Id, user.Id);
         return Ok(new { Message = "Business verified." });
     }
 
@@ -276,32 +278,8 @@ public class AdminController(
         user.CompanyDetail!.Status = VerifyStatus.Rejected;
         user.CompanyDetail.RejectReason = request.RejectReason;
         await context.SaveChangesAsync();
-
-        return Ok(new BusinessVerifyResponse
-        {
-            CompanyId = user.Id,
-            FullName = user.FullName,
-            Email = user.Email!,
-            PhoneNumber = user.PhoneNumber ?? string.Empty,
-            BusinessVerified = user.RecruiterVerified,
-            Company = new CompanyDetailResponse
-            {
-                Id = user.CompanyDetail.Id,
-                CompanyName = user.CompanyDetail.CompanyName,
-                ShortName = user.CompanyDetail.ShortName,
-                TaxCode = user.CompanyDetail.TaxCode,
-                HeadQuarterAddress = user.CompanyDetail.HeadQuarterAddress,
-                Logo = user.CompanyDetail.Logo,
-                ContactEmail = user.CompanyDetail.ContactEmail,
-                ContactPhone = user.CompanyDetail.ContactPhone,
-                Website = user.CompanyDetail.Website ?? string.Empty,
-                FoundedYear = user.CompanyDetail.FoundedYear,
-                Size = user.CompanyDetail.Size,
-                Introduction = user.CompanyDetail.Introduction,
-                Status = user.CompanyDetail.Status,
-                RejectReason = user.CompanyDetail.RejectReason
-            }
-        });
+        await notificationService.SendNotificationAsync(NotificationType.RejectRecruiter, user.Id, user.Id);
+        return Ok(new { Message = "Reject successfully." });
     }
 
     [HttpGet("freelance-recruiter-verifications")]
@@ -484,7 +462,7 @@ public class AdminController(
         freelanceRecruiterDetail.Status = VerifyStatus.Verified;
         freelanceRecruiterDetail.RejectReason = null;
         await context.SaveChangesAsync();
-
+        await notificationService.SendNotificationAsync(NotificationType.AcceptRecruiter, user.Id, user.Id);
         return Ok(new { Message = "Freelance recruiter verified." });
     }
 
@@ -506,46 +484,8 @@ public class AdminController(
         user.FreelanceRecruiterDetail!.Status = VerifyStatus.Rejected;
         user.FreelanceRecruiterDetail!.RejectReason = request.RejectReason;
         await context.SaveChangesAsync();
-
-        return Ok(new FreelanceRecruiterVerifyResponse
-        {
-            UserId = user.Id,
-            FullName = user.FullName,
-            Email = user.Email!,
-            PhoneNumber = user.PhoneNumber ?? string.Empty,
-            ProfilePicture = user.ProfilePicture,
-            GitHubProfile = user.GitHubProfile,
-            LinkedInProfile = user.LinkedInProfile,
-            FreelanceRecruiter = new FreelanceRecruiterDetailResponse
-            {
-                Id = user.FreelanceRecruiterDetail.Id,
-                Status = user.FreelanceRecruiterDetail.Status,
-                RejectReason = user.FreelanceRecruiterDetail.RejectReason,
-                FrontIdCard = context.AttachedFiles
-                    .Where(f => f.Type == FileType.FrontIdCard && f.TargetId == user.FreelanceRecruiterDetail.Id)
-                    .Select(f => new FileResponse
-                    {
-                        Id = f.Id,
-                        TargetId = f.TargetId,
-                        Name = f.Name,
-                        Path = f.Path,
-                        Uploaded = f.Uploaded
-                    })
-                    .SingleOrDefault(),
-                BackIdCard = context.AttachedFiles
-                    .Where(f => f.Type == FileType.BackIdCard && f.TargetId == user.FreelanceRecruiterDetail.Id)
-                    .Select(f => new FileResponse
-                    {
-                        Id = f.Id,
-                        TargetId = f.TargetId,
-                        Name = f.Name,
-                        Path = f.Path,
-                        Uploaded = f.Uploaded
-                    })
-                    .SingleOrDefault()
-            },
-            FreelanceRecruiterVerified = user.RecruiterVerified
-        });
+        await notificationService.SendNotificationAsync(NotificationType.RejectRecruiter, user.Id, user.Id);
+        return Ok(new { Message = "Reject successfully." });
     }
 
     [HttpGet("jobs")]
@@ -748,7 +688,9 @@ public class AdminController(
     [HttpPatch("jobs/{id:guid}/accept")]
     public async Task<IActionResult> AcceptJob([FromRoute] Guid id)
     {
-        var job = await context.Jobs.FindAsync(id);
+        var job = await context.Jobs
+            .Include(j => j.Campaign)
+            .SingleOrDefaultAsync(j => j.Id == id);
         if (job == null)
         {
             return NotFound(new { Message = "Job not found." });
@@ -763,6 +705,8 @@ public class AdminController(
         job.Status = JobStatus.Active;
         context.Jobs.Update(job);
         await context.SaveChangesAsync();
+        await notificationService.SendNotificationAsync(NotificationType.AcceptJob, job.Campaign.RecruiterId,
+            job.CampaignId);
 
         return Ok(new { Message = $"Accept job {id} successfully." });
     }
@@ -770,7 +714,9 @@ public class AdminController(
     [HttpPatch("jobs/{id:guid}/reject")]
     public async Task<IActionResult> RejectJob([FromRoute] Guid id, [FromBody] RejectRequest request)
     {
-        var job = await context.Jobs.FindAsync(id);
+        var job = await context.Jobs
+            .Include(j => j.Campaign)
+            .SingleOrDefaultAsync(j => j.Id == id);
         if (job == null)
         {
             return NotFound(new { Message = "Job not found." });
@@ -785,7 +731,8 @@ public class AdminController(
         job.RejectReason = request.RejectReason;
         context.Jobs.Update(job);
         await context.SaveChangesAsync();
-
+        await notificationService.SendNotificationAsync(NotificationType.RejectJob, job.Campaign.RecruiterId,
+            job.CampaignId);
         return Ok(new { Message = $"Reject job {id} successfully." });
     }
 }
