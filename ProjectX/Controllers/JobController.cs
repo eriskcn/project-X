@@ -1055,6 +1055,7 @@ public class JobController(
                 var jobDescription = new AttachedFile
                 {
                     Id = Guid.NewGuid(),
+                    TargetId = job.Id,
                     Name = displayName,
                     Path = PathHelper.GetRelativePathFromAbsolute(filePath, env.WebRootPath),
                     Type = FileType.JobDescription,
