@@ -62,4 +62,5 @@ public class ShortApplication
     public required string JobTitle { get; set; }
     public Guid CampaignId { get; set; }
     public ApplicationProcess Process { get; set; }
+    public DateTime? Submitted { get; set; }
 }

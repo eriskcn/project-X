@@ -534,7 +534,8 @@ public class StatsService(ApplicationDbContext context) : IStatsService
                 },
                 JobTitle = app.Job.Title,
                 CampaignId = app.Job.Campaign.Id,
-                Process = app.Process
+                Process = app.Process,
+                Submitted = app.Submitted
             })
             .ToListAsync();
 
