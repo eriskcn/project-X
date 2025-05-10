@@ -36,6 +36,8 @@
       <Content Remove="Middlewares\**" />
       <Content Remove="Validation\**" />
       <Content Remove="Services\ngrok\**" />
+      <Content Remove="DTOs\Turnstiles\**" />
+      <Content Remove="View\**" />
     </ItemGroup>
 
     <ItemGroup>
@@ -45,18 +47,30 @@
       <Compile Remove="Validation\**" />
       <Compile Remove="Services\ngrok\**" />
       <Compile Remove="Services\OrderExpirationService.cs" />
+      <Compile Remove="Controllers\TurnstileController.cs" />
+      <Compile Remove="DTOs\Turnstiles\**" />
+      <Compile Remove="View\**" />
     </ItemGroup>
 
     <ItemGroup>
       <EmbeddedResource Remove="Middlewares\**" />
       <EmbeddedResource Remove="Validation\**" />
       <EmbeddedResource Remove="Services\ngrok\**" />
+      <EmbeddedResource Remove="DTOs\Turnstiles\**" />
+      <EmbeddedResource Remove="View\**" />
     </ItemGroup>
 
     <ItemGroup>
       <None Remove="Middlewares\**" />
       <None Remove="Validation\**" />
       <None Remove="Services\ngrok\**" />
+      <None Remove="DTOs\Turnstiles\**" />
+      <None Remove="View\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="View\PaymentError.cshtml" />
+      <_ContentIncludedByDefault Remove="View\PaymentSuccess.cshtml" />
     </ItemGroup>
 
 </Project>

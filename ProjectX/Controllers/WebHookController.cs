@@ -88,6 +88,7 @@ public class WebHookController(
     }
 
     [HttpPost("webhook")]
+    [ApiExplorerSettings(IgnoreApi = true)] 
     public async Task<IActionResult> HandleSePayWebhook([FromBody] SePayWebhookRequest request)
     {
         try

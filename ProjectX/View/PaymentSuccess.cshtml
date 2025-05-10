@@ -1,0 +1,71 @@
+@model ProjectX.View.PaymentCallbackViewModel
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán thành công</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .success-icon {
+            color: #4CAF50;
+            font-size: 50px;
+            text-align: center;
+        }
+        .error-icon {
+            color: #f44336;
+            font-size: 50px;
+            text-align: center;
+        }
+        h1 {
+            color: #4CAF50;
+            text-align: center;
+        }
+        .payment-details {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .btn {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="success-icon">✓</div>
+    <h1>@Model.Message</h1>
+    
+    <div class="payment-details">
+        <h3>Thông tin giao dịch:</h3>
+        <p>Mã giao dịch: @Model.PaymentResult.VnpayTransactionId</p>
+        <p>Ngân hàng: @Model.PaymentResult.BankingInfor.BankCode</p>
+        <p>Thời gian: @Model.PaymentResult.Timestamp.ToString("dd/MM/yyyy HH:mm")</p>
+        <p>Mô tả: @Model.PaymentResult.Description</p>
+    </div>
+
+    <a href="/" class="btn">Quay về trang chủ</a>
+</div>
+</body>
+</html>

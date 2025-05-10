@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using ProjectX.Data;
 using ProjectX.DTOs;
@@ -24,6 +25,7 @@ public class AuthController(
     : ControllerBase
 {
     [HttpPost("sign-up")]
+    [EnableRateLimiting("registerLimiter")]
     public async Task<IActionResult> SignUp([FromBody] SignUpRequest request)
     {
         try
@@ -179,6 +181,7 @@ public class AuthController(
 
     [HttpPost("sign-in")]
     [AllowAnonymous]
+    [EnableRateLimiting("loginLimiter")]
     public async Task<IActionResult> SignIn([FromBody] SignInRequest request)
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);

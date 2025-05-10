@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.CookiePolicy;
@@ -11,6 +12,7 @@ using ProjectX.Data;
 using ProjectX.Models;
 using ProjectX.Services;
 using DotNetEnv;
+using Microsoft.AspNetCore.RateLimiting;
 using ProjectX.Hubs;
 using ProjectX.Services.Email;
 using ProjectX.Services.GoogleAuth;
@@ -23,7 +25,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Register configuration for dependency injection
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
-
+// builder.Services.AddHttpClient(); // For Turnstile
 // Configure Identity options
 builder.Services.Configure<IdentityOptions>(options =>
 {
@@ -164,6 +166,31 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddHostedService<DatabaseBackupService>();
 builder.Services.AddHostedService<AppointmentReminderService>();
 builder.Services.AddHostedService<BusinessPackageService>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("fixed", config =>
+    {
+        config.PermitLimit = 3;
+        config.Window = TimeSpan.FromSeconds(10);
+        config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        config.QueueLimit = 2;
+    });
+    options.AddFixedWindowLimiter("loginLimiter", config =>
+    {
+        config.PermitLimit = 5;
+        config.Window = TimeSpan.FromMinutes(1);
+        config.QueueLimit = 1;
+        config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+    options.AddFixedWindowLimiter("registerLimiter", config =>
+    {
+        config.PermitLimit = 3;
+        config.Window = TimeSpan.FromMinutes(10);
+        config.QueueLimit = 0;
+    });
+});
+
+
 builder.WebHost.ConfigureKestrel(options =>
 {
     // options.ListenAnyIP(8443, listenOptions =>
@@ -231,6 +258,9 @@ app.Use(async (context, next) =>
         }
     }
 });
+
+app.UseRateLimiter();
+
 // Enable authentication
 app.UseAuthentication();
 

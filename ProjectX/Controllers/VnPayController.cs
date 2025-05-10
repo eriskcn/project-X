@@ -31,6 +31,7 @@ public class VnPayController : ControllerBase
     }
 
     [HttpGet("call-back")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public async Task<ActionResult<PaymentResult>> CallBack()
     {
         if (!Request.QueryString.HasValue)
