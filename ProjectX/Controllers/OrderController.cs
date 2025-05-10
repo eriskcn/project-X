@@ -16,6 +16,9 @@ public class OrderController(ApplicationDbContext context) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<OrderResponse>>> GetOwnOrders(
+        [FromQuery] OrderStatus? status,
+        [FromQuery] PaymentGateway? gateway,
+        [FromQuery] DateOnly? date,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
@@ -39,6 +42,21 @@ public class OrderController(ApplicationDbContext context) : ControllerBase
         var baseQuery = context.Orders
             .AsNoTracking()
             .Where(o => o.UserId == userGuid);
+
+        if (status.HasValue)
+        {
+            baseQuery = baseQuery.Where(o => o.Status == status.Value);
+        }
+
+        if (gateway.HasValue)
+        {
+            baseQuery = baseQuery.Where(o => o.Gateway == gateway.Value);
+        }
+
+        if (date.HasValue)
+        {
+            baseQuery = baseQuery.Where(o => DateOnly.FromDateTime(o.Created) == date.Value);
+        }
 
         var orderedQuery = baseQuery.OrderByDescending(o => o.Created);
 
